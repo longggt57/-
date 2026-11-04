@@ -1,0 +1,499 @@
+{
+  "name": "③ 매일 아침 매출 리포트 (슬랙 + 메일)",
+  "nodes": [
+    {
+      "id": "c8d1ad9b-01cc-5e46-92ff-213592d1d709",
+      "name": "메모 0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -320
+      ],
+      "parameters": {
+        "content": "## ③ 일일 매출 리포트\n매일 오전 8:30, 구글시트 `주문` 탭(워크플로 ①이 기록)을 읽어\n어제 매출 · 주문수 · 객단가 · 지난주 같은 요일 대비 · TOP5 상품을\n슬랙과 이메일로 보냅니다. Claude가 2~3문장 코멘트를 붙입니다.\n\nuseAI=false 이거나 데모 모드이면 규칙 기반 코멘트를 씁니다.",
+        "width": 540,
+        "height": 260,
+        "color": 4
+      }
+    },
+    {
+      "id": "58870cde-9cdc-54f3-9dea-fffc57c54fb2",
+      "name": "매일 08:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 8 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "8da875a7-6db3-5b5c-9126-59d41a9fd042",
+      "name": "설정",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1324eabd-e580-5186-8912-508080f1015a",
+              "name": "demoMode",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "6971c3cd-264f-5eff-905a-e9909fd0c5eb",
+              "name": "shopName",
+              "value": "곡물상회",
+              "type": "string"
+            },
+            {
+              "id": "42b337c9-2fc3-5438-9f59-eab4515f6e8c",
+              "name": "useAI",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "4bc01aba-fd90-5791-a6b8-cd411fd422b3",
+              "name": "model",
+              "value": "claude-opus-5-5",
+              "type": "string"
+            },
+            {
+              "id": "588a6725-e45a-5eee-8875-de48e1ebd9aa",
+              "name": "sheetUrl",
+              "value": "https://docs.google.com/spreadsheets/d/여기에_시트_ID/edit",
+              "type": "string"
+            },
+            {
+              "id": "c3a161c5-3f03-5a78-b173-f015c27d76b0",
+              "name": "slackChannel",
+              "value": "#매출리포트",
+              "type": "string"
+            },
+            {
+              "id": "df72d27d-94e2-5524-821f-c09e49fdba29",
+              "name": "emailTo",
+              "value": "owner@example.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fa4f38af-ec9a-5250-bb5f-de38cb282817",
+      "name": "데모 모드?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d7796f73-a16c-4d8d-a2ab-670609f12b5e",
+              "leftValue": "={{ $json.demoMode }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "9a2e9d9e-5354-5671-b346-ed955e423180",
+      "name": "샘플 주문 35일치 (데모)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "// [데모 모드] '주문' 시트에서 읽어온 것과 같은 형식의 최근 35일 샘플 데이터\n// (워크플로 ①이 기록하는 열 이름과 동일)\nconst products = [\n  ['[1+1] 국산 무농약 현미 4kg', 32900, 9],\n  ['제주 감귤 5kg 가정용', 20900, 7],\n  ['유기농 귀리 1kg', 12900, 5],\n  ['햇 찹쌀 2kg', 15900, 3],\n  ['국산 서리태 1kg', 18900, 2],\n  ['혼합 잡곡 선물세트', 45000, 1],\n];\n// 재현 가능한 의사난수 (매번 같은 데모 결과)\nlet seed = 20261104;\nconst rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);\n\nconst rows = [];\nconst now = Date.now() + 9 * 3600e3; // KST 기준\nfor (let day = 35; day >= 1; day--) {\n  const base = new Date(now - day * 86400e3);\n  const weekend = [0, 6].includes(base.getUTCDay());\n  const n = Math.round((weekend ? 14 : 22) + rnd() * 10 + (35 - day) * 0.3);\n  for (let k = 0; k < n; k++) {\n    const pick = rnd() * 27;\n    let acc = 0;\n    const p = products.find(([, , w]) => (acc += w) >= pick) || products[0];\n    const qty = rnd() < 0.8 ? 1 : 2;\n    const t = new Date(base);\n    t.setUTCHours(Math.floor(rnd() * 24), Math.floor(rnd() * 60), 0);\n    const iso = t.toISOString();\n    rows.push({\n      결제일시: `${iso.slice(0, 10)} ${iso.slice(11, 19)}`,\n      상품주문번호: `D${iso.slice(0, 10).replace(/-/g, '')}${String(k).padStart(4, '0')}`,\n      상품명: p[0],\n      수량: qty,\n      결제금액: p[1] * qty,\n    });\n  }\n}\nreturn rows.map((json) => ({ json }));\n"
+      }
+    },
+    {
+      "id": "c6968a8c-fa71-556e-bfd8-babde0845607",
+      "name": "주문 시트 읽기",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        680,
+        140
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('설정').first().json.sheetUrl }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "주문",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "18a52e87-0342-5c5a-b577-76981239138f",
+      "name": "어제 매출 집계",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// 어제(KST) 매출 집계 + 지난주 같은 요일 / 최근 7일 평균 비교 + 상품 TOP5\nconst rows = $input.all().map((i) => i.json);\n\nconst kstNow = new Date(Date.now() + 9 * 3600e3);\nconst dayStr = (offset) => new Date(kstNow.getTime() - offset * 86400e3).toISOString().slice(0, 10);\nconst target = dayStr(1);\nconst lastWeek = dayStr(8);\nconst recent7 = Array.from({ length: 7 }, (_, i) => dayStr(i + 2)); // 어제 이전 7일\n\nconst byDay = {};\nconst seen = new Set();\nfor (const r of rows) {\n  const date = String(r.결제일시 || '').slice(0, 10);\n  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) continue;\n  const id = String(r.상품주문번호 || '');\n  if (id) { if (seen.has(id)) continue; seen.add(id); }\n  const amount = Number(String(r.결제금액).replace(/[^0-9.-]/g, '')) || 0;\n  const qty = Number(r.수량) || 0;\n  const d = (byDay[date] ||= { orders: 0, revenue: 0, items: 0, products: {} });\n  d.orders += 1;\n  d.revenue += amount;\n  d.items += qty;\n  const p = (d.products[r.상품명 || '(이름 없음)'] ||= { qty: 0, revenue: 0 });\n  p.qty += qty;\n  p.revenue += amount;\n}\n\nconst empty = { orders: 0, revenue: 0, items: 0, products: {} };\nconst y = byDay[target] || empty;\nconst lw = byDay[lastWeek] || empty;\nconst avg7 = recent7.reduce((s, d) => s + (byDay[d]?.revenue || 0), 0) / 7;\nconst pct = (a, b) => (b ? Math.round(((a - b) / b) * 1000) / 10 : null);\n\nconst top = Object.entries(y.products)\n  .map(([name, v]) => ({ name, ...v }))\n  .sort((a, b) => b.revenue - a.revenue)\n  .slice(0, 5);\n\nconst trend = [...recent7].reverse().concat(target).map((d) => ({ date: d, revenue: byDay[d]?.revenue || 0 }));\n\nreturn [{\n  json: {\n    date: target,\n    weekday: '일월화수목금토'[new Date(target + 'T00:00:00Z').getUTCDay()],\n    orders: y.orders,\n    revenue: y.revenue,\n    items: y.items,\n    avgOrderValue: y.orders ? Math.round(y.revenue / y.orders) : 0,\n    lastWeekRevenue: lw.revenue,\n    vsLastWeekPct: pct(y.revenue, lw.revenue),\n    avg7Revenue: Math.round(avg7),\n    vsAvg7Pct: pct(y.revenue, avg7),\n    top,\n    trend,\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "e97a2987-b706-5ee4-a725-9898295469bf",
+      "name": "AI 코멘트 사용?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1140,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5df1dcdc-ff43-4909-ab19-c9775f584adb",
+              "leftValue": "={{ $('설정').first().json.useAI }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            },
+            {
+              "id": "d92df77b-ce0e-4333-b434-b78d72e4119e",
+              "leftValue": "={{ !$('설정').first().json.demoMode }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "42982bb2-a7d5-5fb7-ae38-d8385f1ec1d6",
+      "name": "AI 요청 구성",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "// 집계 결과 → Claude에게 한 줄 코멘트 요청\nconst cfg = $('설정').first().json;\nconst s = $input.first().json;\n\nconst request = {\n  model: cfg.model,\n  max_tokens: 4000,\n  system: [\n    `당신은 온라인 쇼핑몰 \"${cfg.shopName}\" 사장님의 매출 비서입니다.`,\n    '주어진 숫자만 근거로, 사장님이 아침에 읽을 코멘트를 2~3문장으로 씁니다.',\n    '- 첫 문장: 어제 실적을 지난주 같은 요일·최근 7일 평균과 비교해 한마디로 평가',\n    '- 둘째 문장: 눈에 띄는 상품이나 변화 1가지',\n    '- (선택) 셋째 문장: 오늘 해볼 만한 행동 1가지',\n    '숫자를 지어내지 말고, 과장하지 말고, 이모지·마크다운 없이 평문으로 쓰세요.',\n  ].join('\\n'),\n  messages: [{ role: 'user', content: `어제 매출 데이터(JSON):\\n${JSON.stringify(s)}` }],\n  output_config: { effort: 'low' },\n  fallbacks: 'default',\n};\nreturn [{ json: { ...s, request } }];\n"
+      }
+    },
+    {
+      "id": "65aedee3-f56b-5883-97ba-fb414abaf854",
+      "name": "Claude 코멘트 작성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1580,
+        -140
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2026-10-21"
+            },
+            {
+              "name": "anthropic-beta",
+              "value": "server-side-fallback-2026-07-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "9e026805-0db9-52c9-86a7-fb5c2acc2a23",
+      "name": "코멘트 추출",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "// Claude 응답에서 코멘트 추출 (실패하면 빈 값 → 기본 코멘트 사용)\nconst res = $input.first().json;\nconst stats = $('AI 요청 구성').first().json;\nconst ok = res.stop_reason === 'end_turn';\nconst comment = ok\n  ? (res.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('').trim()\n  : '';\nconst { request, ...rest } = stats;\nreturn [{ json: { ...rest, comment } }];\n"
+      }
+    },
+    {
+      "id": "a2d07f5b-2210-5eb8-a2fe-27dfebf925ea",
+      "name": "리포트 작성",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2020,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// 슬랙 메시지 + HTML 메일 본문 작성\nconst cfg = $('설정').first().json;\nconst s = $input.first().json;\nconst won = (n) => `${Math.round(Number(n)).toLocaleString('ko-KR')}원`;\nconst delta = (p) => (p === null || p === undefined ? '비교 데이터 없음' : `${p > 0 ? '▲' : p < 0 ? '▼' : ''}${Math.abs(p)}%`);\n\n// AI 코멘트가 없으면 규칙 기반 기본 코멘트\nconst fallback = s.orders === 0\n  ? '어제는 결제된 주문이 없었습니다. 판매처 연동 상태를 한번 확인해 보세요.'\n  : `어제 매출은 지난주 같은 요일 대비 ${delta(s.vsLastWeekPct)}, 최근 7일 평균 대비 ${delta(s.vsAvg7Pct)}입니다.` +\n    (s.top[0] ? ` 가장 많이 팔린 상품은 '${s.top[0].name}'입니다.` : '');\nconst comment = s.comment || fallback;\n\nconst max = Math.max(...s.trend.map((t) => t.revenue), 1);\nconst bars = s.trend.map((t) => {\n  const n = Math.round((t.revenue / max) * 12);\n  return `${t.date.slice(5)} ${'█'.repeat(n)}${'░'.repeat(12 - n)} ${won(t.revenue)}`;\n});\n\nconst slackText = [\n  `📊 *${cfg.shopName} 일일 매출 리포트* · ${s.date} (${s.weekday})`,\n  `*매출 ${won(s.revenue)}* · 주문 ${s.orders}건 · 객단가 ${won(s.avgOrderValue)}`,\n  `지난주 ${s.weekday}요일 대비 ${delta(s.vsLastWeekPct)} · 7일 평균 대비 ${delta(s.vsAvg7Pct)}`,\n  '',\n  `💡 ${comment}`,\n  '',\n  '*인기 상품 TOP5*',\n  ...(s.top.length ? s.top.map((p, i) => `${i + 1}. ${p.name} — ${p.qty}개 / ${won(p.revenue)}`) : ['(없음)']),\n  '',\n  '*최근 8일 추이*',\n  '```' + bars.join('\\n') + '```',\n].join('\\n');\n\nconst esc = (t) => String(t).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst color = (p) => (p > 0 ? '#1a7f37' : p < 0 ? '#cf222e' : '#57606a');\nconst html = `\n<div style=\"font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;max-width:560px;margin:0 auto;color:#1f2328\">\n  <p style=\"color:#57606a;margin:0\">${esc(cfg.shopName)} · ${s.date} (${s.weekday})</p>\n  <h1 style=\"font-size:28px;margin:4px 0 0\">${won(s.revenue)}</h1>\n  <p style=\"margin:4px 0 16px\">주문 ${s.orders}건 · 객단가 ${won(s.avgOrderValue)}</p>\n  <table style=\"width:100%;border-collapse:collapse;margin-bottom:16px\">\n    <tr><td style=\"padding:8px;background:#f6f8fa\">지난주 ${s.weekday}요일 대비</td>\n        <td style=\"padding:8px;background:#f6f8fa;text-align:right;color:${color(s.vsLastWeekPct)}\"><b>${delta(s.vsLastWeekPct)}</b> (${won(s.lastWeekRevenue)})</td></tr>\n    <tr><td style=\"padding:8px\">최근 7일 평균 대비</td>\n        <td style=\"padding:8px;text-align:right;color:${color(s.vsAvg7Pct)}\"><b>${delta(s.vsAvg7Pct)}</b> (${won(s.avg7Revenue)})</td></tr>\n  </table>\n  <div style=\"padding:12px 16px;background:#ddf4ff;border-radius:8px;margin-bottom:16px\">💡 ${esc(comment)}</div>\n  <h3 style=\"margin:0 0 8px\">인기 상품 TOP5</h3>\n  <table style=\"width:100%;border-collapse:collapse\">\n    ${s.top.map((p, i) => `<tr><td style=\"padding:6px 0;border-bottom:1px solid #d0d7de\">${i + 1}. ${esc(p.name)}</td><td style=\"padding:6px 0;border-bottom:1px solid #d0d7de;text-align:right\">${p.qty}개 · ${won(p.revenue)}</td></tr>`).join('')}\n  </table>\n  <p style=\"color:#8c959f;font-size:12px;margin-top:24px\">이 메일은 n8n 자동화로 매일 아침 발송됩니다.</p>\n</div>`;\n\nreturn [{\n  json: {\n    ...s,\n    comment,\n    slackText,\n    emailSubject: `[${cfg.shopName}] ${s.date} 매출 ${won(s.revenue)} (${delta(s.vsLastWeekPct)})`,\n    emailHtml: html,\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "fef7303b-a8d6-5e4b-8bbd-295a8d20729a",
+      "name": "슬랙 발송",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2260,
+        -100
+      ],
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('설정').first().json.slackChannel }}",
+          "mode": "name"
+        },
+        "text": "={{ $json.slackText }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "4211485f-e1b1-5ef2-9ebd-62984c93eea5",
+      "name": "메일 발송",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2260,
+        100
+      ],
+      "parameters": {
+        "sendTo": "={{ $('설정').first().json.emailTo }}",
+        "subject": "={{ $json.emailSubject }}",
+        "emailType": "html",
+        "message": "={{ $json.emailHtml }}",
+        "options": {
+          "appendAttribution": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "매일 08:30": {
+      "main": [
+        [
+          {
+            "node": "설정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "설정": {
+      "main": [
+        [
+          {
+            "node": "데모 모드?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "데모 모드?": {
+      "main": [
+        [
+          {
+            "node": "샘플 주문 35일치 (데모)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "주문 시트 읽기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "샘플 주문 35일치 (데모)": {
+      "main": [
+        [
+          {
+            "node": "어제 매출 집계",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "주문 시트 읽기": {
+      "main": [
+        [
+          {
+            "node": "어제 매출 집계",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "어제 매출 집계": {
+      "main": [
+        [
+          {
+            "node": "AI 코멘트 사용?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI 코멘트 사용?": {
+      "main": [
+        [
+          {
+            "node": "AI 요청 구성",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "리포트 작성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI 요청 구성": {
+      "main": [
+        [
+          {
+            "node": "Claude 코멘트 작성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude 코멘트 작성": {
+      "main": [
+        [
+          {
+            "node": "코멘트 추출",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "코멘트 추출": {
+      "main": [
+        [
+          {
+            "node": "리포트 작성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "리포트 작성": {
+      "main": [
+        [
+          {
+            "node": "슬랙 발송",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "메일 발송",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

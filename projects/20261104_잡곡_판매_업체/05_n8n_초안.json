@@ -1,0 +1,395 @@
+{
+  "name": "[초안] 잡곡 판매 업체 · 스마트스토어·쿠팡 주문 통합 → 구글시트 정리 → CJ대한통운 업로드 파일 생성 → 슬랙 알림 (송장 등록은 2단계)",
+  "nodes": [
+    {
+      "id": "8afdfc65-3800-56a1-8339-43726c58de97",
+      "name": "메모 0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -360
+      ],
+      "parameters": {
+        "content": "## 스마트스토어·쿠팡 주문 통합 → 구글시트 정리 → CJ대한통운 업로드 파일 생성 → 슬랙 알림 (송장 등록은 2단계)\n**고객**: 잡곡 판매 업체\n\n이 워크플로는 의뢰 분석으로 자동 생성된 **설계 초안**입니다.\n노드 아래 설명과 코드 노드의 `TODO`를 채워 완성하세요.\n\n**사람 확인 지점**: 주소 누락·옵션 불일치로 '확인필요' 표시된 주문 검토, 택배 업로드 파일을 CJ대한통운에 올리기 전 최종 확인",
+        "width": 560,
+        "height": 280,
+        "color": 4
+      }
+    },
+    {
+      "id": "ecbc2795-1c6a-56d3-8723-d993360433ca",
+      "name": "매일 08:40 실행",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "notes": "출고일(월~토) 오전 8시 40분에 자동 실행합니다.",
+      "notesInFlow": true
+    },
+    {
+      "id": "2aa2e7a5-2e17-5e40-8caf-ba6cd9245eee",
+      "name": "설정",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e0b07b2-4ef1-54ea-9759-04dd461d6c9d",
+              "name": "demoMode",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "f907650d-bb9b-5cc1-85ae-e70866267f3a",
+              "name": "sheetUrl",
+              "value": "https://docs.google.com/spreadsheets/d/여기에_시트_ID/edit",
+              "type": "string"
+            },
+            {
+              "id": "490b41eb-82f8-573b-ab04-6f77662bdd93",
+              "name": "slackChannel",
+              "value": "#알림",
+              "type": "string"
+            },
+            {
+              "id": "5853f677-528b-5885-b50f-2aaa1e0c2eb2",
+              "name": "네이버 스마트스토어 API 키",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "79597d15-c477-58c6-9f74-61bca3a2e400",
+              "name": "쿠팡 Wing API 키",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "3c82b0f5-b187-53fa-9ef4-82f0ded96c95",
+              "name": "CJ대한통운 API 키",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "32c00107-4dd3-5dd0-83d0-a98b8eba1baa",
+      "name": "스마트스토어 주문 조회",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.example.com/TODO",
+        "options": {}
+      },
+      "notes": "전일 출고 마감 이후 결제완료된 주문을 커머스 API로 가져옵니다.",
+      "notesInFlow": true
+    },
+    {
+      "id": "5b74e538-1194-57a2-ae1a-6168de256c78",
+      "name": "쿠팡 주문 조회",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.example.com/TODO",
+        "options": {}
+      },
+      "notes": "같은 기간 결제완료(ACCEPT) 상태의 쿠팡 주문을 가져옵니다.",
+      "notesInFlow": true
+    },
+    {
+      "id": "9466c83a-c9d2-5333-a875-db3d36b59470",
+      "name": "주문 통합·정리",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// TODO: 두 판매처 주문을 같은 열 구조로 맞추고, 판매처·옵션·주소를 정규화합니다. 주소 누락이나 옵션 불일치는 '확인필요'로 표시합니다.\n// 서비스: -\n// 이전 단계('쿠팡 주문 조회') 출력: $input.all()\n// 설정 값: $('설정').first().json\nreturn $input.all();\n"
+      },
+      "notes": "두 판매처 주문을 같은 열 구조로 맞추고, 판매처·옵션·주소를 정규화합니다. 주소 누락이나 옵션 불일치는 '확인필요'로 표시합니다.",
+      "notesInFlow": true
+    },
+    {
+      "id": "0d02159a-7652-5a7e-b217-bdca667e6528",
+      "name": "이상 주문 있음?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "db9ef390-665e-4994-91e9-48b230b98274",
+              "leftValue": "={{ $json.TODO }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "notes": "'확인필요'로 표시된 주문이 있으면 담당자 확인 알림을 먼저 보냅니다.",
+      "notesInFlow": true
+    },
+    {
+      "id": "bd63483c-d3c4-529d-b627-d3b4793df9a8",
+      "name": "주문 시트 기록",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('설정').first().json.sheetUrl }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "notes": "통합된 주문을 구글시트 '주문' 탭에 날짜별로 기록합니다.",
+      "notesInFlow": true
+    },
+    {
+      "id": "f588827a-a3c3-5910-9995-c35f0bae1a99",
+      "name": "택배 업로드 파일 생성",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// TODO: CJ대한통운 업로드 양식 열 순서에 맞춘 파일 데이터를 만들고 시트 '택배업로드' 탭에 씁니다.\n// 서비스: CJ대한통운\n// 이전 단계('주문 시트 기록') 출력: $input.all()\n// 설정 값: $('설정').first().json\nreturn $input.all();\n"
+      },
+      "notes": "CJ대한통운 업로드 양식 열 순서에 맞춘 파일 데이터를 만들고 시트 '택배업로드' 탭에 씁니다.",
+      "notesInFlow": true
+    },
+    {
+      "id": "70bb0289-7624-5b3c-baef-8cc86ba2c839",
+      "name": "택배 시트 기록",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1920,
+        0
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('설정').first().json.sheetUrl }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "notes": "업로드용 데이터를 '택배업로드' 탭에 기록해 바로 내려받을 수 있게 합니다.",
+      "notesInFlow": true
+    },
+    {
+      "id": "4482b901-eb64-5618-b1fe-a00e2804f158",
+      "name": "처리 결과 알림",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2160,
+        0
+      ],
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('설정').first().json.slackChannel }}",
+          "mode": "name"
+        },
+        "text": "={{ $json.text }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "notes": "판매처별 주문 건수, 확인필요 건수, 시트 링크를 슬랙으로 보냅니다.",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "매일 08:40 실행": {
+      "main": [
+        [
+          {
+            "node": "설정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "설정": {
+      "main": [
+        [
+          {
+            "node": "스마트스토어 주문 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "스마트스토어 주문 조회": {
+      "main": [
+        [
+          {
+            "node": "쿠팡 주문 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "쿠팡 주문 조회": {
+      "main": [
+        [
+          {
+            "node": "주문 통합·정리",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "주문 통합·정리": {
+      "main": [
+        [
+          {
+            "node": "이상 주문 있음?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "이상 주문 있음?": {
+      "main": [
+        [
+          {
+            "node": "주문 시트 기록",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "주문 시트 기록": {
+      "main": [
+        [
+          {
+            "node": "택배 업로드 파일 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "택배 업로드 파일 생성": {
+      "main": [
+        [
+          {
+            "node": "택배 시트 기록",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "택배 시트 기록": {
+      "main": [
+        [
+          {
+            "node": "처리 결과 알림",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
