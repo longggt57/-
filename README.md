@@ -190,6 +190,16 @@ ANTHROPIC_API_KEY=sk-ant-... python3 test/live_claude_check.py
 
 ![콘솔 대시보드](docs/screenshots/08_콘솔_대시보드.png)
 
+## Fiverr 버전 (영어)
+
+- **영어판 콘솔:** [`docs/console-en/index.html`](docs/console-en/index.html)
+  - Shopify·Amazon 판매처 기준이고, 금액은 달러, 시간은 보는 사람의 현지 시간입니다.
+  - 배송 파일 열 구성은 미국 배송앱 업로드 양식에 맞췄습니다.
+  - 고친 뒤 `python3 docs/console-en/build_page.py`로 `index.html`을 다시 만드세요.
+- **Fiverr 대표 이미지 3장:** `docs/fiverr/gig_*.png` (1280×769). 원본은 `gig_images.html`입니다.
+- **등록 문구:** [Fiverr 등록 가이드](docs/fiverr/Fiverr_등록_가이드.md)에 제목, 패키지, 설명, FAQ, 태그, 구매자 질문을 정리했습니다.
+- **아직 없는 것:** Shopify·Amazon용 n8n 워크플로는 아직 만들지 않았습니다. 첫 주문 때 고객 환경에 맞춰 만들어야 합니다.
+
 ## 무료 택배 변환기 (마케팅용 데모)
 
 [`docs/demo/index.html`](docs/demo/index.html): 스마트스토어 주문 엑셀을 올리면 택배 업로드 파일이 바로 나오는 웹페이지입니다. 합포장, 주소·연락처 오류 분리, 취소 주문 제외까지 해 줍니다. 파일은 브라우저 안에서만 처리되고 서버로 보내지 않습니다.

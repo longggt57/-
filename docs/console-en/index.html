@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Seller Operations Console</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+</head>
+<body>
+<style>
+/* Layout: left sidebar + right workspace. Shipping-label yellow marks only things to act on; buttons use ink. */
+:root {
+  --bg: #eef0f3;        
+  --panel: #ffffff;
+  --panel-2: #f6f7f9;
+  --ink: #14181d;
+  --ink-2: #3a424d;
+  --muted: #5d6672;
+  --line: #d9dde3;
+  --label: #ffd23f;     
+  --label-ink: #14181d;
+  --btn: #14181d; --btn-ink: #ffffff;
+  --s1: #2a78d6;        
+  --s2: #eb6834;        
+  --good: #0ca30c; --good-bg: #e7f6e7;
+  --warn: #9a6700; --warn-bg: #fff4d6;
+  --crit: #d03b3b; --crit-bg: #fdecec;
+  --info-bg: #e8f0fb;
+  --grid: #e9ecf0;
+  --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101317; --panel: #1a1f26; --panel-2: #222831; --ink: #e8ebef; --ink-2: #c3c9d1; --muted: #9aa4b1; --line: #2e3540;
+    --label: #f2c230; --label-ink: #14181d; --btn: #e8ebef; --btn-ink: #101317;
+    --s1: #3987e5; --s2: #d95926;
+    --good: #3fbf5a; --good-bg: #16301c; --warn: #f2c230; --warn-bg: #33290f; --crit: #ff7b7b; --crit-bg: #3a1d1d; --info-bg: #17263a; --grid: #262d36;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101317; --panel: #1a1f26; --panel-2: #222831; --ink: #e8ebef; --ink-2: #c3c9d1; --muted: #9aa4b1; --line: #2e3540;
+  --label: #f2c230; --label-ink: #14181d; --btn: #e8ebef; --btn-ink: #101317;
+  --s1: #3987e5; --s2: #d95926;
+  --good: #3fbf5a; --good-bg: #16301c; --warn: #f2c230; --warn-bg: #33290f; --crit: #ff7b7b; --crit-bg: #3a1d1d; --info-bg: #17263a; --grid: #262d36;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.55; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--s1); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.app { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100%; }
+
+.side {
+  background: var(--panel); border-right: 1px solid var(--line);
+  padding-block: 18px; padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: 14px;
+  display: flex; flex-direction: column; gap: 18px; position: sticky; top: 0; height: 100vh;
+}
+.brand { display: grid; gap: 2px; padding: 0 6px; }
+.brand b { font-size: 16px; }
+.brand span { color: var(--muted); font-size: 12px; }
+.nav { display: grid; gap: 2px; }
+.nav a {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 8px; color: var(--ink-2); text-decoration: none; font-weight: 500;
+}
+.nav a:hover { background: var(--panel-2); }
+.nav a.on { background: var(--ink); color: var(--panel); }
+.nav .cnt { font-family: var(--mono); font-size: 12px; min-width: 22px; text-align: center; padding: 0 6px; border-radius: 999px; background: var(--panel-2); color: var(--ink); }
+.nav a.on .cnt { background: var(--label); color: var(--label-ink); }
+.nav .cnt.hot { background: var(--label); color: var(--label-ink); }
+.side .foot { margin-top: auto; font-size: 12px; color: var(--muted); padding: 0 6px; display: grid; gap: 8px; }
+
+
+.main { min-width: 0; display: flex; flex-direction: column; }
+.top {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding-block: 14px; padding-left: 24px; padding-right: max(24px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.top h1 { font-size: 20px; }
+.top .meta { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 13px; flex-wrap: wrap; }
+.demo { background: var(--label); color: var(--label-ink); font-weight: 700; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+.view { padding-block: 20px 40px; padding-left: 24px; padding-right: max(24px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; align-content: start; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding-right: max(14px, env(safe-area-inset-right, 0px)); gap: 10px; }
+  .nav { display: flex; overflow-x: auto; gap: 4px; padding-bottom: 2px; }
+  .nav a { white-space: nowrap; }
+  .side .foot { display: none; }
+  .top, .view { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.card-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.card-h h2 { font-size: 15px; }
+.card-h small { color: var(--muted); font-size: 12.5px; }
+.card-b { padding: 14px 16px; min-width: 0; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 12px; font-weight: 500; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.btn:hover { background: var(--panel-2); }
+.btn.pri { background: var(--btn); color: var(--btn-ink); border-color: var(--btn); }
+.btn.pri:hover { opacity: .9; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.sm { padding: 4px 9px; font-size: 13px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.good { background: var(--good-bg); color: var(--good); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.crit { background: var(--crit-bg); color: var(--crit); }
+.pill.info { background: var(--info-bg); color: var(--ink-2); }
+.pill.mute { background: var(--panel-2); color: var(--muted); }
+.pill.nodot::before { display: none; }
+.ch { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.ch i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.ch.s1 i { background: var(--s1); } .ch.s2 i { background: var(--s2); }
+.tag { background: var(--label); color: var(--label-ink); font-weight: 700; font-size: 11.5px; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.muted { color: var(--muted); }
+.empty { color: var(--muted); padding: 18px 4px; text-align: center; }
+
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
+th { font-weight: 500; color: var(--muted); background: var(--panel-2); position: sticky; top: 0; }
+tr:last-child td { border-bottom: 0; }
+td.w { white-space: normal; min-width: 200px; }
+td.r, th.r { text-align: right; }
+
+
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1180px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .kpis > :last-child { grid-column: span 2; } }
+@media (max-width: 620px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.kpi .lbl { color: var(--muted); font-size: 12.5px; display: flex; justify-content: space-between; gap: 6px; }
+.kpi .val { font-family: var(--mono); font-size: 28px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.kpi .val small { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+.kpi .sub { font-size: 12.5px; color: var(--muted); }
+.kpi.todo { border-color: var(--label); box-shadow: inset 0 3px 0 var(--label); }
+.dash { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 1060px) { .dash { grid-template-columns: minmax(0, 1fr); } }
+.chart-wrap { position: relative; }
+.legend { display: flex; gap: 14px; font-size: 12.5px; color: var(--ink-2); }
+.tip {
+  position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 10px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,.12); min-width: 140px; z-index: 5;
+}
+.tip b { display: block; margin-bottom: 4px; }
+.tip .r { display: flex; justify-content: space-between; gap: 12px; }
+.todo-list { display: grid; gap: 8px; }
+.todo-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); }
+.todo-item .ic { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; font-weight: 700; font-family: var(--mono); }
+.todo-item .ic.y { background: var(--label); color: var(--label-ink); }
+.todo-item .ic.r { background: var(--crit-bg); color: var(--crit); }
+.todo-item .ic.g { background: var(--good-bg); color: var(--good); }
+.todo-item b { display: block; }
+.todo-item span { color: var(--muted); font-size: 12.5px; }
+.timeline { display: grid; }
+.tl { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.tl:last-child { border-bottom: 0; }
+.tl .t { font-family: var(--mono); color: var(--muted); font-size: 12.5px; padding-top: 1px; }
+.tl b { font-weight: 500; }
+.tl span.d { display: block; color: var(--muted); font-size: 12.5px; }
+
+
+.wf-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 980px) { .wf-grid { grid-template-columns: minmax(0, 1fr); } }
+.wf { display: grid; grid-template-rows: auto auto 1fr auto; }
+.wf .card-h h2 { display: flex; gap: 8px; align-items: center; }
+.wf .no { font-family: var(--mono); background: var(--ink); color: var(--panel); border-radius: 5px; padding: 0 6px; font-size: 13px; }
+.wf-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.wf-meta div { display: grid; gap: 1px; }
+.wf-meta span { color: var(--muted); font-size: 12px; }
+.wf-meta b { font-family: var(--mono); font-weight: 500; font-size: 13px; }
+.steps { padding: 12px 16px; display: grid; gap: 4px; font-size: 13px; }
+.steps .s { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; align-items: start; color: var(--ink-2); }
+.steps .s .m { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); margin-top: 3px; }
+.steps .s.done .m { border-color: var(--good); background: var(--good); }
+.steps .s.run .m { border-color: var(--s1); border-top-color: transparent; animation: spin .7s linear infinite; }
+.steps .s.fail .m { border-color: var(--crit); background: var(--crit); }
+.steps .s .x { font-family: var(--mono); color: var(--muted); font-size: 12px; }
+.steps .s em { font-style: normal; color: var(--muted); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.strip { display: flex; gap: 3px; align-items: center; }
+.strip i { width: 12px; height: 18px; border-radius: 3px; background: var(--good); opacity: .85; }
+.strip i.w { background: var(--warn); }
+.strip i.c { background: var(--crit); }
+.wf-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.result { margin: 0 16px 12px; padding: 10px 12px; background: var(--panel-2); border-radius: 8px; font-size: 13px; }
+
+
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); padding: 6px 12px; cursor: pointer; }
+.seg button.on { background: var(--ink); color: var(--panel); }
+.filters input[type=search], .filters select, .field input, .field textarea, .field select {
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 6px 10px;
+}
+.filters input[type=search] { min-width: 200px; }
+
+
+.issue-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .issue-grid { grid-template-columns: minmax(0, 1fr); } }
+.issue { border-left: 4px solid var(--crit); }
+.field { display: grid; gap: 4px; }
+.field label { font-size: 12px; color: var(--muted); }
+.field input, .field textarea { width: 100%; }
+.form { display: grid; gap: 10px; }
+
+
+.cs { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 960px) { .cs { grid-template-columns: minmax(0, 1fr); } }
+.cs-list { display: grid; }
+.cs-item { display: grid; gap: 3px; padding: 12px 14px; border-bottom: 1px solid var(--line); cursor: pointer; background: none; border-left: 0; border-right: 0; border-top: 0; text-align: left; width: 100%; }
+.cs-item:hover { background: var(--panel-2); }
+.cs-item.on { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--ink); }
+.cs-item .h { display: flex; justify-content: space-between; gap: 8px; }
+.cs-item p { margin: 0; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quote { background: var(--panel-2); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; }
+.draft { width: 100%; min-height: 140px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--panel); line-height: 1.6; }
+.ai-box { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ai-box div { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; }
+.ai-box span { font-size: 12px; color: var(--muted); }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--panel); padding: 10px 16px; border-radius: 10px; font-size: 13.5px; z-index: 20; max-width: calc(100% - 32px);
+}
+.cfg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .cfg { grid-template-columns: minmax(0, 1fr); } }
+.conn { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.conn:last-child { border-bottom: 0; }
+.conn span { display: block; color: var(--muted); font-size: 12.5px; }
+textarea.mono { font-family: var(--mono); font-size: 12.5px; min-height: 180px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .steps .s.run .m { animation: none; } }
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><b>Northfield Grains</b><span>Operations console</span></div>
+    <nav class="nav" id="nav" aria-label="Menu"></nav>
+    <div class="foot">
+      <span class="pill good" style="width:fit-content">All connections healthy</span>
+      <span id="syncInfo"></span>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <h1 id="title">Dashboard</h1>
+      <div class="meta"><span id="clock" class="num"></span><button class="btn sm" id="runAll" type="button">Run order sync now</button></div>
+    </header>
+    <main class="view" id="view"></main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(() => {
+'use strict';
+// ───────────── Time helpers (viewer's local time) ─────────────
+const TZ = -new Date().getTimezoneOffset() * 60e3, MIN = 60e3, HOUR = 3600e3, DAY = 86400e3;
+const kd = (ms) => new Date(ms + TZ).toISOString().slice(0, 10);
+const kt = (ms) => new Date(ms + TZ).toISOString().slice(11, 16);
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const md = (ms) => { const d = kd(ms); return `${MON[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}`; };
+const kdt = (ms) => `${md(ms)} ${kt(ms)}`;
+const dayStart = (ms) => new Date(kd(ms) + 'T00:00:00').getTime();
+const wd = (ms) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(ms + TZ).getUTCDay()];
+const usd = (n) => `$${(Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = (s, el = document) => el.querySelector(s);
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+// ───────────── Sample data (deterministic) ─────────────
+function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const PRODUCTS = [
+  ['Organic Brown Rice 4 lb', '2-pack', 24.99, 9], ['Rolled Oats 2 lb', '', 9.49, 7], ['Tri-Color Quinoa 2 lb', '', 14.99, 5],
+  ['Black Beans 2 lb', '', 7.99, 3], ['Wild Rice Blend 1 lb', '', 11.49, 2], ['Whole Grain Gift Box', 'Gift wrap', 39.00, 1],
+];
+const NAMES = ['Emma Johnson', 'Liam Carter', 'Olivia Brooks', 'Noah Patel', 'Ava Martinez', 'Ethan Kim', 'Sophia Reed', 'Mason Nguyen', 'Isabella Ward', 'Lucas Rivera', 'Mia Thompson', 'James Foster',
+  'Charlotte Hayes', 'Benjamin Cole', 'Amelia Price', 'Henry Russell', 'Harper Diaz', 'Daniel Ortiz', 'Ella Bennett', 'Jack Sullivan', 'Grace Howard', 'Owen Palmer', 'Chloe Barnes', 'Wyatt Fisher'];
+const ADDRS = [
+  ['10001', '128 W 29th St', 'Apt 4B', 'New York, NY'], ['60614', '2245 N Clark St', 'Unit 3', 'Chicago, IL'], ['78704', '1810 S Lamar Blvd', 'Suite 210', 'Austin, TX'],
+  ['98103', '4512 Fremont Ave N', '', 'Seattle, WA'], ['30309', '980 Peachtree St NE', 'Apt 1207', 'Atlanta, GA'], ['80205', '3301 Walnut St', 'Unit 5', 'Denver, CO'],
+  ['94110', '2770 Mission St', 'Apt 2', 'San Francisco, CA'], ['02116', '410 Boylston St', 'Floor 6', 'Boston, MA'], ['33131', '701 Brickell Ave', 'Apt 1503', 'Miami, FL'],
+  ['97214', '1520 SE Belmont St', '', 'Portland, OR'], ['55408', '3022 Hennepin Ave', 'Apt 304', 'Minneapolis, MN'], ['85004', '45 W Jefferson St', 'Unit 812', 'Phoenix, AZ'],
+];
+const digits = (r, n) => Array.from({ length: n }, () => Math.floor(r() * 10)).join('');
+function ids(channel, paidAt, r) {
+  if (channel === 'Amazon') { const no = `11${digits(r, 1)}-${digits(r, 7)}-${digits(r, 7)}`; return { orderNo: no, id: no + '-' + digits(r, 4) }; }
+  const no = `#${1000 + Math.floor(r() * 9000)}${digits(r, 1)}`; return { orderNo: no, id: `gid${digits(r, 12)}` };
+}
+
+function buildState() {
+  const r = rng(20261104);
+  const now = Date.now();
+  let anchor = dayStart(now) + 8 * HOUR + 40 * MIN;           // most recent ship-day 8:40 AM
+  if (anchor > now) anchor -= DAY;
+  while (wd(anchor) === 'Sun') anchor -= DAY;
+  const people = NAMES.map((n, i) => {
+    const a = ADDRS[i % ADDRS.length];
+    return { name: n, phone: `(${200 + Math.floor(r() * 700)}) ${100 + Math.floor(r() * 900)}-${1000 + Math.floor(r() * 9000)}`, zip: a[0], addr: `${a[1]}${a[2] ? ', ' + a[2] : ''}, ${a[3]} ${a[0]}` };
+  });
+  const pick = () => { let w = r() * 27, acc = 0; return PRODUCTS.find((p) => (acc += p[3]) >= w) || PRODUCTS[0]; };
+  const mk = (paidAt, person, channel, status) => {
+    const p = pick(); const qty = r() < 0.8 ? 1 : 2;
+    return {
+      ...ids(channel, paidAt, r), channel, paidAt, product: p[0], option: p[1], qty, amount: p[2] * qty,
+      receiver: person.name, phone: person.phone, zip: person.zip, addr: person.addr,
+      memo: r() < 0.3 ? ['Leave at front door', 'Ring doorbell', 'Call on arrival'][Math.floor(r() * 3)] : '', status,
+    };
+  };
+  const orders = [];
+  for (let d = 14; d >= 1; d--) {
+    const base = dayStart(anchor) - d * DAY;
+    const weekend = ['Sat', 'Sun'].includes(wd(base));
+    const n = Math.round((weekend ? 18 : 28) + r() * 10 + (14 - d) * 0.4);
+    for (let k = 0; k < n; k++) orders.push(mk(base + Math.floor(r() * DAY), people[Math.floor(r() * people.length)], r() < 0.58 ? 'Shopify' : 'Amazon', d <= 2 ? 'Shipped' : 'Delivered'));
+  }
+  const A = [];
+  const tA = (i) => anchor - DAY + Math.floor((i + 1) * (DAY / 17));
+  for (let i = 0; i < 15; i++) A.push(mk(tA(i), people[i % people.length], i % 3 === 0 ? 'Amazon' : 'Shopify', 'New'));
+  A.push(mk(tA(15), people[0], A[0].channel === 'Amazon' ? 'Shopify' : 'Amazon', 'New')); // same household, two channels
+  A[4].addr = '';                // missing address
+  A[9].phone = '(555) 12-3456';  // malformed phone
+  orders.push(...A);
+  const span = Math.max(now - anchor, 40 * MIN);
+  const B = [];
+  for (let i = 0; i < 6; i++) B.push(mk(Math.min(now - MIN, anchor + Math.floor((i + 1) * span / 7)), people[16 + i], i % 2 ? 'Amazon' : 'Shopify', 'New'));
+  B[5].status = 'Canceled'; B[5].memo = 'Canceled by customer';
+  orders.push(...B);
+
+  const state = { v: 1, createdAt: now, anchor, orders, shipments: [], runs: [], inquiries: [], csQueue: [], columnMap: COLUMN_MAP, seq: 1000 };
+  for (let d = 14; d >= 1; d--) {
+    const day = dayStart(anchor) - d * DAY;
+    if (wd(day) !== 'Sun') {
+      const at = day + 8 * HOUR + 40 * MIN;
+      const cnt = orders.filter((o) => o.paidAt < at && o.paidAt >= at - (wd(day) === 'Mon' ? 3 : 1) * DAY).length;
+      const retry = d === 5;
+      state.runs.push({ wf: 5, at, status: retry ? 'Retried' : 'Success', dur: retry ? 14.2 : 6 + r() * 3, summary: retry ? `Amazon API timeout → succeeded on retry · ${Math.round(cnt * 0.85)} shipments` : `${cnt} orders → ${Math.round(cnt * 0.86)} shipments` });
+    }
+    state.runs.push({ wf: 3, at: day + 8 * HOUR + 30 * MIN, status: 'Success', dur: 3 + r() * 2, summary: 'Daily sales report sent (email + Slack)' });
+  }
+  state.runs.push({ wf: 3, at: anchor - 10 * MIN, status: 'Success', dur: 3.4, summary: 'Daily sales report sent (email + Slack)' });
+  const res = collect(state, A.map((o) => o.id), anchor, 'scheduled');
+  state.runs.push({ wf: 5, at: anchor, status: 'Success', dur: 7.8, summary: res.summary });
+  for (let k = 6; k >= 1; k--) state.runs.push({ wf: 1, at: now - k * 10 * MIN, status: 'Success', dur: 1.2 + r(), summary: k === 3 ? '1 new order → Slack alert' : 'No new orders' });
+  state.inquiries = INQUIRIES.slice(0, 5).map((q, i) => ({ ...q, id: 'Q' + (i + 1), at: now - (i * 47 + 12) * MIN, status: i >= 3 ? 'Replied' : 'Open' }));
+  state.csQueue = INQUIRIES.slice(5);
+  state.inquiries.forEach((q) => state.runs.push({ wf: 2, at: q.at, status: 'Success', dur: 4 + r() * 3, summary: `Inquiry triaged: ${q.ai.category} · ${q.ai.urgency}` }));
+  state.runs.sort((a, b) => a.at - b.at);
+  return state;
+}
+
+const COLUMN_MAP = 'Name=Recipient\nPhone=Phone\nAddress=Address\nItems=Items\nQuantity=Qty\nOrder #=Order\nNotes=Notes\nCombined=Combined';
+
+const INQUIRIES = [
+  { name: 'Rachel M.', channel: 'Shopify', orderNo: '#48213', message: 'Half the oats bag arrived torn open and spilled in the box. I have photos. I would like a refund.',
+    ai: { category: 'Complaint', urgency: 'High', sentiment: 'Negative', needs_human: true, reason: 'Damaged item + refund request',
+      draft: 'Hi Rachel, I am really sorry your order arrived damaged. Could you reply with the photos so we can review them right away? Once we confirm, we will send a replacement or issue a full refund, whichever you prefer.' } },
+  { name: 'Kevin D.', channel: 'Website', orderNo: '', message: 'I ordered brown rice last night. Will it ship today?',
+    ai: { category: 'Shipping', urgency: 'Medium', sentiment: 'Neutral', needs_human: false, reason: '',
+      draft: 'Hi Kevin, thanks for reaching out. Orders placed before 2 PM ship the same business day, so last night\'s order is scheduled to ship today. Delivery usually takes 2 to 4 business days, and you will get a tracking link by email as soon as it ships.' } },
+  { name: 'Priya S.', channel: 'Amazon', orderNo: '113-4920571-8830264', message: 'I ordered two bags of quinoa but only one came.',
+    ai: { category: 'Shipping', urgency: 'High', sentiment: 'Negative', needs_human: true, reason: 'Missing quantity: check packing record',
+      draft: 'Hi Priya, sorry about that. I am checking the packing record for your order now. If a bag was missed, we will ship the second one today at no cost.' } },
+  { name: 'Tom W.', channel: 'Shopify', orderNo: '#47790', message: 'Can I get an invoice with my business name for this order?',
+    ai: { category: 'Billing', urgency: 'Low', sentiment: 'Neutral', needs_human: false, reason: '',
+      draft: 'Hi Tom, of course. Please reply with the business name and billing address you would like on the invoice, and we will email a PDF copy within one business day.' } },
+  { name: 'Lena G.', channel: 'Website', orderNo: '', message: 'Does the gift box come with a card? It is for my mom.',
+    ai: { category: 'Product question', urgency: 'Low', sentiment: 'Positive', needs_human: false, reason: '',
+      draft: 'Hi Lena, what a nice gift. Yes, the gift box includes a blank card. If you send us your message, we will handwrite it before shipping.' } },
+  { name: 'Marcus B.', channel: 'Amazon', orderNo: '112-7731046-2259018', message: 'I typed the wrong address. Can you change it if it has not shipped?',
+    ai: { category: 'Shipping', urgency: 'High', sentiment: 'Neutral', needs_human: true, reason: 'Address change before shipping: check today\'s label file',
+      draft: 'Hi Marcus, if the order has not shipped yet we can update the address. Please send the correct address and we will update it right away. If it has already shipped, we will help redirect it with the carrier.' } },
+  { name: 'Hannah L.', channel: 'Shopify', orderNo: '', message: 'Are your black beans non-GMO?',
+    ai: { category: 'Product question', urgency: 'Low', sentiment: 'Neutral', needs_human: false, reason: '',
+      draft: 'Hi Hannah, thanks for asking. Sourcing details are listed on the product page under Product details. I will double-check the certification and confirm by email.' } },
+];
+
+// ───────────── Core logic: order sync (same rules as the n8n workflow) ─────────────
+const phoneOk = (p) => /^\+?1?[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(String(p || '').trim());
+function problems(o) {
+  const p = [];
+  if (!String(o.receiver || '').trim()) p.push('Missing recipient');
+  if (!phoneOk(o.phone)) p.push('Invalid phone');
+  if (String(o.addr || '').trim().length < 8) p.push('Missing or incomplete address');
+  return p;
+}
+function collect(state, list, at, how) {
+  const set = new Set(list);
+  const targets = state.orders.filter((o) => set.has(o.id));
+  const canceled = targets.filter((o) => o.status === 'Canceled');
+  const live = targets.filter((o) => o.status === 'New');
+  const ok = [], bad = [];
+  for (const o of live) { const p = problems(o); if (p.length) { o.status = 'Needs review'; o.problem = p.join(', '); bad.push(o); } else ok.push(o); }
+  const groups = new Map();
+  for (const o of ok) { const k = `${o.receiver.toLowerCase()}|${String(o.addr).toLowerCase().replace(/[\s,.]/g, '')}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(o); }
+  const made = [];
+  for (const g of groups.values()) {
+    state.seq++;
+    const sh = {
+      id: 'S' + state.seq, createdAt: at, how, status: 'Ready to upload',
+      channels: [...new Set(g.map((o) => o.channel))], receiver: g[0].receiver, phone: g[0].phone, zip: g[0].zip, addr: g[0].addr,
+      items: g.map((o) => `${o.product}${o.option ? ` (${o.option})` : ''} x${o.qty}`).join(' / '),
+      qty: g.reduce((s, o) => s + o.qty, 0), memo: [...new Set(g.map((o) => o.memo).filter(Boolean))].join(' / '),
+      orderNos: [...new Set(g.map((o) => o.orderNo))].join(', '), orderIds: g.map((o) => o.id), combined: g.length > 1 ? g.length : 0,
+    };
+    g.forEach((o) => { o.status = 'Packing'; o.shipmentId = sh.id; });
+    made.push(sh);
+  }
+  state.shipments.push(...made);
+  const comb = made.filter((s) => s.combined).length;
+  return {
+    found: targets.length, canceled: canceled.length, issues: bad.length, shipments: made.length, combined: comb,
+    summary: targets.length ? `${plural(targets.length, 'order')} → ${plural(made.length, 'shipment')}${comb ? ` (${comb} combined)` : ''}${bad.length ? ` · ${bad.length} need review` : ''}` : 'No new orders',
+  };
+}
+
+// ───────────── Persistence ─────────────
+const KEY = 'seller-console-en-v1';
+let S;
+try { const raw = localStorage.getItem(KEY); if (raw) { const p = JSON.parse(raw); if (p && p.v === 1 && Date.now() - p.createdAt < 20 * HOUR) S = p; } } catch {}
+if (!S) S = buildState();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+save();
+
+// ───────────── Shared UI ─────────────
+const WF = {
+  1: { no: '1', name: 'New order alerts', trigger: 'Every 10 minutes', desc: 'Logs new paid orders to Google Sheets and posts a Slack alert.' },
+  2: { no: '2', name: 'Inquiry triage & reply drafts', trigger: 'On new inquiry (webhook)', desc: 'Sorts each inquiry by topic and urgency and writes a reply draft. A person reviews and sends it.' },
+  3: { no: '3', name: 'Daily sales report', trigger: 'Daily 8:30 AM', desc: 'Emails yesterday\'s revenue, orders and top products, with a short summary.' },
+  5: { no: '4', name: 'Order sync → shipping file + Google Sheet', trigger: 'Ship days 8:40 AM (Mon–Sat)', desc: 'Merges Shopify and Amazon orders into one shipping upload file and a fresh Google Sheet.' },
+};
+const ROUTES = [['dashboard', 'Dashboard'], ['automations', 'Automations'], ['orders', 'Orders'], ['shipping', 'Shipping'], ['issues', 'Needs review'], ['cs', 'Inquiries'], ['config', 'Connections']];
+const chTag = (c) => `<span class="ch ${c === 'Amazon' ? 's2' : 's1'}"><i></i>${esc(c)}</span>`;
+const STATUS_PILL = { New: 'info', Packing: 'warn', 'Needs review': 'crit', Shipped: 'good', Delivered: 'mute', Canceled: 'mute', 'Ready to upload': 'warn', Uploaded: 'good', Open: 'warn', Replied: 'good', Success: 'good', Retried: 'warn', Failed: 'crit' };
+const pill = (s, label) => `<span class="pill ${STATUS_PILL[s] || 'mute'}">${esc(label || s)}</span>`;
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 3600); }
+const counts = () => ({
+  newOrders: S.orders.filter((o) => o.status === 'New').length,
+  waiting: S.shipments.filter((s) => s.status === 'Ready to upload').length,
+  issues: S.orders.filter((o) => o.status === 'Needs review').length,
+  csOpen: S.inquiries.filter((q) => q.status === 'Open').length,
+  csUrgent: S.inquiries.filter((q) => q.status === 'Open' && q.ai.needs_human).length,
+});
+function renderNav(route) {
+  const c = counts();
+  const badge = { orders: c.newOrders, shipping: c.waiting, issues: c.issues, cs: c.csOpen };
+  const hot = { shipping: c.waiting > 0, issues: c.issues > 0, cs: c.csUrgent > 0 };
+  $('#nav').innerHTML = ROUTES.map(([k, l]) => `<a href="#${k}" class="${k === route ? 'on' : ''}" ${k === route ? 'aria-current="page"' : ''}>${l}${badge[k] ? `<span class="cnt ${hot[k] ? 'hot' : ''}">${badge[k]}</span>` : ''}</a>`).join('');
+}
+
+// ───────────── Dashboard ─────────────
+function viewDashboard() {
+  const c = counts();
+  const today0 = dayStart(Date.now());
+  const todayOrders = S.orders.filter((o) => o.paidAt >= today0);
+  const tShop = todayOrders.filter((o) => o.channel === 'Shopify').length;
+  const month0 = new Date(kd(Date.now()).slice(0, 8) + '01T00:00:00').getTime();
+  const runs5 = S.runs.filter((r) => r.wf === 5 && r.at >= month0).length;
+  const runs3 = S.runs.filter((r) => r.wf === 3 && r.at >= month0).length;
+  const runs2 = S.runs.filter((r) => r.wf === 2 && r.at >= month0).length;
+  const savedMin = runs5 * 40 + runs3 * 10 + runs2 * 3;
+  const lastSync = [...S.runs].reverse().find((r) => r.wf === 5);
+  const urgentQ = S.inquiries.find((q) => q.status === 'Open' && q.ai.needs_human);
+  const todo = [];
+  if (c.waiting) todo.push(['y', c.waiting, `${plural(c.waiting, 'shipment')} ready to upload`, `Created at ${kt(lastSync.at)} · upload the file to your shipping app`, '<a class="btn sm pri" href="#shipping">Open shipping</a>']);
+  if (c.issues) todo.push(['r', c.issues, `${plural(c.issues, 'order')} need review`, 'Fix the address or phone and it moves to shipping', '<a class="btn sm" href="#issues">Fix</a>']);
+  if (urgentQ) todo.push(['r', c.csUrgent, `${c.csUrgent} ${c.csUrgent === 1 ? 'inquiry needs' : 'inquiries need'} a person`, `${urgentQ.ai.category} · ${urgentQ.ai.reason}`, '<a class="btn sm" href="#cs">Open</a>']);
+  if (c.newOrders) todo.push(['y', c.newOrders, `${plural(c.newOrders, 'new order')} since 8:40 AM`, 'Picked up by the next scheduled sync, or run it now', '<button class="btn sm" type="button" data-run="5">Run now</button>']);
+  if (!todo.length) todo.push(['g', '✓', 'Nothing to do right now', 'Waiting for the next scheduled run', '']);
+  const recent = [...S.runs].reverse().slice(0, 7);
+  return `
+  <section class="kpis" aria-label="Today">
+    <div class="card kpi"><div class="lbl">Paid orders today</div><div class="val">${todayOrders.length}</div><div class="sub">${chTag('Shopify')} ${tShop} · ${chTag('Amazon')} ${todayOrders.length - tShop}</div></div>
+    <div class="card kpi ${c.waiting ? 'todo' : ''}"><div class="lbl">Ready to ship</div><div class="val">${c.waiting}</div><div class="sub">${plural(S.shipments.filter((s) => s.status === 'Ready to upload' && s.combined).length, 'combined shipment')}</div></div>
+    <div class="card kpi"><div class="lbl">Needs review ${c.issues ? pill('Needs review', 'Action') : ''}</div><div class="val">${c.issues}</div><div class="sub">Address or phone problems</div></div>
+    <div class="card kpi"><div class="lbl">Open inquiries ${c.csUrgent ? pill('Failed', `${c.csUrgent} urgent`) : ''}</div><div class="val">${c.csOpen}</div><div class="sub">Reply drafts ready</div></div>
+    <div class="card kpi"><div class="lbl">Time saved this month <span class="muted">est.</span></div><div class="val">${(savedMin / 60).toFixed(1)}<small>h</small></div><div class="sub">${runs5} syncs × 40 min, plus reports</div></div>
+  </section>
+  <section class="dash">
+    <div class="card">
+      <div class="card-h"><h2>Paid orders per day <small>last 15 days</small></h2><div class="legend"><span class="ch s1"><i></i>Shopify</span><span class="ch s2"><i></i>Amazon</span></div></div>
+      <div class="card-b"><div class="chart-wrap" id="chart"></div>
+        <details><summary class="muted" style="cursor:pointer;font-size:12.5px">Show as table</summary><div class="scroll" id="chartTable"></div></details></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>To do today</h2><small>${wd(Date.now())}, ${md(Date.now())}</small></div>
+      <div class="card-b todo-list">${todo.map(([cl, n, t, d, a]) => `<div class="todo-item"><div class="ic ${cl}">${n}</div><div><b>${t}</b><span>${d}</span></div>${a}</div>`).join('')}</div>
+    </div>
+  </section>
+  <section class="dash">
+    <div class="card">
+      <div class="card-h"><h2>Recent automation runs</h2><a class="btn sm" href="#automations">View all</a></div>
+      <div class="card-b timeline">${recent.map((r) => `<div class="tl"><div class="t">${kd(r.at) === kd(Date.now()) ? kt(r.at) : md(r.at)}</div><div><b>${WF[r.wf].no}. ${esc(WF[r.wf].name)}</b><span class="d">${esc(r.summary)}</span></div>${pill(r.status)}</div>`).join('')}</div>
+    </div>
+    <div class="card"><div class="card-h"><h2>This week by channel</h2><small>since Monday</small></div><div class="card-b" id="weekSplit"></div></div>
+  </section>`;
+}
+
+function drawChart() {
+  const el = $('#chart'); if (!el) return;
+  const end = dayStart(Date.now());
+  const days = Array.from({ length: 15 }, (_, i) => end - (14 - i) * DAY);
+  const data = days.map((d) => { const os = S.orders.filter((o) => o.paidAt >= d && o.paidAt < d + DAY); return { d, s1: os.filter((o) => o.channel === 'Shopify').length, s2: os.filter((o) => o.channel === 'Amazon').length }; });
+  const W = Math.max(320, el.clientWidth), H = 240, pl = 34, pr = 8, pt = 12, pb = 28;
+  const max = Math.max(...data.map((x) => x.s1 + x.s2), 1);
+  const step = max > 40 ? 20 : 10; const top = Math.ceil(max / step) * step;
+  const y = (v) => pt + (H - pt - pb) * (1 - v / top);
+  const bw = (W - pl - pr) / data.length; const barW = Math.min(26, bw * 0.62);
+  const cs = getComputedStyle(document.documentElement);
+  const col = { s1: cs.getPropertyValue('--s1').trim(), s2: cs.getPropertyValue('--s2').trim(), grid: cs.getPropertyValue('--grid').trim(), muted: cs.getPropertyValue('--muted').trim(), ink: cs.getPropertyValue('--ink').trim() };
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Paid orders per day by channel, last 15 days">`;
+  for (let v = 0; v <= top; v += step) svg += `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" stroke="${col.grid}" stroke-width="1"/><text x="${pl - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="${col.muted}" font-family="IBM Plex Mono, monospace">${v}</text>`;
+  data.forEach((x, i) => {
+    const cx = pl + bw * i + bw / 2, x0 = cx - barW / 2; const y1 = y(x.s1), y0 = y(0), y2 = y(x.s1 + x.s2); const today = i === data.length - 1;
+    if (x.s1) svg += `<rect x="${x0}" y="${y1}" width="${barW}" height="${y0 - y1}" fill="${col.s1}"/>`;
+    if (x.s2) { const h = Math.max(0, y1 - y2 - 2), rr = Math.min(4, h / 2); svg += `<path d="M${x0},${y1 - 2} v${-(h - rr)} q0,${-rr} ${rr},${-rr} h${barW - 2 * rr} q${rr},0 ${rr},${rr} v${h - rr} z" fill="${col.s2}"/>`; }
+    if (i % 2 === 0 || today) svg += `<text x="${cx}" y="${H - 9}" text-anchor="middle" font-size="11" fill="${today ? col.ink : col.muted}" font-weight="${today ? 600 : 400}">${today ? 'Today' : md(x.d)}</text>`;
+    svg += `<rect class="hit" data-i="${i}" x="${pl + bw * i}" y="${pt}" width="${bw}" height="${H - pt - pb}" fill="transparent"/>`;
+  });
+  svg += '</svg><div class="tip" id="tip" hidden></div>';
+  el.innerHTML = svg;
+  const tip = $('#tip', el);
+  el.querySelectorAll('.hit').forEach((h) => {
+    h.addEventListener('mouseenter', () => {
+      const x = data[+h.dataset.i];
+      tip.innerHTML = `<b>${wd(x.d)}, ${md(x.d)}</b><div class="r"><span class="ch s1"><i></i>Shopify</span><span class="num">${x.s1}</span></div><div class="r"><span class="ch s2"><i></i>Amazon</span><span class="num">${x.s2}</span></div><div class="r muted"><span>Total</span><span class="num">${x.s1 + x.s2}</span></div>`;
+      tip.hidden = false;
+      const bx = (+h.getAttribute('x') + bw / 2) / W * el.clientWidth;
+      tip.style.left = Math.min(el.clientWidth - 160, Math.max(0, bx - 75)) + 'px'; tip.style.top = '8px';
+    });
+    h.addEventListener('mouseleave', () => (tip.hidden = true));
+  });
+  $('#chartTable').innerHTML = `<table><thead><tr><th>Date</th><th class="r">Shopify</th><th class="r">Amazon</th><th class="r">Total</th></tr></thead><tbody>${data.map((x) => `<tr><td>${md(x.d)}</td><td class="r num">${x.s1}</td><td class="r num">${x.s2}</td><td class="r num">${x.s1 + x.s2}</td></tr>`).join('')}</tbody></table>`;
+  const now = Date.now(); const dow = (new Date(now + TZ).getUTCDay() + 6) % 7; const w0 = dayStart(now) - dow * DAY;
+  const wk = S.orders.filter((o) => o.paidAt >= w0 && o.status !== 'Canceled');
+  const a = wk.filter((o) => o.channel === 'Shopify'), b = wk.filter((o) => o.channel === 'Amazon');
+  const sum = (xs) => xs.reduce((s, o) => s + o.amount, 0); const pa = wk.length ? Math.round(a.length / wk.length * 100) : 0;
+  $('#weekSplit').innerHTML = `
+    <div style="display:flex;height:14px;border-radius:4px;overflow:hidden;gap:2px;margin:4px 0 14px">${a.length ? `<div style="flex:${a.length};background:var(--s1)"></div>` : ''}${b.length ? `<div style="flex:${b.length};background:var(--s2)"></div>` : ''}</div>
+    <table><thead><tr><th>Channel</th><th class="r">Orders</th><th class="r">Share</th><th class="r">Revenue</th></tr></thead><tbody>
+      <tr><td>${chTag('Shopify')}</td><td class="r num">${a.length}</td><td class="r num">${pa}%</td><td class="r num">${usd(sum(a))}</td></tr>
+      <tr><td>${chTag('Amazon')}</td><td class="r num">${b.length}</td><td class="r num">${wk.length ? 100 - pa : 0}%</td><td class="r num">${usd(sum(b))}</td></tr>
+      <tr><td><b>Total</b></td><td class="r num"><b>${wk.length}</b></td><td class="r num">100%</td><td class="r num"><b>${usd(sum(wk))}</b></td></tr>
+    </tbody></table>`;
+}
+
+// ───────────── Automations ─────────────
+const live = {};
+function nextRun(id) {
+  const now = Date.now();
+  if (id === 2) return 'On each new inquiry';
+  if (id === 1) return kt(Math.ceil(now / (10 * MIN)) * 10 * MIN);
+  const [h, m] = id === 3 ? [8, 30] : [8, 40];
+  let t = dayStart(now) + h * HOUR + m * MIN;
+  while (t <= now || (id === 5 && wd(t) === 'Sun')) t += DAY;
+  return `${kd(t) === kd(now) ? 'Today' : kd(t) === kd(now + DAY) ? 'Tomorrow' : md(t)} ${kt(t)}`;
+}
+function viewAutomations() {
+  return `<p class="muted" style="margin:0">Four workflows run on schedule. Use <b>Run now</b> when you need results right away.</p>
+  <section class="wf-grid">${[5, 1, 2, 3].map((id) => {
+    const rs = S.runs.filter((r) => r.wf === id); const last = rs[rs.length - 1];
+    const ok = rs.filter((r) => r.status !== 'Failed').length; const avg = rs.length ? rs.reduce((s, r) => s + r.dur, 0) / rs.length : 0; const L = live[id];
+    return `<article class="card wf">
+      <div class="card-h"><h2><span class="no">${WF[id].no}</span>${esc(WF[id].name)}</h2>${pill('Success', 'Active')}</div>
+      <div class="wf-meta"><div><span>Trigger</span><b>${esc(WF[id].trigger)}</b></div><div><span>Last run</span><b>${last ? kdt(last.at) : '-'}</b></div><div><span>Success · avg</span><b>${rs.length ? Math.round(ok / rs.length * 100) : 0}% · ${avg.toFixed(1)}s</b></div></div>
+      ${L ? `<div class="steps" aria-live="polite">${L.steps.map((s) => `<div class="s ${s.st}"><span class="m"></span><span>${esc(s.t)}${s.d ? ` <em>· ${esc(s.d)}</em>` : ''}</span><span class="x">${s.ms ? s.ms + 'ms' : ''}</span></div>`).join('')}</div>${L.result ? `<div class="result">${L.result}</div>` : ''}`
+        : `<div class="steps"><span class="muted">${esc(WF[id].desc)}</span><div class="row" style="margin-top:6px"><span class="muted" style="font-size:12px">Last ${Math.min(14, rs.length)} runs</span><div class="strip">${rs.slice(-14).map((r) => `<i class="${r.status === 'Retried' ? 'w' : r.status === 'Failed' ? 'c' : ''}" title="${esc(kdt(r.at) + ' · ' + r.status + ' · ' + r.summary)}"></i>`).join('')}</div></div></div>`}
+      <div class="wf-foot"><span class="muted" style="font-size:12.5px">Next run <b class="num" style="color:var(--ink)">${nextRun(id)}</b></span><button class="btn pri sm" type="button" data-run="${id}" ${L && !L.done ? 'disabled' : ''}>${L && !L.done ? 'Running…' : 'Run now'}</button></div>
+    </article>`;
+  }).join('')}</section>
+  <section class="card"><div class="card-h"><h2>Run history</h2><small>last 30</small></div><div class="scroll"><table><thead><tr><th>Time</th><th>Workflow</th><th>Result</th><th>Details</th><th class="r">Duration</th></tr></thead><tbody>
+    ${[...S.runs].reverse().slice(0, 30).map((r) => `<tr><td class="num">${kdt(r.at)}</td><td>${WF[r.wf].no}. ${esc(WF[r.wf].name)}</td><td>${pill(r.status)}</td><td class="w">${esc(r.summary)}</td><td class="r num">${r.dur.toFixed(1)}s</td></tr>`).join('')}
+  </tbody></table></div></section>`;
+}
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+async function runWorkflow(id) {
+  if (live[id] && !live[id].done) return;
+  const L = (live[id] = { steps: [], done: false, result: '' }); const at = Date.now(); const t0 = performance.now();
+  const paint = () => { if (route() === 'automations') render(); };
+  const step = async (t, fn) => {
+    const s = { t, st: 'run', d: '' }; L.steps.push(s); paint();
+    await new Promise((r) => setTimeout(r, reduce ? 0 : 320 + Math.random() * 380));
+    try { s.d = (await fn()) || ''; s.st = 'done'; } catch (e) { s.st = 'fail'; s.d = e.message; throw e; }
+    s.ms = Math.round(120 + Math.random() * 600); paint();
+  };
+  if (route() !== 'automations') location.hash = 'automations'; else render();
+  let summary = '';
+  try {
+    if (id === 5) {
+      const fresh = S.orders.filter((o) => o.status === 'New' || (o.status === 'Canceled' && !o.handled));
+      const sh = fresh.filter((o) => o.channel === 'Shopify'), am = fresh.filter((o) => o.channel === 'Amazon');
+      await step('Fetch Shopify orders', () => `${sh.length} paid (Admin API)`);
+      await step('Fetch Amazon orders', () => `${am.length} unshipped (SP-API)`);
+      await step('Skip orders already processed', () => `checked against ${S.orders.filter((o) => o.shipmentId).length} records`);
+      let res;
+      await step('Validate & combine', () => { res = collect(S, fresh.map((o) => o.id), at, 'manual'); fresh.forEach((o) => (o.handled = true)); return `${res.issues} need review · ${res.canceled} canceled skipped · ${res.combined} combined`; });
+      if (res.shipments) {
+        await step('Create new Google Sheet', () => `Shipments ${md(at)} · ${plural(res.shipments, 'shipment')} (3 tabs)`);
+        await step('Build shipping upload file', () => `shipments_${kd(at)}.xlsx`);
+        await step('Send email + Slack', () => 'Sheet link + file attached');
+      } else await step('Send "nothing to ship" email', () => 'Email sent');
+      summary = res.summary;
+      L.result = res.shipments ? `<b>${plural(res.shipments, 'shipment')}</b> added to the shipping queue. <a href="#shipping">Open shipping →</a>` : 'No new orders to process.';
+    } else if (id === 1) {
+      const n = 1 + Math.floor(Math.random() * 3); const r = rng(Date.now() & 0xffff); const made = [];
+      await step('Check Shopify for new orders', () => `last 15 min · ${plural(n, 'new paid order')}`);
+      await step('Normalize & de-duplicate', () => {
+        for (let i = 0; i < n; i++) {
+          const p = PRODUCTS[Math.floor(r() * PRODUCTS.length)]; const nm = NAMES[Math.floor(r() * NAMES.length)]; const a = ADDRS[Math.floor(r() * ADDRS.length)]; const paid = Date.now() - Math.floor(r() * 9) * MIN;
+          made.push({ ...ids('Shopify', paid, r), channel: 'Shopify', paidAt: paid, product: p[0], option: p[1], qty: 1, amount: p[2], receiver: nm, phone: `(${200 + Math.floor(r() * 700)}) ${100 + Math.floor(r() * 900)}-${1000 + Math.floor(r() * 9000)}`, zip: a[0], addr: `${a[1]}${a[2] ? ', ' + a[2] : ''}, ${a[3]} ${a[0]}`, memo: '', status: 'New' });
+        }
+        S.orders.push(...made); return `${made.length} logged`;
+      });
+      await step('Append to Google Sheet', () => 'Orders tab');
+      await step('Post Slack alert', () => `${plural(made.length, 'new order')} · ${usd(made.reduce((s, o) => s + o.amount, 0))}`);
+      summary = `${plural(made.length, 'new order')} → Slack alert`;
+      L.result = `<b>${plural(made.length, 'new order')}</b> came in. Run the order sync to add them to shipping.`;
+    } else if (id === 2) {
+      const q = S.csQueue.shift();
+      await step('Receive inquiry (webhook)', () => (q ? `${q.channel} · ${q.name}` : 'No new inquiries'));
+      if (q) {
+        await step('Classify & draft reply', () => `${q.ai.category} · urgency ${q.ai.urgency}`);
+        await step(q.ai.needs_human ? 'Slack: urgent channel' : 'Slack: support channel', () => (q.ai.needs_human ? q.ai.reason : 'Draft shared'));
+        await step('Log to Google Sheet', () => 'Inquiries tab');
+        S.inquiries.unshift({ ...q, id: 'Q' + (S.inquiries.length + 1), at: Date.now(), status: 'Open' });
+        summary = `Inquiry triaged: ${q.ai.category} · ${q.ai.urgency}`;
+        L.result = 'New inquiry triaged. <a href="#cs">Review the draft →</a>';
+      } else { summary = 'No new inquiries'; L.result = 'No new inquiries.'; }
+    } else if (id === 3) {
+      const y0 = dayStart(Date.now()) - DAY, w0 = y0 - 7 * DAY;
+      const yo = S.orders.filter((o) => o.paidAt >= y0 && o.paidAt < y0 + DAY && o.status !== 'Canceled');
+      const wo = S.orders.filter((o) => o.paidAt >= w0 && o.paidAt < w0 + DAY && o.status !== 'Canceled');
+      const rev = yo.reduce((s, o) => s + o.amount, 0), prev = wo.reduce((s, o) => s + o.amount, 0);
+      const pct = prev ? Math.round((rev - prev) / prev * 1000) / 10 : 0;
+      const top = Object.entries(yo.reduce((m, o) => ((m[o.product] = (m[o.product] || 0) + o.amount), m), {})).sort((a, b) => b[1] - a[1])[0];
+      await step('Read orders sheet', () => `${yo.length} orders yesterday`);
+      await step('Summarize yesterday', () => `${usd(rev)} · ${pct >= 0 ? '▲' : '▼'}${Math.abs(pct)}% vs last ${wd(y0)}`);
+      await step('Write summary note', () => '2–3 sentences');
+      await step('Send email + Slack', () => '1 report');
+      summary = 'Daily sales report sent (email + Slack)';
+      L.result = `<b>${md(y0)} revenue ${usd(rev)}</b> · ${yo.length} orders · AOV ${usd(yo.length ? rev / yo.length : 0)} · ${pct >= 0 ? '▲' : '▼'}${Math.abs(pct)}% vs last ${wd(y0)}${top ? `<br>Top product: ${esc(top[0])}` : ''}`;
+    }
+    S.runs.push({ wf: id, at, status: 'Success', dur: (performance.now() - t0) / 1000, summary });
+  } catch (e) {
+    S.runs.push({ wf: id, at, status: 'Failed', dur: (performance.now() - t0) / 1000, summary: e.message });
+    L.result = `Failed: ${esc(e.message)}`;
+  }
+  L.done = true; save(); render(); tick();
+  toast(`${WF[id].name}: ${summary}`);
+}
+
+// ───────────── Orders ─────────────
+const ui = { ch: 'All', st: 'All', q: '', cs: null };
+function viewOrders() {
+  const list = S.orders.filter((o) => (ui.ch === 'All' || o.channel === ui.ch) && (ui.st === 'All' || o.status === ui.st) &&
+    (!ui.q || `${o.receiver} ${o.product} ${o.orderNo}`.toLowerCase().includes(ui.q.toLowerCase()))).sort((a, b) => b.paidAt - a.paidAt);
+  const sts = ['All', 'New', 'Packing', 'Needs review', 'Shipped', 'Delivered', 'Canceled'];
+  return `<div class="filters">
+      <div class="seg" role="group" aria-label="Channel">${['All', 'Shopify', 'Amazon'].map((c) => `<button type="button" data-ch="${c}" class="${ui.ch === c ? 'on' : ''}">${c}</button>`).join('')}</div>
+      <select id="stSel" aria-label="Status">${sts.map((s) => `<option ${ui.st === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+      <input type="search" id="q" placeholder="Name, product, order #" value="${esc(ui.q)}" aria-label="Search">
+      <span class="muted">${plural(list.length, 'order')}</span>
+    </div>
+    <section class="card"><div class="scroll" style="max-height:640px"><table><thead><tr><th>Paid</th><th>Channel</th><th>Order #</th><th>Product</th><th class="r">Qty</th><th class="r">Total</th><th>Ship to</th><th>Status</th></tr></thead><tbody>
+      ${list.slice(0, 300).map((o) => `<tr><td class="num">${kdt(o.paidAt)}</td><td>${chTag(o.channel)}</td><td class="num">${esc(o.orderNo)}</td><td class="w">${esc(o.product)}${o.option ? ` <span class="muted">(${esc(o.option)})</span>` : ''}</td><td class="r num">${o.qty}</td><td class="r num">${usd(o.amount)}</td><td>${esc(o.receiver)}</td><td>${pill(o.status)}${o.problem ? ` <span class="muted" style="font-size:12px">${esc(o.problem)}</span>` : ''}</td></tr>`).join('') || '<tr><td colspan="8" class="empty">No orders match these filters.</td></tr>'}
+    </tbody></table></div></section>`;
+}
+
+// ───────────── Shipping ─────────────
+function cols() {
+  const F = { Recipient: 'receiver', Phone: 'phone', Address: 'addr', Items: 'items', Qty: 'qty', Notes: 'memo', Order: 'orderNos', Zip: 'zip' };
+  return String(S.columnMap).split('\n').map((l) => l.trim()).filter((l) => l && l.includes('=') && !l.startsWith('#')).map((l) => {
+    const i = l.indexOf('='); const src = l.slice(i + 1).trim(); const fx = src.match(/^"(.*)"$/);
+    return { h: l.slice(0, i).trim(), get: fx ? () => fx[1] : src === 'Combined' ? (s) => (s.combined ? `${s.combined} orders` : '') : src === 'Channel' ? (s) => s.channels.join('+') : (s) => s[F[src]] ?? '' };
+  });
+}
+function viewShipping() {
+  const wait = S.shipments.filter((s) => s.status === 'Ready to upload');
+  const doneL = S.shipments.filter((s) => s.status === 'Uploaded').slice(-20).reverse();
+  const row = (s) => `<tr><td>${s.channels.map(chTag).join(' ')}</td><td>${esc(s.receiver)}</td><td class="num">${esc(s.phone)}</td><td class="w">${esc(s.addr)}</td><td class="w">${esc(s.items)}</td><td class="r num">${s.qty}</td><td>${s.combined ? `<span class="tag">${s.combined} combined</span>` : ''}</td><td class="muted">${esc(s.memo)}</td></tr>`;
+  const head = '<thead><tr><th>Channel</th><th>Ship to</th><th>Phone</th><th>Address</th><th>Items</th><th class="r">Qty</th><th>Combined</th><th>Notes</th></tr></thead>';
+  return `<section class="card">
+    <div class="card-h"><h2>Ready to upload <span class="num">${wait.length}</span></h2>
+      <div class="row"><button class="btn pri" type="button" id="xlsx" ${wait.length ? '' : 'disabled'}>Download file</button><button class="btn" type="button" id="copyT" ${wait.length ? '' : 'disabled'}>Copy table</button><button class="btn" type="button" id="markUp" ${wait.length ? '' : 'disabled'}>Mark as uploaded</button></div></div>
+    <div class="card-b" style="padding-bottom:0"><div class="row muted" style="font-size:12.5px">${pill('Ready to upload', 'Google Sheet')} <span>The same data is saved to a new Google Sheet every ship day (Shipments · All orders · Needs review tabs).</span></div></div>
+    <div class="card-b"><div class="scroll"><table>${head}<tbody>${wait.map(row).join('') || '<tr><td colspan="8" class="empty">Nothing to upload. The next scheduled sync runs at 8:40 AM on ship days.</td></tr>'}</tbody></table></div></div>
+  </section>
+  <section class="card"><div class="card-h"><h2>Uploaded</h2><small>last 20</small></div><div class="card-b"><div class="scroll"><table>${head}<tbody>${doneL.map(row).join('') || '<tr><td colspan="8" class="empty">None yet.</td></tr>'}</tbody></table></div></div></section>`;
+}
+
+// ───────────── Needs review ─────────────
+function viewIssues() {
+  const list = S.orders.filter((o) => o.status === 'Needs review');
+  if (!list.length) return '<section class="card"><div class="card-b empty">Nothing to review. Orders with address or phone problems show up here automatically.</div></section>';
+  return `<p class="muted" style="margin:0">These orders were left out of the shipping file because the address or phone looks wrong. Fix them with the details from your store admin and they move straight to shipping.</p>
+  <section class="issue-grid">${list.map((o) => `<form class="card issue" data-id="${esc(o.id)}">
+    <div class="card-h"><h2>${esc(o.receiver || '(no name)')} · ${chTag(o.channel)}</h2>${pill('Needs review', o.problem)}</div>
+    <div class="card-b form">
+      <div class="muted" style="font-size:12.5px">Order ${esc(o.orderNo)} · ${esc(o.product)} x${o.qty} · ${kdt(o.paidAt)}</div>
+      <div class="field"><label for="p_${esc(o.id)}">Phone</label><input id="p_${esc(o.id)}" name="phone" value="${esc(o.phone)}"></div>
+      <div class="field"><label for="a_${esc(o.id)}">Address</label><input id="a_${esc(o.id)}" name="addr" value="${esc(o.addr)}" placeholder="Street, unit, city, state ZIP"></div>
+      <div class="row"><button class="btn pri sm" type="submit">Fix and add to shipping</button><span class="muted err" style="font-size:12.5px"></span></div>
+    </div></form>`).join('')}</section>`;
+}
+
+// ───────────── Inquiries ─────────────
+function viewCS() {
+  const list = [...S.inquiries].sort((a, b) => (a.status === b.status ? b.at - a.at : a.status === 'Open' ? -1 : 1));
+  if (!ui.cs || !list.find((q) => q.id === ui.cs)) ui.cs = list[0]?.id;
+  const q = list.find((x) => x.id === ui.cs);
+  return `<section class="cs">
+    <div class="card"><div class="card-h"><h2>Inquiries <span class="num">${list.length}</span></h2><button class="btn sm" type="button" data-run="2">Check for new</button></div>
+      <div class="cs-list">${list.map((x) => `<button type="button" class="cs-item ${x.id === ui.cs ? 'on' : ''}" data-q="${x.id}">
+        <span class="h"><b>${esc(x.name)} <span class="muted" style="font-weight:400">· ${esc(x.channel)}</span></b>${x.status === 'Replied' ? pill('Replied') : x.ai.needs_human ? pill('Failed', 'Needs a person') : pill('Open', 'Draft ready')}</span>
+        <p>${esc(x.message)}</p><span class="muted" style="font-size:12px">${esc(x.ai.category)} · ${kdt(x.at)}</span></button>`).join('')}</div></div>
+    ${q ? `<div class="card"><div class="card-h"><h2>${esc(q.name)} <span class="muted" style="font-weight:400">· ${esc(q.channel)}${q.orderNo ? ' · order ' + esc(q.orderNo) : ''}</span></h2>${pill(q.status)}</div>
+      <div class="card-b form">
+        <div class="quote">${esc(q.message)}</div>
+        <div class="ai-box"><div><span>Topic</span><b>${esc(q.ai.category)}</b></div><div><span>Urgency</span><b style="color:${q.ai.urgency === 'High' ? 'var(--crit)' : 'inherit'}">${esc(q.ai.urgency)}</b></div><div><span>Tone</span><b>${esc(q.ai.sentiment)}</b></div></div>
+        ${q.ai.needs_human ? `<div class="row">${pill('Failed', 'Needs a person')}<span>${esc(q.ai.reason)}</span></div>` : ''}
+        <div class="field"><label for="draft">Reply draft · review and edit before sending</label><textarea class="draft" id="draft">${esc(q.draftEdit ?? q.ai.draft)}</textarea></div>
+        <div class="row"><button class="btn pri" type="button" id="copyDraft">Copy draft</button><button class="btn" type="button" id="doneQ" ${q.status === 'Replied' ? 'disabled' : ''}>Mark as replied</button><span class="muted" style="font-size:12.5px">Drafts are never sent automatically.</span></div>
+      </div></div>` : ''}
+  </section>`;
+}
+
+// ───────────── Connections ─────────────
+function viewConfig() {
+  const conns = [['Shopify', 'Admin API · orders'], ['Amazon Seller Central', 'SP-API · unshipped orders'], ['Google Sheets / Drive', 'New sheet every ship day'], ['Gmail', 'Shipping file & reports'], ['Slack', '#orders · #support'], ['Claude API', 'Inquiry triage, reply drafts, report notes']];
+  return `<section class="cfg">
+    <div class="card"><div class="card-h"><h2>Connected services</h2><small>via n8n credentials</small></div>
+      <div class="card-b">${conns.map(([n, d]) => `<div class="conn"><div><b>${n}</b><span>${d}</span></div>${pill('Success', 'Connected')}</div>`).join('')}</div></div>
+    <div class="card"><div class="card-h"><h2>Shipping file columns</h2><small>applied to the shipping download</small></div>
+      <div class="card-b form">
+        <div class="field"><label for="colmap">One per line: Column=Field · fixed value: Service="Ground"</label><textarea id="colmap" class="mono">${esc(S.columnMap)}</textarea></div>
+        <span class="muted" style="font-size:12.5px">Fields: Recipient, Phone, Address, Zip, Items, Qty, Notes, Order, Channel, Combined</span>
+        <div class="row"><button class="btn pri sm" type="button" id="saveMap">Save</button><button class="btn sm" type="button" id="resetMap">Reset to default</button></div>
+      </div></div>
+    <div class="card"><div class="card-h"><h2>Data</h2></div>
+      <div class="card-b form"><span class="muted">Showing sample data. Connect your store accounts to switch to live orders.</span>
+        <div class="row"><button class="btn sm" type="button" id="resetAll">Reset sample data</button></div></div></div>
+  </section>`;
+}
+
+// ───────────── Routing & render ─────────────
+const VIEWS = { dashboard: viewDashboard, automations: viewAutomations, orders: viewOrders, shipping: viewShipping, issues: viewIssues, cs: viewCS, config: viewConfig };
+const route = () => { const h = location.hash.slice(1); return VIEWS[h] ? h : 'dashboard'; };
+function render() {
+  const r = route(); renderNav(r);
+  $('#title').textContent = ROUTES.find(([k]) => k === r)[1];
+  const focusId = document.activeElement?.id; const caret = document.activeElement?.selectionStart;
+  $('#view').innerHTML = VIEWS[r]();
+  if (r === 'dashboard') drawChart();
+  if (focusId === 'q') { const q = $('#q'); q?.focus(); try { q.setSelectionRange(caret, caret); } catch {} }
+}
+window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => route() === 'dashboard' && drawChart(), 150); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => route() === 'dashboard' && drawChart());
+const tick = () => { $('#clock').textContent = `${wd(Date.now())}, ${md(Date.now())} · ${kt(Date.now())}`; const last = S.runs[S.runs.length - 1]; $('#syncInfo').textContent = last ? `Last sync ${kdt(last.at)}` : ''; };
+tick(); setInterval(tick, 30e3);
+
+// ───────────── Events ─────────────
+document.addEventListener('click', async (e) => {
+  const run = e.target.closest('[data-run]'); if (run) { runWorkflow(+run.dataset.run); return; }
+  const ch = e.target.closest('[data-ch]'); if (ch) { ui.ch = ch.dataset.ch; render(); return; }
+  const qi = e.target.closest('[data-q]'); if (qi) { ui.cs = qi.dataset.q; render(); return; }
+  const id = e.target.id;
+  if (id === 'runAll') runWorkflow(5);
+  if (id === 'xlsx') {
+    const wait = S.shipments.filter((s) => s.status === 'Ready to upload'); const C = cols();
+    if (!window.XLSX) return toast('Could not load the spreadsheet tool. Use Copy table instead.');
+    const ws = XLSX.utils.aoa_to_sheet([C.map((c) => c.h), ...wait.map((s) => C.map((c) => c.get(s)))]);
+    ws['!cols'] = C.map((c) => ({ wch: Math.min(60, Math.max(c.h.length + 2, ...wait.map((s) => String(c.get(s)).length + 2))) }));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Shipments');
+    try { XLSX.writeFile(wb, `shipments_${kd(Date.now())}.xlsx`); toast('Download started. If it is blocked here, use Copy table.'); } catch { toast('Downloads are blocked in this view. Use Copy table.'); }
+  }
+  if (id === 'copyT') {
+    const wait = S.shipments.filter((s) => s.status === 'Ready to upload'); const C = cols();
+    const tsv = [C.map((c) => c.h).join('\t'), ...wait.map((s) => C.map((c) => String(c.get(s)).replace(/[\t\n]+/g, ' ')).join('\t'))].join('\n');
+    try { await navigator.clipboard.writeText(tsv); toast(`Copied ${plural(wait.length, 'row')}. Paste into cell A1.`); } catch { toast('Copy was blocked. Select the table and copy it manually.'); }
+  }
+  if (id === 'markUp') {
+    const wait = S.shipments.filter((s) => s.status === 'Ready to upload');
+    wait.forEach((s) => { s.status = 'Uploaded'; S.orders.filter((o) => o.shipmentId === s.id).forEach((o) => (o.status = 'Shipped')); });
+    save(); render(); toast(`Marked ${plural(wait.length, 'shipment')} as uploaded. Orders are now Shipped.`);
+  }
+  if (id === 'copyDraft') { const t = $('#draft').value; try { await navigator.clipboard.writeText(t); toast('Draft copied.'); } catch { $('#draft').select(); toast('Copy was blocked. Press Ctrl+C to copy the selected text.'); } }
+  if (id === 'doneQ') { const q = S.inquiries.find((x) => x.id === ui.cs); q.status = 'Replied'; save(); render(); toast('Marked as replied.'); }
+  if (id === 'saveMap') { S.columnMap = $('#colmap').value; save(); toast('Columns saved. The shipping download now uses them.'); }
+  if (id === 'resetMap') { S.columnMap = COLUMN_MAP; save(); render(); toast('Columns reset to default.'); }
+  if (id === 'resetAll') { S = buildState(); Object.keys(live).forEach((k) => delete live[k]); save(); location.hash = 'dashboard'; render(); toast('Sample data reset.'); }
+});
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'q') { ui.q = e.target.value.trim(); render(); }
+  if (e.target.id === 'draft') { const q = S.inquiries.find((x) => x.id === ui.cs); if (q) { q.draftEdit = e.target.value; save(); } }
+});
+document.addEventListener('change', (e) => { if (e.target.id === 'stSel') { ui.st = e.target.value; render(); } });
+document.addEventListener('submit', (e) => {
+  const f = e.target.closest('form.issue'); if (!f) return; e.preventDefault();
+  const o = S.orders.find((x) => x.id === f.dataset.id);
+  const next = { ...o, phone: f.phone.value.trim(), addr: f.addr.value.trim() };
+  const p = problems(next);
+  if (p.length) { $('.err', f).textContent = `Still a problem: ${p.join(', ')}`; return; }
+  Object.assign(o, { phone: next.phone, addr: next.addr, status: 'New', problem: '' });
+  const res = collect(S, [o.id], Date.now(), 'manual fix');
+  save(); render(); toast(res.shipments ? `${o.receiver}'s order was added to shipping.` : 'Could not add this order.');
+});
+render();
+})();
+</script>
+
+</body>
+</html>

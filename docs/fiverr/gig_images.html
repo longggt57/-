@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fiverr Gig Images</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Archivo+Black&display=swap">
+<style>
+/* Fiverr gig images 1280×769. Shipping-label motif: label yellow + ink on cool grey, console screenshots as proof. */
+:root {
+  --bg: #eef0f3; --paper: #fff; --ink: #14181d; --muted: #5b6470; --line: #d3d8df;
+  --label: #ffd23f; --s1: #2a78d6; --s2: #eb6834; --good: #0ca30c;
+  --display: "Archivo Black", "IBM Plex Sans", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #777; font-family: var(--body); color: var(--ink); }
+.g { width: 1280px; height: 769px; background: var(--bg); position: relative; overflow: hidden; margin: 0 auto 20px; padding: 56px 60px; display: flex; flex-direction: column; gap: 22px; }
+.tape { background: var(--label); font-weight: 700; padding: 6px 14px; transform: rotate(-1.2deg); display: inline-block; font-size: 18px; width: fit-content; }
+h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; line-height: 1.08; letter-spacing: -0.01em; }
+h1 { font-size: 56px; }
+h2 { font-size: 44px; }
+.sub { font-size: 22px; color: var(--muted); margin: 0; max-width: 40ch; line-height: 1.45; }
+.shot { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 18px 40px rgba(20, 24, 29, .14); }
+.shot img { display: block; width: 100%; }
+
+/* 1 */
+.g1 { display: grid; grid-template-columns: 520px 1fr; gap: 36px; align-items: center; }
+.g1 .left { display: grid; gap: 22px; }
+.flow { display: grid; gap: 10px; margin-top: 6px; }
+.flow div { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 500; }
+.flow i { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-style: normal; font-family: var(--mono); font-weight: 600; font-size: 15px; background: var(--ink); color: #fff; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 16px; }
+.g1 .shot { transform: perspective(1400px) rotateY(-8deg); width: 760px; margin-right: -120px; }
+
+/* 2 */
+.g2 .shot { flex: 1; }
+.g2 .shot img { width: 100%; }
+.callouts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.callouts div { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; font-size: 18px; }
+.callouts b { display: block; font-size: 20px; margin-bottom: 2px; }
+.callouts span { color: var(--muted); font-size: 16px; }
+
+/* 3 */
+.ba { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.ba .card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 26px 28px; display: grid; align-content: start; gap: 12px; }
+.ba h3 { margin: 0; font-size: 24px; display: flex; justify-content: space-between; align-items: baseline; }
+.ba h3 b { font-family: var(--mono); font-size: 20px; }
+.ba ol, .ba ul { margin: 0; padding-left: 26px; display: grid; gap: 12px; font-size: 21px; line-height: 1.4; }
+.ba .before h3 b { color: #b42318; }
+.ba .after { border: 2px solid var(--ink); }
+.ba .after h3 { background: var(--label); margin: -26px -28px 4px; padding: 16px 28px; border-radius: 12px 12px 0 0; }
+.foot { font-size: 15px; color: var(--muted); margin-top: auto; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.facts div { background: var(--ink); color: #fff; border-radius: 12px; padding: 16px 20px; display: grid; gap: 2px; }
+.facts b { font-size: 20px; }
+.facts span { color: #b9c1cc; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<section class="g g1" id="i1">
+  <div class="left">
+    <span class="tape">n8n · Shopify · Amazon · Google Sheets</span>
+    <h1>Shopify + Amazon orders, packed and ready by 9 AM</h1>
+    <p class="sub">I automate your morning order routine: one shipping file, one clean Google Sheet, and a dashboard that shows what needs you.</p>
+    <div class="flow">
+      <div><i>1</i>Pull new orders from every channel</div>
+      <div><i>2</i>Combine same-address orders, flag bad addresses</div>
+      <div><i>3</i>Shipping upload file + new Google Sheet + alert</div>
+    </div>
+  </div>
+  <div class="shot"><img src="assets/dash.png" alt="Operations console dashboard"></div>
+</section>
+
+<section class="g g2" id="i2">
+  <span class="tape">Operations console</span>
+  <h2>Every automation and order in one place</h2>
+  <div class="shot"><img src="assets/dash_top.png" alt="Dashboard with orders, shipments and to-dos"></div>
+  <div class="callouts">
+    <div><b>To do today</b><span>Shipments to upload, orders to fix, urgent inquiries</span></div>
+    <div><b>Run history</b><span>Every run logged with result and duration</span></div>
+    <div><b>Run now</b><span>Trigger any workflow when you can't wait</span></div>
+  </div>
+</section>
+
+<section class="g" id="i3">
+  <span class="tape">What changes</span>
+  <h2>From 40 minutes of copy-paste to a quick check</h2>
+  <div class="ba">
+    <div class="card before">
+      <h3>Today <b>~40 min / day</b></h3>
+      <ol>
+        <li>Export orders from Shopify</li>
+        <li>Export orders from Amazon</li>
+        <li>Merge and reformat in a spreadsheet</li>
+        <li>Retype names, addresses, items for shipping</li>
+        <li>Hunt for duplicate households by eye</li>
+      </ol>
+    </div>
+    <div class="card after">
+      <h3>Automated <b>review only</b></h3>
+      <ul>
+        <li>Orders pulled by API on schedule</li>
+        <li>Same household across channels → one box</li>
+        <li>Bad address or phone → "Needs review"</li>
+        <li>Shipping file + Google Sheet in your inbox</li>
+        <li>Already-processed orders never repeat</li>
+      </ul>
+    </div>
+  </div>
+  <div class="facts">
+    <div><b>Runs before you start</b><span>8:40 AM on ship days, or on demand</span></div>
+    <div><b>No double shipping</b><span>Each order is processed once</span></div>
+    <div><b>Your accounts, your data</b><span>Runs in your n8n and Google account</span></div>
+  </div>
+  <div class="foot">Time estimate based on ~50 orders per day. Screens show sample data.</div>
+</section>
+
+</body>
+</html>
