@@ -137,7 +137,19 @@ ANTHROPIC_API_KEY=sk-ant-... python3 test/live_claude_check.py
 - [ ] ② 실제 문의 5~10건으로 답변 품질 확인 후 정책 문구 보정
 - [ ] 워크플로 설정에서 Error Workflow를 지정해 오류 알림 받기(선택)
 
+## 무료 택배 변환기 (마케팅용 데모)
+
+[`docs/demo/index.html`](docs/demo/index.html): 스마트스토어 주문 엑셀을 올리면 택배 업로드 파일이 바로 나오는 웹페이지입니다. 합포장, 주소·연락처 오류 분리, 취소 주문 제외까지 해 줍니다. 파일은 브라우저 안에서만 처리되고 서버로 보내지 않습니다.
+
+- 예시 데이터가 미리 들어 있어서, 열자마자 결과 화면이 보입니다.
+- 열 이름은 자동으로 찾고, 틀리면 드롭다운에서 고칠 수 있습니다. EUC-KR로 저장된 CSV도 읽습니다.
+- 페이지 하단의 "매일 자동으로 받기" 안내가 크몽 문의로 연결됩니다. `docs/demo/tool.html`의 `KMONG_URL`, `CONTACT`를 바꾼 뒤 `python3 docs/demo/build_page.py`를 실행하세요.
+- 공개 방법(GitHub Pages)과 활용 전략은 [마케팅 전략](docs/03_마케팅_전략.md)에 정리했습니다.
+
+![무료 택배 변환기](docs/screenshots/06_무료_택배변환기.png)
+
 ## 문서
 - [요구사항 인터뷰 질문지](docs/01_요구사항_인터뷰_질문지.md)
 - [크몽 상세페이지 초안](docs/02_크몽_상세페이지_초안.md)
+- [마케팅 전략](docs/03_마케팅_전략.md)
 - 스크린샷: [④](docs/screenshots/05_택배엑셀_워크플로.png) · [①](docs/screenshots/01_주문_시트_슬랙.png) · [②](docs/screenshots/02_고객문의_AI.png) · [③](docs/screenshots/03_매출리포트.png) · [③ 메일](docs/screenshots/03_매출리포트_메일.png)

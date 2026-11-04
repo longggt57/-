@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>택배 업로드 변환기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="스마트스토어 주문 엑셀을 올리면 택배사 업로드 파일이 바로 나옵니다. 합포장, 주소 오류 체크까지. 파일은 서버로 전송되지 않습니다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Do+Hyeon&display=swap">
+</head>
+<body>
+<style>
+/* Layout: 운송장(택배 라벨) 모티프 — 상단 소개 → 좌측 입력·설정 / 우측 결과 라벨, 하단 자동화 안내 */
+:root {
+  --bg: #eef0f3;          /* 물류창고 콘크리트 톤의 차가운 회색 */
+  --paper: #ffffff;       /* 라벨 용지 */
+  --ink: #14181d;
+  --muted: #5b6470;
+  --line: #d3d8df;
+  --accent: #1d4ed8;      /* 실행 버튼 */
+  --accent-ink: #ffffff;
+  --label: #ffd23f;       /* 택배 라벨 노랑 */
+  --label-ink: #14181d;
+  --ok: #1a7f4b;
+  --warn: #b42318;
+  --warn-bg: #fdecea;
+  --soft: #f6f7f9;
+  --font-display: "Do Hyeon", "IBM Plex Sans KR", sans-serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101317; --paper: #1a1f26; --ink: #e8ebef; --muted: #9aa4b1; --line: #2e3540;
+    --accent: #6b93ff; --accent-ink: #0b1020; --label: #f2c230; --label-ink: #14181d;
+    --ok: #4cc38a; --warn: #ff8a7a; --warn-bg: #3a1d1a; --soft: #222831; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101317; --paper: #1a1f26; --ink: #e8ebef; --muted: #9aa4b1; --line: #2e3540;
+  --accent: #6b93ff; --accent-ink: #0b1020; --label: #f2c230; --label-ink: #14181d;
+  --ok: #4cc38a; --warn: #ff8a7a; --warn-bg: #3a1d1a; --soft: #222831; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body);
+  font-size: 15px; line-height: 1.6; margin: 0;
+}
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+a { color: var(--accent); }
+button, select, textarea, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* 소개 */
+.intro { padding-block: 40px 24px; display: grid; gap: 20px; }
+.tape {
+  display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+  background: var(--label); color: var(--label-ink); font-weight: 700; font-size: 13px;
+  padding: 4px 12px; letter-spacing: .02em; transform: rotate(-1.2deg);
+}
+.intro h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(32px, 5vw, 52px); line-height: 1.15; }
+.intro p { color: var(--muted); max-width: 62ch; margin: 0; font-size: 16px; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px 20px; list-style: none; padding: 0; margin: 0; color: var(--muted); font-size: 14px; }
+.steps li { display: flex; gap: 8px; align-items: baseline; }
+.steps b { font-family: var(--font-mono); color: var(--ink); }
+
+/* 본문 2열 */
+.app { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 20px; padding-bottom: 40px; align-items: start; }
+@media (max-width: 860px) { .app { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 18px; min-width: 0; }
+.panel h2 { font-size: 15px; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.panel h2 small { font-weight: 400; color: var(--muted); font-size: 13px; }
+.group { display: grid; gap: 8px; }
+.group > label, .lbl { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+.drop {
+  border: 2px dashed var(--line); border-radius: 8px; padding: 22px 16px; text-align: center;
+  display: grid; gap: 6px; cursor: pointer; background: var(--soft); transition: border-color .15s;
+}
+.drop:hover, .drop.over { border-color: var(--accent); }
+.drop strong { font-size: 15px; }
+.drop span { color: var(--muted); font-size: 13px; }
+.drop input { display: none; }
+textarea {
+  width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--paper); padding: 8px 10px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.5;
+}
+.source { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--soft); border: 1px solid var(--line); color: var(--ink); }
+.pill.example { background: var(--label); color: var(--label-ink); border-color: transparent; font-weight: 700; }
+
+.map { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: center; font-size: 13px; }
+.map select { width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+.map .need::after { content: " *"; color: var(--warn); }
+
+.toggles { display: grid; gap: 8px; }
+.toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+.toggle input { margin-top: 4px; accent-color: var(--accent); }
+.toggle small { display: block; color: var(--muted); font-size: 12.5px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+select.preset { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+details[open] summary { margin-bottom: 8px; }
+
+/* 결과: 운송장 라벨 */
+.label {
+  background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0;
+}
+.label-head {
+  background: var(--label); color: var(--label-ink); padding: 14px 20px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.label-head h2 { font-family: var(--font-display); font-weight: 400; font-size: 24px; line-height: 1.2; }
+.barcode { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; display: grid; justify-items: end; gap: 2px; }
+.barcode i { display: block; height: 22px; width: 150px; background: repeating-linear-gradient(90deg, var(--label-ink) 0 2px, transparent 2px 4px, var(--label-ink) 4px 5px, transparent 5px 8px, var(--label-ink) 8px 11px, transparent 11px 12px); }
+.perf { border-top: 2px dashed var(--line); }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 520px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { padding: 14px 20px; border-right: 1px solid var(--line); display: grid; gap: 2px; }
+.stat:last-child { border-right: 0; }
+.stat span { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+.stat b { font-family: var(--font-mono); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat.bad b { color: var(--warn); }
+.stat.good b { color: var(--ok); }
+.actions { padding: 14px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line); }
+.btn {
+  border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 9px 14px;
+  font-weight: 500; cursor: pointer; display: inline-flex; gap: 6px; align-items: center;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.hint { color: var(--muted); font-size: 12.5px; }
+.toast { font-size: 13px; color: var(--ok); }
+
+.section { padding: 16px 20px; display: grid; gap: 10px; border-top: 1px solid var(--line); min-width: 0; }
+.section h3 { font-size: 14px; font-weight: 700; }
+.section h3.bad { color: var(--warn); }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
+th { background: var(--soft); font-weight: 500; color: var(--muted); position: sticky; top: 0; }
+td.wrap { white-space: normal; min-width: 220px; }
+td.num { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+tr:last-child td { border-bottom: 0; }
+.tag { font-size: 11.5px; padding: 1px 6px; border-radius: 4px; background: var(--label); color: var(--label-ink); font-weight: 700; white-space: nowrap; }
+.issue td:last-child { color: var(--warn); font-weight: 500; }
+.empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+.err { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 10px 12px; font-size: 13.5px; }
+
+/* 자동화 안내 */
+.cta { padding-block: 8px 56px; }
+.cta-box {
+  background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 24px;
+  display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px;
+}
+@media (max-width: 760px) { .cta-box { grid-template-columns: minmax(0, 1fr); } }
+.cta h2 { font-family: var(--font-display); font-weight: 400; font-size: 28px; line-height: 1.2; }
+.cta p { color: var(--muted); margin: 8px 0 0; max-width: 60ch; }
+.cta ul { margin: 12px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.compare { display: grid; gap: 8px; align-content: start; }
+.compare div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 8px; background: var(--soft); font-size: 14px; }
+.compare div.after { background: var(--label); color: var(--label-ink); font-weight: 700; }
+.compare b { font-family: var(--font-mono); }
+.contact { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+.contact code { font-family: var(--font-mono); background: var(--soft); padding: 6px 10px; border-radius: 6px; user-select: all; font-size: 13px; }
+footer { color: var(--muted); font-size: 12.5px; padding-bottom: 32px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="wrap intro">
+  <span class="tape">무료 · 설치 없음 · 파일은 내 컴퓨터 밖으로 나가지 않습니다</span>
+  <h1>주문 엑셀 올리면<br>택배 업로드 파일이 바로</h1>
+  <p>스마트스토어 판매자센터에서 받은 주문 엑셀을 그대로 올리세요. 받는 분·연락처·주소를 찾아 택배사 양식으로 바꾸고, 같은 집으로 가는 주문은 한 박스로 묶고, 주소가 빠진 주문은 따로 골라 드립니다.</p>
+  <ol class="steps">
+    <li><b>1</b> 주문 엑셀 올리기 (또는 표 붙여넣기)</li>
+    <li><b>2</b> 자동으로 찾은 열 확인</li>
+    <li><b>3</b> 택배 업로드 파일 받기</li>
+  </ol>
+</header>
+
+<main class="wrap app">
+  <section class="panel" aria-label="입력과 설정">
+    <div class="group">
+      <h2>주문 데이터 <small id="srcInfo"></small></h2>
+      <label class="drop" id="drop" for="file">
+        <strong>엑셀·CSV 파일을 끌어다 놓거나 눌러서 선택</strong>
+        <span>.xlsx · .xls · .csv · 비밀번호가 걸린 파일은 엑셀에서 암호를 풀고 다시 저장해 주세요</span>
+        <input type="file" id="file" accept=".xlsx,.xls,.csv,.tsv,.txt">
+      </label>
+      <details>
+        <summary>또는 엑셀에서 표를 복사해서 붙여넣기</summary>
+        <textarea id="paste" placeholder="엑셀에서 머리글 줄을 포함해 복사(Ctrl+C)한 뒤 여기에 붙여넣기(Ctrl+V)"></textarea>
+      </details>
+      <div class="source" id="source"></div>
+      <div id="loadErr" class="err" hidden></div>
+    </div>
+
+    <div class="group">
+      <h2>찾은 열 <small>틀리면 바꿔 주세요</small></h2>
+      <div class="map" id="map"></div>
+    </div>
+
+    <div class="group">
+      <h2>옵션</h2>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="optCombine" checked>
+          <span>같은 집 주문 한 박스로 묶기<small>받는 분·연락처·주소가 모두 같으면 한 줄로 합칩니다</small></span></label>
+        <label class="toggle"><input type="checkbox" id="optCancel" checked>
+          <span>취소·반품 주문 빼기<small>주문상태 열에 취소·반품·환불·교환이 있으면 제외합니다</small></span></label>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>택배사 양식</h2>
+      <div class="row">
+        <select class="preset" id="preset" aria-label="양식 선택">
+          <option value="cj">CJ대한통운형 (예시)</option>
+          <option value="basic">기본형</option>
+          <option value="custom">직접 입력</option>
+        </select>
+      </div>
+      <details>
+        <summary>열 이름·순서 직접 고치기</summary>
+        <textarea id="template" spellcheck="false" aria-label="양식 열 구성"></textarea>
+        <p class="hint">한 줄에 하나씩 <code>엑셀열=항목</code>. 고정값은 <code>운임구분="선불"</code>. 항목: 수령인, 연락처, 주소, 품목, 수량, 배송메모, 주문번호, 상품주문번호, 합포장</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="label" aria-live="polite" aria-label="변환 결과">
+    <div class="label-head">
+      <h2 id="headline">택배 0건 준비</h2>
+      <div class="barcode"><i></i><span id="code">0000-0000-0000</span></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>주문</span><b id="sOrders">0</b></div>
+      <div class="stat good"><span>택배</span><b id="sShip">0</b></div>
+      <div class="stat"><span>합포장</span><b id="sComb">0</b></div>
+      <div class="stat bad"><span>확인 필요</span><b id="sIssue">0</b></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="dl" type="button">엑셀 파일 받기</button>
+      <button class="btn" id="copy" type="button">표 복사 (엑셀에 붙여넣기)</button>
+      <span class="toast" id="toast" role="status"></span>
+    </div>
+    <div class="perf"></div>
+    <div class="section">
+      <h3>업로드 파일 미리보기</h3>
+      <div class="scroll"><table id="out"></table></div>
+    </div>
+    <div class="section" id="issueSec">
+      <h3 class="bad">확인 필요 — 파일에 넣지 않았습니다</h3>
+      <div class="scroll"><table id="issues"></table></div>
+    </div>
+    <div class="section" id="skipSec">
+      <h3>제외한 주문 (취소·반품)</h3>
+      <div class="scroll"><table id="skipped"></table></div>
+    </div>
+  </section>
+</main>
+
+<section class="wrap cta" aria-label="자동화 안내">
+  <div class="cta-box">
+    <div>
+      <h2>매일 아침, 이 파일이 메일함에 와 있게</h2>
+      <p>지금은 엑셀을 직접 받아서 올리셨죠. 자동화하면 주문 다운로드부터 필요 없습니다. 출고일 아침마다 새 주문만 골라 택배 업로드 파일을 만들어 메일로 보내 드립니다.</p>
+      <ul>
+        <li>스마트스토어·쿠팡 주문을 API로 직접 가져오기</li>
+        <li>한 번 보낸 주문은 다음 파일에 다시 들어가지 않음</li>
+        <li>주소 오류·합포장 자동 처리, 결과는 메일·슬랙으로</li>
+        <li>신규 주문 알림, 고객 문의 AI 답변 초안, 일일 매출 리포트까지 확장 가능</li>
+      </ul>
+      <div class="contact">
+        <a class="btn primary" id="ctaLink" href="https://kmong.com" target="_blank" rel="noopener">크몽에서 자동화 문의하기</a>
+        <code id="ctaContact">문의: 크몽 메시지</code>
+      </div>
+    </div>
+    <div class="compare" aria-label="작업 시간 비교">
+      <span class="lbl">하루 주문 50건 기준 (예시)</span>
+      <div><span>손으로 정리</span><b>매일 40분</b></div>
+      <div><span>이 변환기</span><b>매일 3분</b></div>
+      <div class="after"><span>자동화</span><b>매일 0분</b></div>
+    </div>
+  </div>
+</section>
+
+<footer class="wrap">
+  업로드한 파일은 이 브라우저 안에서만 처리되며 어떤 서버에도 전송·저장되지 않습니다. 택배사 양식은 예시이므로 실제 업로드 전에 열 이름을 확인해 주세요.
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(() => {
+  // ===== 판매자가 바꿀 곳 =====
+  const KMONG_URL = 'https://kmong.com';     // 내 크몽 서비스 주소
+  const CONTACT = '문의: 크몽 메시지';        // 연락처 문구 (오픈채팅 주소 등)
+  // ===========================
+  document.getElementById('ctaLink').href = KMONG_URL;
+  document.getElementById('ctaContact').textContent = CONTACT;
+
+  const FIELDS = [
+    ['수령인', true, ['수취인명', '수령인', '받는분성명', '받는분', '수취인', '받는사람', '수령자']],
+    ['연락처', true, ['수취인연락처1', '수취인연락처', '받는분전화번호', '받는분휴대폰', '수령인연락처', '연락처', '휴대폰', '휴대폰번호', '전화번호']],
+    ['주소', true, ['통합배송지', '배송지', '받는분주소', '수취인주소', '수령인주소', '주소', '배송주소']],
+    ['기본주소', false, ['기본배송지', '기본주소']],
+    ['상세주소', false, ['상세배송지', '상세주소']],
+    ['상품명', true, ['상품명', '품목명', '상품']],
+    ['옵션', false, ['옵션정보', '옵션', '옵션명', '선택옵션']],
+    ['수량', false, ['수량', '주문수량', '내품수량']],
+    ['배송메모', false, ['배송메세지', '배송메시지', '배송메모', '배송요청사항', '요청사항']],
+    ['주문번호', false, ['주문번호', '고객주문번호']],
+    ['상품주문번호', false, ['상품주문번호']],
+    ['주문상태', false, ['주문상태', '상태', '클레임상태', '주문세부상태']],
+  ];
+  const PRESETS = {
+    cj: '받는분성명=수령인\n받는분전화번호=연락처\n받는분주소=주소\n품목명=품목\n내품수량=수량\n배송메세지=배송메모\n고객주문번호=주문번호\n합포장=합포장',
+    basic: '이름=수령인\n전화번호=연락처\n주소=주소\n상품=품목\n수량=수량\n메모=배송메모\n주문번호=주문번호',
+  };
+
+  // 예시 데이터 (스마트스토어 주문 엑셀과 비슷한 형태, 가상의 인물)
+  const SAMPLE = [
+    ['상품주문번호', '주문번호', '주문상태', '구매자명', '수취인명', '상품명', '옵션정보', '수량', '수취인연락처1', '통합배송지', '배송메세지'],
+    ['2026110411000101', '2026110410000101', '발송대기', '김민준', '김민준', '[1+1] 국산 무농약 현미 4kg', '용량: 4kg x 2', 1, '010-1234-5678', '서울특별시 강남구 테헤란로 123 101동 1001호', '문 앞에 놓아주세요'],
+    ['2026110411000102', '2026110410000102', '발송대기', '이서연', '이서연', '제주 감귤 5kg 가정용', '크기: 중과', 2, '010-2345-6789', '경기도 성남시 분당구 판교역로 45 3층', ''],
+    ['2026110411000103', '2026110410000103', '발송대기', '김민준', '김민준', '유기농 귀리 1kg', '', 1, '010-1234-5678', '서울특별시 강남구 테헤란로 123 101동 1001호', '문 앞에 놓아주세요'],
+    ['2026110411000104', '2026110410000104', '발송대기', '박지호', '박지호', '햇 찹쌀 2kg', '', 3, '010-3456-7890', '부산광역시 해운대구 센텀중앙로 78 502호', '부재 시 경비실'],
+    ['2026110411000105', '2026110410000105', '발송대기', '최유나', '최유나', '혼합 잡곡 선물세트', '포장: 선물용', 1, '010-4567-8901', '', '선물입니다'],
+    ['2026110411000106', '2026110410000106', '취소요청', '정하늘', '정하늘', '국산 서리태 1kg', '', 2, '010-5678-9012', '대전광역시 유성구 대학로 99 2동 301호', ''],
+    ['2026110411000107', '2026110410000107', '발송대기', '한소희', '한소희', '제주 감귤 5kg 가정용', '크기: 대과', 1, '010-6789-012', '광주광역시 서구 상무중앙로 12 1501호', '배송 전 연락 부탁드려요'],
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const norm = (s) => String(s ?? '').replace(/\s|\(.*?\)/g, '').trim();
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  let state = { grid: SAMPLE, header: [], body: [], mapping: {}, label: '예시 데이터', example: true, result: null };
+
+  // ---- 머리글 줄 찾기 + 열 자동 매칭 ----
+  function detect(grid) {
+    const all = new Set(FIELDS.flatMap((f) => f[2].map(norm)));
+    let best = 0, bestScore = -1;
+    for (let r = 0; r < Math.min(15, grid.length); r++) {
+      const score = (grid[r] || []).filter((c) => all.has(norm(c))).length;
+      if (score > bestScore) { best = r; bestScore = score; }
+    }
+    const header = (grid[best] || []).map((c) => String(c ?? '').trim());
+    const body = grid.slice(best + 1).filter((r) => r && r.some((c) => String(c ?? '').trim() !== ''));
+    const mapping = {};
+    const used = new Set();
+    for (const [key, , syns] of FIELDS) {
+      let idx = -1;
+      for (const s of syns) {                       // 정확히 같은 이름 우선
+        idx = header.findIndex((h, i) => !used.has(i) && norm(h) === norm(s));
+        if (idx >= 0) break;
+      }
+      if (idx < 0) for (const s of syns) {          // 포함 관계
+        idx = header.findIndex((h, i) => !used.has(i) && norm(h).includes(norm(s)) && norm(s).length >= 2);
+        if (idx >= 0) break;
+      }
+      mapping[key] = idx;
+      if (idx >= 0) used.add(idx);
+    }
+    return { header, body, mapping, headerFound: bestScore >= 2 };
+  }
+
+  // ---- 변환 ----
+  const phoneOk = (p) => /^0\d{1,2}-?\d{3,4}-?\d{4}$/.test(String(p ?? '').replace(/\s/g, ''));
+  function convert() {
+    const { header, body, mapping } = state;
+    const get = (row, key) => (mapping[key] >= 0 ? String(row[mapping[key]] ?? '').trim() : '');
+    const orders = body.map((row) => {
+      let addr = get(row, '주소');
+      if (!addr) addr = [get(row, '기본주소'), get(row, '상세주소')].filter(Boolean).join(' ');
+      const qty = parseInt(get(row, '수량').replace(/[^0-9]/g, ''), 10);
+      return {
+        수령인: get(row, '수령인'), 연락처: get(row, '연락처'), 주소: addr,
+        상품명: get(row, '상품명'), 옵션: get(row, '옵션'), 수량: Number.isFinite(qty) && qty > 0 ? qty : 1,
+        배송메모: get(row, '배송메모'), 주문번호: get(row, '주문번호'), 상품주문번호: get(row, '상품주문번호'),
+        주문상태: get(row, '주문상태'),
+      };
+    });
+
+    const skipped = [], issues = [], ok = [];
+    for (const o of orders) {
+      if ($('optCancel').checked && /취소|반품|환불|교환/.test(o.주문상태)) { skipped.push(o); continue; }
+      const p = [];
+      if (!o.수령인) p.push('받는 분 없음');
+      if (!phoneOk(o.연락처)) p.push('연락처 형식 오류');
+      if (o.주소.length < 8) p.push('주소 없음/불완전');
+      if (!o.상품명) p.push('상품명 없음');
+      if (p.length) issues.push({ ...o, 문제: p.join(', ') }); else ok.push(o);
+    }
+
+    const item = (o) => `${o.상품명}${o.옵션 ? `(${o.옵션})` : ''} x${o.수량}`;
+    let ships;
+    if ($('optCombine').checked) {
+      const g = new Map();
+      for (const o of ok) {
+        const k = [o.수령인, o.연락처.replace(/\D/g, ''), o.주소.replace(/\s/g, '')].join('|');
+        if (!g.has(k)) g.set(k, []);
+        g.get(k).push(o);
+      }
+      ships = [...g.values()].map((a) => ({
+        수령인: a[0].수령인, 연락처: a[0].연락처, 주소: a[0].주소,
+        품목: a.map(item).join(' / '), 수량: a.reduce((s, o) => s + o.수량, 0),
+        배송메모: [...new Set(a.map((o) => o.배송메모).filter(Boolean))].join(' / '),
+        주문번호: [...new Set(a.map((o) => o.주문번호).filter(Boolean))].join(','),
+        상품주문번호: a.map((o) => o.상품주문번호).filter(Boolean).join(','),
+        합포장: a.length > 1 ? `${a.length}건 합침` : '',
+      }));
+    } else {
+      ships = ok.map((o) => ({ ...o, 품목: item(o), 합포장: '' }));
+    }
+
+    const cols = String($('template').value).split('\n').map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('#') && l.includes('='))
+      .map((l) => { const i = l.indexOf('='); const src = l.slice(i + 1).trim(); const fx = src.match(/^"(.*)"$/);
+        return { h: l.slice(0, i).trim(), get: fx ? () => fx[1] : (s) => s[src] ?? '' }; });
+    const rows = ships.map((s) => Object.fromEntries(cols.map((c) => [c.h, c.get(s)])));
+    state.result = { orders, ships, rows, cols: cols.map((c) => c.h), issues, skipped };
+    render();
+  }
+
+  // ---- 화면 그리기 ----
+  function table(el, headers, rows, opts = {}) {
+    if (!rows.length) { el.innerHTML = `<tr><td class="empty">${opts.empty || '없음'}</td></tr>`; return; }
+    el.innerHTML = `<thead><tr>${headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${
+      rows.map((r) => `<tr class="${opts.rowClass || ''}">${headers.map((h) => {
+        const v = r[h];
+        if (h === '합포장' && v) return `<td><span class="tag">${esc(v)}</span></td>`;
+        const cls = /수량/.test(h) ? 'num' : /품목|주소/.test(h) ? 'wrap' : '';
+        return `<td class="${cls}">${esc(v)}</td>`;
+      }).join('')}</tr>`).join('')}</tbody>`;
+  }
+
+  function render() {
+    const r = state.result;
+    const combined = r.ships.filter((s) => s.합포장).length;
+    $('headline').textContent = `택배 ${r.ships.length}건 준비`;
+    $('sOrders').textContent = r.orders.length;
+    $('sShip').textContent = r.ships.length;
+    $('sComb').textContent = combined;
+    $('sIssue').textContent = r.issues.length;
+    const d = new Date();
+    $('code').textContent = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${String(r.ships.length).padStart(4, '0')}`;
+    table($('out'), r.cols, r.rows, { empty: '변환할 주문이 없습니다. 왼쪽에서 받는 분·연락처·주소 열이 맞게 잡혔는지 확인해 주세요.' });
+    table($('issues'), ['주문번호', '수령인', '상품명', '연락처', '주소', '문제'], r.issues, { rowClass: 'issue' });
+    $('issueSec').hidden = !r.issues.length;
+    table($('skipped'), ['주문번호', '수령인', '상품명', '주문상태'], r.skipped);
+    $('skipSec').hidden = !r.skipped.length;
+    $('dl').disabled = $('copy').disabled = !r.rows.length;
+  }
+
+  function renderMap() {
+    const { header, mapping } = state;
+    const opts = (sel) => `<option value="-1">(없음)</option>` + header.map((h, i) =>
+      `<option value="${i}" ${i === sel ? 'selected' : ''}>${esc(h || `${i + 1}번째 열`)}</option>`).join('');
+    $('map').innerHTML = FIELDS.filter(([k]) => k !== '기본주소' && k !== '상세주소' || mapping[k] >= 0)
+      .map(([k, need]) => `<label class="${need ? 'need' : ''}" for="m_${k}">${k}</label><select id="m_${k}" data-key="${k}">${opts(mapping[k])}</select>`).join('');
+    $('map').querySelectorAll('select').forEach((s) => s.addEventListener('change', () => {
+      state.mapping[s.dataset.key] = Number(s.value); convert();
+    }));
+  }
+
+  function load(grid, label, example = false) {
+    $('loadErr').hidden = true;
+    const d = detect(grid);
+    Object.assign(state, { grid, ...d, label, example });
+    $('source').innerHTML = `${example ? '<span class="pill example">예시</span>' : '<span class="pill">불러옴</span>'} ${esc(label)} · 주문 ${d.body.length}줄`;
+    if (!d.headerFound) showErr('머리글 줄(수취인명, 상품명 같은 열 이름)을 찾지 못했습니다. 아래 "찾은 열"에서 직접 골라 주세요.');
+    renderMap();
+    convert();
+  }
+  function showErr(msg) { $('loadErr').textContent = msg; $('loadErr').hidden = false; }
+
+  // ---- 파일 읽기 ----
+  async function readFile(file) {
+    if (!window.XLSX) return showErr('엑셀 읽기 도구를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.');
+    try {
+      const buf = await file.arrayBuffer();
+      let wb;
+      if (/\.(csv|tsv|txt)$/i.test(file.name)) {
+        let text;
+        try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+        catch { text = new TextDecoder('euc-kr').decode(buf); }       // 한글 엑셀 CSV(EUC-KR)
+        wb = XLSX.read(text.replace(/^﻿/, ''), { type: 'string' });
+      } else {
+        wb = XLSX.read(buf, { type: 'array' });
+      }
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const grid = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+      if (!grid.length) return showErr('파일에 데이터가 없습니다.');
+      load(grid, file.name);
+    } catch (e) {
+      const msg = String(e && e.message || e);
+      if (/password|encrypt|ECMA-376|CFB/i.test(msg)) showErr('비밀번호가 걸린 파일입니다. 엑셀에서 열고 [파일 → 정보 → 통합 문서 보호 → 암호 설정]에서 암호를 지운 뒤 저장해서 다시 올려 주세요. 또는 표를 복사해 붙여넣어도 됩니다.');
+      else showErr(`파일을 읽지 못했습니다: ${msg}`);
+    }
+  }
+  $('file').addEventListener('change', (e) => e.target.files[0] && readFile(e.target.files[0]));
+  const drop = $('drop');
+  ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => e.dataTransfer.files[0] && readFile(e.dataTransfer.files[0]));
+  $('paste').addEventListener('input', (e) => {
+    const t = e.target.value.trim();
+    if (!t) return;
+    const grid = t.split(/\r?\n/).map((l) => l.split('\t'));
+    load(grid, '붙여넣은 표');
+  });
+
+  // ---- 옵션·양식 ----
+  $('template').value = PRESETS.cj;
+  $('preset').addEventListener('change', (e) => { if (PRESETS[e.target.value]) $('template').value = PRESETS[e.target.value]; convert(); });
+  $('template').addEventListener('input', () => { $('preset').value = 'custom'; convert(); });
+  $('optCombine').addEventListener('change', convert);
+  $('optCancel').addEventListener('change', convert);
+
+  // ---- 내보내기 ----
+  const toast = (m) => { $('toast').textContent = m; clearTimeout(toast.t); toast.t = setTimeout(() => ($('toast').textContent = ''), 3500); };
+  $('dl').addEventListener('click', () => {
+    const r = state.result;
+    if (!window.XLSX || !r.rows.length) return;
+    const ws = XLSX.utils.json_to_sheet(r.rows, { header: r.cols });
+    ws['!cols'] = r.cols.map((h) => ({ wch: Math.min(60, Math.max(h.length * 2 + 2, ...r.rows.map((x) => String(x[h] ?? '').length + 2))) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '업로드');
+    const d = new Date();
+    const name = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}_택배업로드.xlsx`;
+    try { XLSX.writeFile(wb, name); toast(`${name} 저장을 시작했습니다. 저장이 안 되면 '표 복사'를 써 주세요.`); }
+    catch { toast("이 화면에서는 파일 저장이 막혀 있습니다. '표 복사'를 써 주세요."); }
+  });
+  $('copy').addEventListener('click', async () => {
+    const r = state.result;
+    const clean = (v) => String(v ?? '').replace(/[\t\r\n]+/g, ' ');
+    const tsv = [r.cols.join('\t'), ...r.rows.map((x) => r.cols.map((h) => clean(x[h])).join('\t'))].join('\n');
+    try { await navigator.clipboard.writeText(tsv); toast(`${r.rows.length}줄을 복사했습니다. 엑셀 A1 칸에 붙여넣으세요.`); }
+    catch { $('paste').closest('details').open = false; toast('복사가 막혔습니다. 미리보기 표를 드래그해서 복사해 주세요.'); }
+  });
+
+  load(SAMPLE, '예시 데이터 (가상의 주문 7건)', true);
+})();
+</script>
+
+</body>
+</html>
