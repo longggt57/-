@@ -1,0 +1,498 @@
+{
+  "name": "④ 매일 아침 택배 업로드 엑셀 자동 생성 → 메일 첨부",
+  "nodes": [
+    {
+      "id": "4acef6f7-0ea6-5bbb-97c6-71988c2d76bc",
+      "name": "메모 0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -380
+      ],
+      "parameters": {
+        "content": "## ④ 택배 업로드 엑셀 자동 생성\n출고일(월~토) 오전 8:40, 구글시트 `주문` 탭(워크플로 ①이 기록)에서\n지난번 이후 결제된 주문을 골라 **택배사 업로드용 엑셀 파일**을 새로 만들고\n메일에 첨부해서 보냅니다.\n\n- 같은 사람·같은 주소 주문은 한 박스로 합침 (`combineSameAddress`)\n- 주소·연락처가 이상한 주문은 엑셀에서 빼고 메일에 '확인 필요'로 표시\n- 한 번 보낸 주문은 다음 파일에 다시 들어가지 않음\n\n엑셀 열 이름·순서는 `설정 → columnMap`에서 택배사 양식에 맞게 바꾸세요.",
+        "width": 600,
+        "height": 330,
+        "color": 4
+      }
+    },
+    {
+      "id": "8c0480a0-b017-5c44-85b6-de1a664bb309",
+      "name": "출고일 08:40",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "40 8 * * 1-6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "eab22f0a-42e0-59ef-b21d-098576a49eef",
+      "name": "설정",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "591c6fd7-4bbf-5be4-b334-83160c144bac",
+              "name": "demoMode",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "f9eb8658-d68e-5400-9d45-0f6054de58ae",
+              "name": "shopName",
+              "value": "곡물상회",
+              "type": "string"
+            },
+            {
+              "id": "4625d80b-5260-59b3-b9e0-707a521d2730",
+              "name": "sheetUrl",
+              "value": "https://docs.google.com/spreadsheets/d/여기에_시트_ID/edit",
+              "type": "string"
+            },
+            {
+              "id": "a17f7d89-a777-5629-8e75-dda92c923ab3",
+              "name": "emailTo",
+              "value": "owner@example.com",
+              "type": "string"
+            },
+            {
+              "id": "4d32c361-b237-5632-941b-6d91065c18e8",
+              "name": "combineSameAddress",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "c20034f2-1c4f-593e-b88e-2f6452278ffe",
+              "name": "columnMap",
+              "value": "받는분성명=수령인\n받는분전화번호=연락처\n받는분주소=주소\n품목명=품목\n내품수량=수량\n배송메세지=배송메모\n고객주문번호=주문번호\n합포장=합포장",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f2fd0979-989e-5cf0-95c5-307cab77ab64",
+      "name": "데모 모드?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "eee0f629-e478-52a5-a28e-c326e89850a8",
+              "leftValue": "={{ $json.demoMode }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "cc53a699-38d0-55d9-a6a8-5a5ad6d8c55d",
+      "name": "샘플 주문 (데모)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "// [데모 모드] '주문' 시트(워크플로 ①이 기록)와 같은 형식의 샘플\n// - 같은 사람이 두 번 주문한 건(합포장 대상), 주소가 빠진 건(확인 필요)을 일부러 넣었습니다.\nconst now = Date.now() + 9 * 3600e3; // KST\nconst at = (hAgo) => {\n  const iso = new Date(now - hAgo * 3600e3).toISOString();\n  return `${iso.slice(0, 10)} ${iso.slice(11, 19)}`;\n};\n\nconst rows = [\n  [3, '2026110411000101', '2026110410000101', '[1+1] 국산 무농약 현미 4kg', '용량: 4kg x 2', 1, 32900, '김민준', '010-1234-5678', '서울특별시 강남구 테헤란로 123 101동 1001호', '문 앞에 놓아주세요'],\n  [5, '2026110411000102', '2026110410000102', '제주 감귤 5kg 가정용', '크기: 중과', 2, 41800, '이서연', '010-2345-6789', '경기도 성남시 분당구 판교역로 45 3층', ''],\n  [6, '2026110411000103', '2026110410000103', '유기농 귀리 1kg', '', 1, 12900, '김민준', '010-1234-5678', '서울특별시 강남구 테헤란로 123 101동 1001호', '문 앞에 놓아주세요'],\n  [9, '2026110411000104', '2026110410000104', '햇 찹쌀 2kg', '', 3, 47700, '박지호', '010-3456-7890', '부산광역시 해운대구 센텀중앙로 78 502호', '부재 시 경비실'],\n  [12, '2026110411000105', '2026110410000105', '혼합 잡곡 선물세트', '포장: 선물용', 1, 45000, '최유나', '010-4567-8901', '', '선물입니다'],\n  [15, '2026110411000106', '2026110410000106', '국산 서리태 1kg', '', 2, 37800, '정하늘', '010-5678-9012', '대전광역시 유성구 대학로 99 2동 301호', ''],\n  [20, '2026110411000107', '2026110410000107', '제주 감귤 5kg 가정용', '크기: 대과', 1, 22900, '한소희', '010-6789-0123', '광주광역시 서구 상무중앙로 12 1501호', '배송 전 연락 부탁드려요'],\n  [30, '2026110311000099', '2026110310000099', '유기농 귀리 1kg', '', 1, 12900, '오래전', '010-0000-0000', '서울특별시 종로구 세종대로 1', ''], // 조회 기간 밖 → 제외\n];\n\nreturn rows.map(([h, poid, oid, name, opt, qty, amt, who, tel, addr, memo]) => ({\n  json: {\n    결제일시: at(h), 주문일시: at(h + 0.02), 주문번호: oid, 상품주문번호: poid,\n    상품명: name, 옵션: opt, 수량: qty, 결제금액: amt,\n    주문자: who, 수령인: who, 연락처: tel, 주소: addr, 배송메모: memo, 수집일시: at(h - 0.1),\n  },\n}));\n"
+      }
+    },
+    {
+      "id": "325fd187-9245-512f-b5ed-8154b2464094",
+      "name": "주문 시트 읽기",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        680,
+        140
+      ],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('설정').first().json.sheetUrl }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "주문",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "382d8a3f-5692-5840-b1db-fe5f2071b934",
+      "name": "출고 대상 선별",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// 출고 대상 선별\n// 1) 지난 실행 이후 결제된 주문만 (처음 실행이면 최근 24시간, 월요일이면 48시간)\n// 2) 이미 엑셀로 보낸 상품주문번호는 제외\n// 3) 받는 사람·연락처·주소가 이상한 주문은 '확인 필요'로 분리 (엑셀에 넣지 않음)\n// 4) 같은 사람·같은 주소 주문은 한 박스로 합치기 (설정: combineSameAddress)\nconst cfg = $('설정').first().json;\nconst demo = cfg.demoMode === true;\nconst store = $getWorkflowStaticData('global');\n\nconst KST = 9 * 3600e3;\nconst nowMs = Date.now();\nconst kstNow = new Date(nowMs + KST);\nconst fallbackHours = kstNow.getUTCDay() === 1 ? 48 : 24; // 월요일은 주말 주문 포함\nconst fromMs = !demo && store.lastRunAt ? store.lastRunAt : nowMs - fallbackHours * 3600e3;\n\n// \"YYYY-MM-DD HH:MM:SS\"(KST) → ms\nconst parse = (s) => {\n  const m = String(s || '').match(/^(\\d{4})-(\\d{2})-(\\d{2})[ T](\\d{2}):(\\d{2})(?::(\\d{2}))?/);\n  return m ? Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)) - KST : NaN;\n};\nconst fmt = (ms) => new Date(ms + KST).toISOString().slice(0, 16).replace('T', ' ');\n\nconst sent = new Set(demo ? [] : store.sentIds || []);\nconst seen = new Set();\nconst picked = [];\nfor (const { json: r } of $input.all()) {\n  const t = parse(r.결제일시);\n  const id = String(r.상품주문번호 || '');\n  if (isNaN(t) || t < fromMs || t > nowMs) continue;\n  if (id && (sent.has(id) || seen.has(id))) continue;\n  if (id) seen.add(id);\n  picked.push(r);\n}\n\n// 검증\nconst phoneOk = (p) => /^0\\d{1,2}-?\\d{3,4}-?\\d{4}$/.test(String(p || '').replace(/\\s/g, ''));\nconst ok = [];\nconst issues = [];\nfor (const r of picked) {\n  const problems = [];\n  if (!String(r.수령인 || '').trim()) problems.push('받는 사람 없음');\n  if (!phoneOk(r.연락처)) problems.push('연락처 형식 오류');\n  if (String(r.주소 || '').trim().length < 8) problems.push('주소 없음/불완전');\n  if (problems.length) issues.push({ ...r, 문제: problems.join(', ') });\n  else ok.push(r);\n}\n\n// 품목 표기: 상품명(옵션) x수량\nconst item = (r) => `${r.상품명}${r.옵션 ? `(${r.옵션})` : ''} x${Number(r.수량) || 1}`;\n\nlet shipments;\nif (cfg.combineSameAddress) {\n  const groups = new Map();\n  for (const r of ok) {\n    const key = [r.수령인, String(r.연락처).replace(/\\D/g, ''), String(r.주소).replace(/\\s/g, '')].join('|');\n    if (!groups.has(key)) groups.set(key, []);\n    groups.get(key).push(r);\n  }\n  shipments = [...groups.values()].map((g) => ({\n    수령인: g[0].수령인,\n    연락처: g[0].연락처,\n    주소: g[0].주소,\n    품목: g.map(item).join(' / '),\n    수량: g.reduce((s, r) => s + (Number(r.수량) || 1), 0),\n    배송메모: [...new Set(g.map((r) => r.배송메모).filter(Boolean))].join(' / '),\n    주문번호: [...new Set(g.map((r) => r.주문번호))].join(','),\n    상품주문번호: g.map((r) => r.상품주문번호).join(','),\n    주문자: g[0].주문자,\n    결제금액: g.reduce((s, r) => s + (Number(r.결제금액) || 0), 0),\n    합포장: g.length > 1 ? `${g.length}건 합침` : '',\n  }));\n} else {\n  shipments = ok.map((r) => ({ ...r, 품목: item(r), 합포장: '' }));\n}\n\nconst date = kstNow.toISOString().slice(0, 10);\nreturn [{\n  json: {\n    date,\n    fileName: `${date}_택배업로드.xlsx`,\n    window: `${fmt(fromMs)} ~ ${fmt(nowMs)}`,\n    orderCount: picked.length,\n    shipmentCount: shipments.length,\n    combinedCount: shipments.filter((s) => s.합포장).length,\n    shipments,\n    issues,\n    processedIds: picked.map((r) => String(r.상품주문번호 || '')).filter(Boolean),\n    runAt: nowMs,\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "3bec2a32-6d10-5069-9fc7-8c5638323f15",
+      "name": "택배 있음?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1140,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "77f52ec7-4231-5194-8e52-52079071dbc5",
+              "leftValue": "={{ $json.shipmentCount > 0 }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "bbd96e8a-822e-5e6f-b36f-1757abfddeae",
+      "name": "엑셀 행 만들기",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "// 택배사 업로드 양식에 맞춰 엑셀 행 만들기\n// 열 구성은 '설정' 노드의 columnMap 에서 바꿉니다. 한 줄에 하나씩:\n//   엑셀열이름=필드이름        예) 받는분성명=수령인\n//   엑셀열이름=\"고정값\"        예) 운임구분=\"선불\"\n// 쓸 수 있는 필드: 수령인, 연락처, 주소, 품목, 수량, 배송메모, 주문번호, 상품주문번호, 주문자, 결제금액, 합포장\nconst cfg = $('설정').first().json;\nconst { shipments } = $input.first().json;\n\nconst columns = String(cfg.columnMap || '')\n  .split('\\n')\n  .map((l) => l.trim())\n  .filter((l) => l && !l.startsWith('#') && l.includes('='))\n  .map((l) => {\n    const i = l.indexOf('=');\n    const header = l.slice(0, i).trim();\n    const src = l.slice(i + 1).trim();\n    const fixed = src.match(/^\"(.*)\"$/);\n    return { header, get: fixed ? () => fixed[1] : (s) => s[src] ?? '' };\n  });\nif (!columns.length) throw new Error('설정 노드의 columnMap 이 비어 있습니다.');\n\nreturn shipments.map((s) => {\n  const row = {};\n  for (const c of columns) row[c.header] = c.get(s);\n  return { json: row };\n});\n"
+      }
+    },
+    {
+      "id": "2d7f8bc5-ad68-5c20-8178-bd8f77958ea1",
+      "name": "엑셀 파일 만들기",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1600,
+        -120
+      ],
+      "parameters": {
+        "operation": "xlsx",
+        "binaryPropertyName": "data",
+        "options": {
+          "fileName": "={{ $('출고 대상 선별').first().json.fileName }}",
+          "sheetName": "업로드",
+          "headerRow": true
+        }
+      }
+    },
+    {
+      "id": "e8e80965-717d-58df-811f-983498a8e84c",
+      "name": "메일 내용 (파일 첨부)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "// 메일 제목·본문 작성 (파일 있음 / 출고 대상 없음 공통)\nconst cfg = $('설정').first().json;\nconst s = $('출고 대상 선별').first().json;\nconst esc = (t) => String(t ?? '').replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst has = s.shipmentCount > 0;\n\nconst issueRows = s.issues.map((r) => `\n  <tr>\n    <td style=\"padding:6px 8px;border-bottom:1px solid #eee\">${esc(r.주문번호)}</td>\n    <td style=\"padding:6px 8px;border-bottom:1px solid #eee\">${esc(r.수령인)}</td>\n    <td style=\"padding:6px 8px;border-bottom:1px solid #eee\">${esc(r.상품명)}</td>\n    <td style=\"padding:6px 8px;border-bottom:1px solid #eee;color:#cf222e\">${esc(r.문제)}</td>\n  </tr>`).join('');\n\nconst html = `\n<div style=\"font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;max-width:600px;color:#1f2328\">\n  <p style=\"margin:0;color:#57606a\">${esc(cfg.shopName)} · ${s.date} 출고 준비</p>\n  <h2 style=\"margin:4px 0 12px\">${has ? `택배 ${s.shipmentCount}건 업로드 파일이 준비됐습니다` : '오늘 출고할 주문이 없습니다'}</h2>\n  <table style=\"border-collapse:collapse;margin-bottom:16px\">\n    <tr><td style=\"padding:4px 16px 4px 0;color:#57606a\">조회 기간</td><td>${esc(s.window)}</td></tr>\n    <tr><td style=\"padding:4px 16px 4px 0;color:#57606a\">주문</td><td>${s.orderCount}건</td></tr>\n    <tr><td style=\"padding:4px 16px 4px 0;color:#57606a\">택배</td><td><b>${s.shipmentCount}건</b>${s.combinedCount ? ` (합포장 ${s.combinedCount}건 포함)` : ''}</td></tr>\n    <tr><td style=\"padding:4px 16px 4px 0;color:#57606a\">확인 필요</td><td style=\"color:${s.issues.length ? '#cf222e' : 'inherit'}\"><b>${s.issues.length}건</b></td></tr>\n  </table>\n  ${has ? `<p>첨부한 <b>${esc(s.fileName)}</b> 파일을 택배사 사이트에 업로드하세요.</p>` : ''}\n  ${s.issues.length ? `\n  <h3 style=\"margin:20px 0 8px;color:#cf222e\">⚠ 확인 필요 (엑셀에 넣지 않았습니다)</h3>\n  <table style=\"width:100%;border-collapse:collapse;font-size:14px\">\n    <tr style=\"background:#f6f8fa\"><th style=\"padding:6px 8px;text-align:left\">주문번호</th><th style=\"padding:6px 8px;text-align:left\">받는 분</th><th style=\"padding:6px 8px;text-align:left\">상품</th><th style=\"padding:6px 8px;text-align:left\">문제</th></tr>\n    ${issueRows}\n  </table>\n  <p style=\"font-size:14px\">판매자센터에서 주문 정보를 확인한 뒤 따로 접수해 주세요.</p>` : ''}\n  <p style=\"margin-top:20px;padding:10px 12px;background:#fff8c5;border-radius:6px;font-size:14px\">\n    업로드 전, 그사이 <b>취소·환불된 주문</b>이 없는지 판매자센터에서 한 번 확인해 주세요.\n  </p>\n  <p style=\"color:#8c959f;font-size:12px;margin-top:24px\">이 메일은 n8n 자동화로 출고일 아침마다 발송됩니다.</p>\n</div>`;\n\nreturn [{\n  json: {\n    subject: has\n      ? `[${cfg.shopName}] ${s.date} 택배 ${s.shipmentCount}건 업로드 파일${s.issues.length ? ` · 확인 필요 ${s.issues.length}건` : ''}`\n      : `[${cfg.shopName}] ${s.date} 출고 대상 없음${s.issues.length ? ` · 확인 필요 ${s.issues.length}건` : ''}`,\n    html,\n  },\n  binary: $input.first().binary, // 엑셀 첨부 파일 그대로 전달\n}];\n"
+      }
+    },
+    {
+      "id": "84caa19d-b839-5e73-ba47-acc03b4a8f87",
+      "name": "메일 발송 (엑셀 첨부)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2040,
+        -120
+      ],
+      "parameters": {
+        "sendTo": "={{ $('설정').first().json.emailTo }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "a6b123e2-e4a2-5db5-ad63-125cfcc5f1df",
+      "name": "메일 내용 (출고 없음)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        140
+      ],
+      "parameters": {
+        "jsCode": "// 메일 제목·본문 작성 (파일 있음 / 출고 대상 없음 공통)\nconst cfg = $('설정').first().json;\nconst s = $('출고 대상 선별').first().json;\nconst esc = (t) => String(t ?? '').replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst has = s.shipmentCount > 0;\n\nconst issueRows = s.issues.map((r) => `\n  <tr>\n    <td style=\"padding:6px 8px;border-bottom:1px solid #eee\">${esc(r.주문번호)}</td>\n    <td style=\"padding:6px 8px;border-bottom:1px solid #eee\">${esc(r.수령인)}</td>\n    <td style=\"padding:6px 8px;border-bottom:1px solid #eee\">${esc(r.상품명)}</td>\n    <td style=\"padding:6px 8px;border-bottom:1px solid #eee;color:#cf222e\">${esc(r.문제)}</td>\n  </tr>`).join('');\n\nconst html = `\n<div style=\"font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;max-width:600px;color:#1f2328\">\n  <p style=\"margin:0;color:#57606a\">${esc(cfg.shopName)} · ${s.date} 출고 준비</p>\n  <h2 style=\"margin:4px 0 12px\">${has ? `택배 ${s.shipmentCount}건 업로드 파일이 준비됐습니다` : '오늘 출고할 주문이 없습니다'}</h2>\n  <table style=\"border-collapse:collapse;margin-bottom:16px\">\n    <tr><td style=\"padding:4px 16px 4px 0;color:#57606a\">조회 기간</td><td>${esc(s.window)}</td></tr>\n    <tr><td style=\"padding:4px 16px 4px 0;color:#57606a\">주문</td><td>${s.orderCount}건</td></tr>\n    <tr><td style=\"padding:4px 16px 4px 0;color:#57606a\">택배</td><td><b>${s.shipmentCount}건</b>${s.combinedCount ? ` (합포장 ${s.combinedCount}건 포함)` : ''}</td></tr>\n    <tr><td style=\"padding:4px 16px 4px 0;color:#57606a\">확인 필요</td><td style=\"color:${s.issues.length ? '#cf222e' : 'inherit'}\"><b>${s.issues.length}건</b></td></tr>\n  </table>\n  ${has ? `<p>첨부한 <b>${esc(s.fileName)}</b> 파일을 택배사 사이트에 업로드하세요.</p>` : ''}\n  ${s.issues.length ? `\n  <h3 style=\"margin:20px 0 8px;color:#cf222e\">⚠ 확인 필요 (엑셀에 넣지 않았습니다)</h3>\n  <table style=\"width:100%;border-collapse:collapse;font-size:14px\">\n    <tr style=\"background:#f6f8fa\"><th style=\"padding:6px 8px;text-align:left\">주문번호</th><th style=\"padding:6px 8px;text-align:left\">받는 분</th><th style=\"padding:6px 8px;text-align:left\">상품</th><th style=\"padding:6px 8px;text-align:left\">문제</th></tr>\n    ${issueRows}\n  </table>\n  <p style=\"font-size:14px\">판매자센터에서 주문 정보를 확인한 뒤 따로 접수해 주세요.</p>` : ''}\n  <p style=\"margin-top:20px;padding:10px 12px;background:#fff8c5;border-radius:6px;font-size:14px\">\n    업로드 전, 그사이 <b>취소·환불된 주문</b>이 없는지 판매자센터에서 한 번 확인해 주세요.\n  </p>\n  <p style=\"color:#8c959f;font-size:12px;margin-top:24px\">이 메일은 n8n 자동화로 출고일 아침마다 발송됩니다.</p>\n</div>`;\n\nreturn [{\n  json: {\n    subject: has\n      ? `[${cfg.shopName}] ${s.date} 택배 ${s.shipmentCount}건 업로드 파일${s.issues.length ? ` · 확인 필요 ${s.issues.length}건` : ''}`\n      : `[${cfg.shopName}] ${s.date} 출고 대상 없음${s.issues.length ? ` · 확인 필요 ${s.issues.length}건` : ''}`,\n    html,\n  },\n  binary: $input.first().binary, // 엑셀 첨부 파일 그대로 전달\n}];\n"
+      }
+    },
+    {
+      "id": "7ef9368b-77e7-5939-9b62-05bddd8b86bb",
+      "name": "메일 발송 (알림)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1600,
+        140
+      ],
+      "parameters": {
+        "sendTo": "={{ $('설정').first().json.emailTo }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      }
+    },
+    {
+      "id": "c8832389-e85c-52dd-8999-fb942c30dd8b",
+      "name": "처리 완료 기록",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// 메일 발송이 끝난 뒤에만 '처리 완료'로 기록 (발송 실패 시 다음 실행 때 다시 포함됨)\nconst cfg = $('설정').first().json;\nconst s = $('출고 대상 선별').first().json;\nif (cfg.demoMode !== true) {\n  const store = $getWorkflowStaticData('global');\n  store.lastRunAt = s.runAt;\n  store.sentIds = [...new Set([...(store.sentIds || []), ...s.processedIds])].slice(-5000);\n}\nreturn [{ json: { done: true, date: s.date, shipments: s.shipmentCount, issues: s.issues.length } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "출고일 08:40": {
+      "main": [
+        [
+          {
+            "node": "설정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "설정": {
+      "main": [
+        [
+          {
+            "node": "데모 모드?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "데모 모드?": {
+      "main": [
+        [
+          {
+            "node": "샘플 주문 (데모)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "주문 시트 읽기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "샘플 주문 (데모)": {
+      "main": [
+        [
+          {
+            "node": "출고 대상 선별",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "주문 시트 읽기": {
+      "main": [
+        [
+          {
+            "node": "출고 대상 선별",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "출고 대상 선별": {
+      "main": [
+        [
+          {
+            "node": "택배 있음?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "택배 있음?": {
+      "main": [
+        [
+          {
+            "node": "엑셀 행 만들기",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "메일 내용 (출고 없음)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "엑셀 행 만들기": {
+      "main": [
+        [
+          {
+            "node": "엑셀 파일 만들기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "엑셀 파일 만들기": {
+      "main": [
+        [
+          {
+            "node": "메일 내용 (파일 첨부)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "메일 내용 (파일 첨부)": {
+      "main": [
+        [
+          {
+            "node": "메일 발송 (엑셀 첨부)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "메일 발송 (엑셀 첨부)": {
+      "main": [
+        [
+          {
+            "node": "처리 완료 기록",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "메일 내용 (출고 없음)": {
+      "main": [
+        [
+          {
+            "node": "메일 발송 (알림)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "메일 발송 (알림)": {
+      "main": [
+        [
+          {
+            "node": "처리 완료 기록",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

@@ -98,7 +98,7 @@ def code_node(wf, name, pos, file, mode=None):
 def if_node(wf, name, pos, left, op="true", right=None, combinator="and", extra=None):
     """IF(v2.2). 기본은 boolean true 검사."""
     def cond(l, o, r):
-        c = {"id": str(uuid.uuid4()), "leftValue": l}
+        c = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"{wf.name}/{name}/{l}")), "leftValue": l}
         if o == "true":
             c["operator"] = {"type": "boolean", "operation": "true", "singleValue": True}
             c["rightValue"] = ""
@@ -369,8 +369,98 @@ def build_w3():
     return wf
 
 
+# ---------- ④ 매일 아침 택배 업로드 엑셀 자동 생성 ----------
+
+CJ_COLUMNS = """받는분성명=수령인
+받는분전화번호=연락처
+받는분주소=주소
+품목명=품목
+내품수량=수량
+배송메세지=배송메모
+고객주문번호=주문번호
+합포장=합포장"""
+
+
+def build_w4():
+    wf = WF("④ 매일 아침 택배 업로드 엑셀 자동 생성 → 메일 첨부")
+    wf.sticky(
+        "## ④ 택배 업로드 엑셀 자동 생성\n"
+        "출고일(월~토) 오전 8:40, 구글시트 `주문` 탭(워크플로 ①이 기록)에서\n"
+        "지난번 이후 결제된 주문을 골라 **택배사 업로드용 엑셀 파일**을 새로 만들고\n"
+        "메일에 첨부해서 보냅니다.\n\n"
+        "- 같은 사람·같은 주소 주문은 한 박스로 합침 (`combineSameAddress`)\n"
+        "- 주소·연락처가 이상한 주문은 엑셀에서 빼고 메일에 '확인 필요'로 표시\n"
+        "- 한 번 보낸 주문은 다음 파일에 다시 들어가지 않음\n\n"
+        "엑셀 열 이름·순서는 `설정 → columnMap`에서 택배사 양식에 맞게 바꾸세요.",
+        (-80, -380), w=600, h=330, color=4)
+
+    t = wf.node("출고일 08:40", "n8n-nodes-base.scheduleTrigger", 1.2, (0, 0),
+                {"rule": {"interval": [{"field": "cronExpression", "expression": "40 8 * * 1-6"}]}})
+    cfg = set_node(wf, "설정", (220, 0), [
+        ("demoMode", True),
+        ("shopName", "곡물상회"),
+        ("sheetUrl", "https://docs.google.com/spreadsheets/d/여기에_시트_ID/edit"),
+        ("emailTo", "owner@example.com"),
+        ("combineSameAddress", True),
+        ("columnMap", CJ_COLUMNS),
+    ])
+    demo = if_node(wf, "데모 모드?", (440, 0), "={{ $json.demoMode }}")
+    sample = code_node(wf, "샘플 주문 (데모)", (680, -140), "w4_sample_rows.js")
+    read = wf.node("주문 시트 읽기", "n8n-nodes-base.googleSheets", 4.5, (680, 140), {
+        "documentId": {"__rl": True, "value": "={{ $('설정').first().json.sheetUrl }}", "mode": "url"},
+        "sheetName": {"__rl": True, "value": "주문", "mode": "name"},
+        "options": {},
+    }, alwaysOutputData=True)
+    sel = code_node(wf, "출고 대상 선별", (920, 0), "w4_select.js")
+    has = if_node(wf, "택배 있음?", (1140, 0), "={{ $json.shipmentCount > 0 }}")
+    rows = code_node(wf, "엑셀 행 만들기", (1380, -120), "w4_excel_rows.js")
+    xlsx = wf.node("엑셀 파일 만들기", "n8n-nodes-base.convertToFile", 1.1, (1600, -120), {
+        "operation": "xlsx",
+        "binaryPropertyName": "data",
+        "options": {
+            "fileName": "={{ $('출고 대상 선별').first().json.fileName }}",
+            "sheetName": "업로드",
+            "headerRow": True,
+        },
+    })
+    body1 = code_node(wf, "메일 내용 (파일 첨부)", (1820, -120), "w4_email.js")
+    mail1 = wf.node("메일 발송 (엑셀 첨부)", "n8n-nodes-base.gmail", 2.1, (2040, -120), {
+        "sendTo": "={{ $('설정').first().json.emailTo }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+            "appendAttribution": False,
+            "attachmentsUi": {"attachmentsBinary": [{"property": "data"}]},
+        },
+    })
+    body2 = code_node(wf, "메일 내용 (출고 없음)", (1380, 140), "w4_email.js")
+    mail2 = wf.node("메일 발송 (알림)", "n8n-nodes-base.gmail", 2.1, (1600, 140), {
+        "sendTo": "={{ $('설정').first().json.emailTo }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {"appendAttribution": False},
+    })
+    done = code_node(wf, "처리 완료 기록", (2280, 0), "w4_mark_done.js")
+
+    wf.chain(t, cfg, demo)
+    wf.link(demo, sample, 0)
+    wf.link(demo, read, 1)
+    wf.link(sample, sel)
+    wf.link(read, sel)
+    wf.link(sel, has)
+    wf.link(has, rows, 0)
+    wf.link(has, body2, 1)
+    wf.chain(rows, xlsx, body1, mail1, done)
+    wf.chain(body2, mail2, done)
+    wf.dump("04_택배업로드_엑셀_자동생성.json")
+    return wf
+
+
 if __name__ == "__main__":
     print("n8n 워크플로 빌드:")
     build_w1()
     build_w2()
     build_w3()
+    build_w4()

@@ -128,7 +128,7 @@
           },
           "conditions": [
             {
-              "id": "1500d4cf-c4fd-47dc-8552-458d9a66d397",
+              "id": "d8568258-185a-514d-83cf-95d5c45aa661",
               "leftValue": "={{ $('설정').first().json.demoMode }}",
               "operator": {
                 "type": "boolean",
@@ -240,7 +240,7 @@
           },
           "conditions": [
             {
-              "id": "0a1d6570-fcbb-47f5-b973-82400fae2087",
+              "id": "24ca816d-9d9b-5dca-8137-a02f9f680ede",
               "leftValue": "={{ $json.urgent }}",
               "operator": {
                 "type": "boolean",

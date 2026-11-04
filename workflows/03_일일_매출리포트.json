@@ -115,7 +115,7 @@
           },
           "conditions": [
             {
-              "id": "d7796f73-a16c-4d8d-a2ab-670609f12b5e",
+              "id": "529576ef-b11e-5411-94fe-c3d487f54260",
               "leftValue": "={{ $json.demoMode }}",
               "operator": {
                 "type": "boolean",
@@ -200,7 +200,7 @@
           },
           "conditions": [
             {
-              "id": "5df1dcdc-ff43-4909-ab19-c9775f584adb",
+              "id": "094ad2ae-6c64-55b8-b63f-fe08b6591e89",
               "leftValue": "={{ $('설정').first().json.useAI }}",
               "operator": {
                 "type": "boolean",
@@ -210,7 +210,7 @@
               "rightValue": ""
             },
             {
-              "id": "d92df77b-ce0e-4333-b434-b78d72e4119e",
+              "id": "008e8027-cb81-5e93-8943-7cd5e9a565b3",
               "leftValue": "={{ !$('설정').first().json.demoMode }}",
               "operator": {
                 "type": "boolean",
