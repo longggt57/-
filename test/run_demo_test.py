@@ -28,12 +28,53 @@ SAMPLE_INQUIRIES = {
 }
 
 
-def make_test_copy(wf, idx, inquiry=None):
+# 실제 API 경로 테스트용: 외부 호출 노드를 가짜 응답을 내는 코드 노드로 바꿉니다.
+W5_MOCKS = {
+    "네이버 토큰 발급": "return [{ json: { access_token: 'tok' } }];",
+    "스마트스토어 변경 주문": """return $input.all().map((_, i) => ({ json: { data: { lastChangeStatuses: i === 0
+      ? [{ productOrderId: 'P1', lastChangedType: 'PAYED' }, { productOrderId: 'P2', lastChangedType: 'PAYED' }]
+      : [{ productOrderId: 'P2', lastChangedType: 'PAYED' }] } } }));""",
+    "스마트스토어 주문 상세": """const ids = $input.first().json.productOrderIds;
+      const mk = (id, name, who, addr) => ({ order: { orderId: 'O' + id, paymentDate: '2026-11-04T09:00:00.000+09:00', ordererName: who },
+        productOrder: { productOrderId: id, productName: name, quantity: 1, totalPaymentAmount: 10000,
+          shippingAddress: { name: who, tel1: '010-1111-2222', baseAddress: addr, detailedAddress: '101호', zipCode: '03000' } } });
+      return [{ json: { data: ids.map((id) => id === 'P1' ? mk(id, '현미 4kg', '가나다', '서울특별시 종로구 세종대로 1') : mk(id, '찹쌀 2kg', '라마바', '부산광역시 중구 중앙대로 2')) } }];""",
+    "쿠팡 서명 (HMAC)": "return [{ json: { ...$input.first().json, signature: 'deadbeef' } }];",
+    "쿠팡 발주서 조회": """return [{ json: { code: 200, data: [{ shipmentBoxId: 111, orderId: 222, paidAt: '2026-11-04T08:00:00',
+      orderer: { name: '가나다' }, receiver: { name: '가나다', safeNumber: '0503-1111-2222', addr1: '서울특별시 종로구 세종대로 1', addr2: '101호', postCode: '03000' },
+      parcelPrintMessage: '문 앞', orderItems: [{ vendorItemId: 9, sellerProductName: '귀리 1kg', sellerProductItemName: '1개', shippingCount: 2, orderPrice: 15000 }] }] } }];""",
+}
+GOOGLE_MOCKS = {
+    "구글시트 새 파일 만들기": """const req = $input.first().json.createRequest;
+      if (!req?.properties?.title || req.sheets.length !== 3) throw new Error('생성 요청 형식 오류');
+      return [{ json: { spreadsheetId: 'TEST_SHEET_ID', spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/TEST_SHEET_ID/edit',
+        sheets: req.sheets } }];""",
+    "시트에 데이터 쓰기": """const b = $input.first().json.valuesBody;
+      if (b.valueInputOption !== 'RAW' || b.data.length !== 3) throw new Error('쓰기 요청 형식 오류');
+      return [{ json: { spreadsheetId: 'TEST_SHEET_ID', totalUpdatedRows: b.data.reduce((s, d) => s + d.values.length, 0) } }];""",
+    "시트 서식 (머리글·열 너비)": "return [{ json: { spreadsheetId: 'TEST_SHEET_ID', replies: [] } }];",
+    "드라이브 폴더로 이동": "return [{ json: { id: 'TEST_SHEET_ID' } }];",
+}
+W5_SETTINGS = {"demoMode": False, "naverClientId": "test-client",
+               "naverClientSecret": "$2a$04$abcdefghijklmnopqrstuu", "coupangVendorId": "A00012345", "coupangAccessKey": "ak"}
+
+
+def make_test_copy(wf, idx, inquiry=None, mocks=None, settings=None):
     wf = copy.deepcopy(wf)
     wf["id"] = f"kmongdemo{idx:07d}"  # 16자 영숫자
     wf["active"] = False
     for n in wf["nodes"]:
-        if n["type"] in EXTERNAL:
+        if mocks and n["name"] in mocks:
+            n.update(type="n8n-nodes-base.code", typeVersion=2, parameters={"jsCode": mocks[n["name"]]})
+            n.pop("credentials", None)
+            continue
+        if settings and n["name"] == "설정":
+            for a in n["parameters"]["assignments"]["assignments"]:
+                if a["name"] in settings:
+                    a["value"] = settings[a["name"]]
+                    a["type"] = "boolean" if isinstance(settings[a["name"]], bool) else "string"
+        if n["type"] in EXTERNAL or (n["type"] == "n8n-nodes-base.httpRequest"
+                                     and "googleapis.com" in str(n["parameters"].get("url", ""))):
             n["disabled"] = True
         elif n["type"] in TRIGGERS:
             if n["type"] == "n8n-nodes-base.webhook":
@@ -103,7 +144,10 @@ def main():
             for k, inq in SAMPLE_INQUIRIES.items():
                 cases.append((f"{f.stem} [{k}]", make_test_copy(wf, i * 10 + len(cases), inq)))
         else:
-            cases.append((f.stem, make_test_copy(wf, i)))
+            cases.append((f.stem, make_test_copy(wf, i, mocks=GOOGLE_MOCKS)))
+        if f.stem.startswith("05_"):
+            cases.append((f"{f.stem} [실제 경로·가짜 API]",
+                          make_test_copy(wf, 90 + i, mocks={**W5_MOCKS, **GOOGLE_MOCKS}, settings={**W5_SETTINGS, "driveFolderId": "FOLDER1"})))
 
     failed = 0
     report = {}

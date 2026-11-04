@@ -458,9 +458,188 @@ def build_w4():
     return wf
 
 
+# ---------- ⑤ 판매채널 주문 취합 → 택배 업로드 엑셀 + 구글 스프레드시트 자동 생성 ----------
+
+def google_http(wf, name, pos, method, url, body_expr=None, cred="googleSheetsOAuth2Api"):
+    p = {
+        "method": method,
+        "url": url,
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": cred,
+        "options": {},
+    }
+    if body_expr:
+        p.update({"sendBody": True, "specifyBody": "json", "jsonBody": body_expr})
+    return wf.node(name, "n8n-nodes-base.httpRequest", 4.2, pos, p, retryOnFail=True, maxTries=3, waitBetweenTries=3000)
+
+
+def build_w5():
+    wf = WF("⑤ 판매채널 주문 취합 → 택배 업로드 엑셀 + 구글 스프레드시트 자동 생성")
+    wf.sticky(
+        "## ⑤ 주문 취합 · 택배 업로드 자동화\n"
+        "출고일 아침마다 **스마트스토어 + 쿠팡** 새 주문을 API로 가져와 하나로 합치고\n"
+        "1. 구글 스프레드시트를 **새로 만들어** 탭 3개(택배업로드 · 주문전체 · 확인필요)에 정리\n"
+        "2. 택배사 업로드용 **엑셀 파일** 생성\n"
+        "3. 시트 링크 + 엑셀 첨부를 메일로, 요약은 슬랙으로\n\n"
+        "- 판매처가 달라도 같은 집이면 합포장\n"
+        "- 주소·연락처 이상 주문은 '확인필요' 탭으로 분리\n"
+        "- 한 번 처리한 주문은 다시 들어가지 않음\n\n"
+        "판매처 키를 비워 두면 그 판매처는 건너뜁니다. demoMode=true 이면 샘플 주문 8건으로 시연합니다.",
+        (-80, -460), w=640, h=400, color=4)
+
+    t = wf.node("출고일 08:40", "n8n-nodes-base.scheduleTrigger", 1.2, (0, 0),
+                {"rule": {"interval": [{"field": "cronExpression", "expression": "40 8 * * 1-6"}]}})
+    cfg = set_node(wf, "설정", (220, 0), [
+        ("demoMode", True),
+        ("shopName", "곡물상회"),
+        ("naverClientId", ""),
+        ("naverClientSecret", ""),
+        ("naverLookbackHours", 0),
+        ("coupangVendorId", ""),
+        ("coupangAccessKey", ""),
+        ("coupangStatus", "ACCEPT"),
+        ("coupangLookbackDays", 2),
+        ("combineSameAddress", True),
+        ("columnMap", "판매처=판매처\n" + CJ_COLUMNS + "\n우편번호=우편번호"),
+        ("driveFolderId", ""),
+        ("emailTo", "owner@example.com"),
+        ("slackChannel", ""),
+    ])
+    demo = if_node(wf, "데모 모드?", (440, 0), "={{ $json.demoMode }}")
+    sample = code_node(wf, "샘플 주문 (데모)", (700, -260), "w5_sample.js")
+
+    # 스마트스토어
+    use_n = if_node(wf, "스마트스토어 연결?", (700, 120), "={{ !!$('설정').first().json.naverClientId }}")
+    sign = code_node(wf, "네이버 API 서명 생성", (940, 0), "w1_naver_sign.js")
+    token = wf.node("네이버 토큰 발급", "n8n-nodes-base.httpRequest", 4.2, (1160, 0), {
+        "method": "POST", "url": f"{NAVER}/v1/oauth2/token",
+        "sendBody": True, "contentType": "form-urlencoded",
+        "bodyParameters": {"parameters": [{"name": k, "value": f"={{{{ $json.{k} }}}}"}
+                                          for k in ("client_id", "timestamp", "client_secret_sign", "grant_type", "type")]},
+        "options": {},
+    }, retryOnFail=True, maxTries=3, waitBetweenTries=3000)
+    win = code_node(wf, "조회 구간 나누기 (24시간)", (1380, 0), "w5_naver_windows.js")
+    changed = wf.node("스마트스토어 변경 주문", "n8n-nodes-base.httpRequest", 4.2, (1600, 0), {
+        "method": "GET", "url": f"{NAVER}/v1/pay-order/seller/product-orders/last-changed-statuses",
+        "sendQuery": True, "queryParameters": {"parameters": [
+            {"name": "lastChangedFrom", "value": "={{ $json.lastChangedFrom }}"},
+            {"name": "lastChangedTo", "value": "={{ $json.lastChangedTo }}"},
+            {"name": "lastChangedType", "value": "PAYED"}]},
+        "sendHeaders": True, "headerParameters": {"parameters": [
+            {"name": "Authorization", "value": "=Bearer {{ $json.access_token }}"}]},
+        "options": {},
+    }, retryOnFail=True, maxTries=3, waitBetweenTries=3000)
+    ids = code_node(wf, "상품주문번호 추출", (1820, 0), "w5_naver_ids.js")
+    new_n = if_node(wf, "스마트스토어 새 주문?", (2040, 0), "={{ $json.productOrderIds.length > 0 }}")
+    detail = wf.node("스마트스토어 주문 상세", "n8n-nodes-base.httpRequest", 4.2, (2260, -80), {
+        "method": "POST", "url": f"{NAVER}/v1/pay-order/seller/product-orders/query",
+        "sendHeaders": True, "headerParameters": {"parameters": [
+            {"name": "Authorization", "value": "=Bearer {{ $('네이버 토큰 발급').first().json.access_token }}"}]},
+        "sendBody": True, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ productOrderIds: $json.productOrderIds }) }}",
+        "options": {},
+    }, retryOnFail=True, maxTries=3, waitBetweenTries=3000)
+    n_norm = code_node(wf, "스마트스토어 정리", (2480, 0), "w5_naver_normalize.js")
+
+    # 쿠팡
+    use_c = if_node(wf, "쿠팡 연결?", (2700, 120), "={{ !!$('설정').first().json.coupangAccessKey }}")
+    c_prep = code_node(wf, "쿠팡 요청 준비", (2920, 240), "w5_coupang_prepare.js")
+    c_sign = wf.node("쿠팡 서명 (HMAC)", "n8n-nodes-base.crypto", 2, (3140, 240), {
+        "action": "hmac", "type": "SHA256", "value": "={{ $json.message }}",
+        "dataPropertyName": "signature", "encoding": "hex",
+    })
+    c_get = wf.node("쿠팡 발주서 조회", "n8n-nodes-base.httpRequest", 4.2, (3360, 240), {
+        "method": "GET",
+        "url": "=https://api-gateway.coupang.com{{ $json.path }}?{{ $json.query }}",
+        "sendHeaders": True, "headerParameters": {"parameters": [
+            {"name": "Authorization", "value": "=CEA algorithm=HmacSHA256, access-key={{ $('설정').first().json.coupangAccessKey }}, signed-date={{ $json.signedDate }}, signature={{ $json.signature }}"},
+            {"name": "Content-Type", "value": "application/json;charset=UTF-8"}]},
+        "options": {},
+    }, retryOnFail=True, maxTries=3, waitBetweenTries=3000)
+    c_norm = code_node(wf, "쿠팡 정리", (3580, 240), "w5_coupang_normalize.js")
+
+    # 취합 → 출력
+    col = code_node(wf, "주문 취합", (3820, 0), "w5_collect.js")
+    has = if_node(wf, "택배 있음?", (4040, 0), "={{ $json.shipmentCount > 0 }}")
+    g_new = google_http(wf, "구글시트 새 파일 만들기", (4280, -140), "POST",
+                        "https://sheets.googleapis.com/v4/spreadsheets", "={{ JSON.stringify($json.createRequest) }}")
+    g_req = code_node(wf, "시트 쓰기 요청 구성", (4500, -140), "w5_sheet_requests.js")
+    g_val = google_http(wf, "시트에 데이터 쓰기", (4720, -140), "POST",
+                        "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheetId }}/values:batchUpdate",
+                        "={{ JSON.stringify($json.valuesBody) }}")
+    g_fmt = google_http(wf, "시트 서식 (머리글·열 너비)", (4940, -140), "POST",
+                        "=https://sheets.googleapis.com/v4/spreadsheets/{{ $('시트 쓰기 요청 구성').first().json.spreadsheetId }}:batchUpdate",
+                        "={{ JSON.stringify($('시트 쓰기 요청 구성').first().json.formatBody) }}")
+    use_f = if_node(wf, "드라이브 폴더 지정?", (5160, -140), "={{ !!$('설정').first().json.driveFolderId }}")
+    g_move = google_http(wf, "드라이브 폴더로 이동", (5380, -260), "PATCH",
+                         "=https://www.googleapis.com/drive/v3/files/{{ $('시트 쓰기 요청 구성').first().json.spreadsheetId }}"
+                         "?addParents={{ $('설정').first().json.driveFolderId }}&removeParents=root&fields=id,parents",
+                         cred="googleDriveOAuth2Api")
+    rows = code_node(wf, "엑셀 행 만들기", (5600, -140), "w5_excel_rows.js")
+    xlsx = wf.node("엑셀 파일 만들기", "n8n-nodes-base.convertToFile", 1.1, (5820, -140), {
+        "operation": "xlsx", "binaryPropertyName": "data",
+        "options": {"fileName": "={{ $('주문 취합').first().json.fileName }}", "sheetName": "택배업로드", "headerRow": True},
+    })
+    n1 = code_node(wf, "알림 내용 (파일 첨부)", (6040, -140), "w5_notify.js")
+    m1 = wf.node("메일 발송 (시트 링크 + 엑셀)", "n8n-nodes-base.gmail", 2.1, (6260, -140), {
+        "sendTo": "={{ $('설정').first().json.emailTo }}", "subject": "={{ $json.subject }}",
+        "emailType": "html", "message": "={{ $json.html }}",
+        "options": {"appendAttribution": False, "attachmentsUi": {"attachmentsBinary": [{"property": "data"}]}},
+    })
+    n2 = code_node(wf, "알림 내용 (출고 없음)", (4280, 160), "w5_notify.js")
+    m2 = wf.node("메일 발송 (알림)", "n8n-nodes-base.gmail", 2.1, (4500, 160), {
+        "sendTo": "={{ $('설정').first().json.emailTo }}", "subject": "={{ $json.subject }}",
+        "emailType": "html", "message": "={{ $json.html }}", "options": {"appendAttribution": False},
+    })
+    use_s = if_node(wf, "슬랙 사용?", (6480, 0), "={{ !!$('설정').first().json.slackChannel }}")
+    slack = slack_node(wf, "슬랙 요약", (6700, -100),
+                       "={{ $('설정').first().json.slackChannel }}",
+                       "={{ $('알림 내용 (파일 첨부)').isExecuted ? $('알림 내용 (파일 첨부)').first().json.slackText : $('알림 내용 (출고 없음)').first().json.slackText }}")
+    done = code_node(wf, "처리 완료 기록", (6920, 0), "w5_mark_done.js")
+
+    wf.chain(t, cfg, demo)
+    wf.link(demo, sample, 0)
+    wf.link(demo, use_n, 1)
+    wf.link(sample, col)
+    wf.link(use_n, sign, 0)
+    wf.link(use_n, use_c, 1)
+    wf.chain(sign, token, win, changed, ids, new_n)
+    wf.link(new_n, detail, 0)
+    wf.link(new_n, n_norm, 1)
+    wf.link(detail, n_norm)
+    wf.link(n_norm, use_c)
+    wf.link(use_c, c_prep, 0)
+    wf.link(use_c, col, 1)
+    wf.chain(c_prep, c_sign, c_get, c_norm, col)
+    wf.link(col, has)
+    wf.link(has, g_new, 0)
+    wf.link(has, n2, 1)
+    wf.chain(g_new, g_req, g_val, g_fmt, use_f)
+    wf.link(use_f, g_move, 0)
+    wf.link(use_f, rows, 1)
+    wf.link(g_move, rows)
+    wf.chain(rows, xlsx, n1, m1, use_s)
+    wf.chain(n2, m2, use_s)
+    wf.link(use_s, slack, 0)
+    wf.link(use_s, done, 1)
+    wf.link(slack, done)
+    # 보기 좋게 두 줄 배치: 윗줄 = 판매처별 수집, 아랫줄 = 취합 이후 출력
+    out_names = {col, has, g_new, g_req, g_val, g_fmt, use_f, g_move, rows, xlsx, n1, m1, n2, m2, use_s, slack, done}
+    for n in wf.nodes:
+        if n["name"] in out_names:
+            n["position"] = [n["position"][0] - 3380, n["position"][1] + 720]
+    wf.sticky("### 1단계 · 판매처별 주문 수집\n스마트스토어(24시간 구간 조회) → 쿠팡(HMAC 서명) → 공통 형식으로 정리",
+              (940, -300), w=560, h=110, color=7)
+    wf.sticky("### 2단계 · 취합 → 구글시트 · 엑셀 · 알림\n중복 제외 · 검증 · 합포장 → 새 스프레드시트(탭 3개) + 엑셀 첨부 메일 + 슬랙",
+              (180, 440), w=560, h=110, color=7)
+    wf.dump("05_주문취합_택배엑셀_구글시트_자동생성.json")
+    return wf
+
+
 if __name__ == "__main__":
     print("n8n 워크플로 빌드:")
     build_w1()
     build_w2()
     build_w3()
     build_w4()
+    build_w5()

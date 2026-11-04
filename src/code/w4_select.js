@@ -33,7 +33,7 @@ for (const { json: r } of $input.all()) {
 }
 
 // 검증
-const phoneOk = (p) => /^0\d{1,2}-?\d{3,4}-?\d{4}$/.test(String(p || '').replace(/\s/g, ''));
+const phoneOk = (p) => /^0\d{1,3}-?\d{3,4}-?\d{4}$/.test(String(p || '').replace(/\s/g, ''));
 const ok = [];
 const issues = [];
 for (const r of picked) {

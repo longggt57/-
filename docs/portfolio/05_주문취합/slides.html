@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>주문 취합 자동화 포트폴리오</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Do+Hyeon&display=swap">
+<style>
+/* 크몽 포트폴리오 이미지용 4:3 슬라이드 (1200×900). 운송장 라벨 모티프: 라벨 노랑 + 잉크 + 차가운 회색 */
+:root {
+  --bg: #eef0f3; --paper: #fff; --ink: #14181d; --muted: #5b6470; --line: #d3d8df;
+  --label: #ffd23f; --accent: #1d4ed8; --ok: #1a7f4b; --warn: #b42318; --soft: #f6f7f9;
+  --display: "Do Hyeon", "IBM Plex Sans KR", sans-serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #888; font-family: var(--body); color: var(--ink); }
+.slide {
+  width: 1200px; height: 900px; background: var(--bg); position: relative; overflow: hidden;
+  padding: 64px 72px; display: flex; flex-direction: column; gap: 28px; margin: 0 auto 24px;
+}
+.eyebrow { display: flex; gap: 10px; align-items: center; font-size: 18px; color: var(--muted); }
+.tape { background: var(--label); color: var(--ink); font-weight: 700; padding: 5px 14px; transform: rotate(-1.2deg); display: inline-block; }
+h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; line-height: 1.15; text-wrap: balance; }
+h1 { font-size: 64px; }
+h2 { font-size: 46px; }
+.sub { font-size: 22px; color: var(--muted); margin: 0; max-width: 46ch; line-height: 1.55; }
+.foot { position: absolute; left: 72px; right: 72px; bottom: 36px; display: flex; justify-content: space-between; font-size: 15px; color: var(--muted); }
+.foot b { font-family: var(--mono); color: var(--ink); }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
+
+/* 1. 표지 흐름도 */
+.flow { display: grid; grid-template-columns: 1fr auto 1.1fr auto 1.2fr; align-items: center; gap: 18px; margin-top: 8px; }
+.col { display: grid; gap: 12px; }
+.box { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; font-size: 20px; font-weight: 700; display: grid; gap: 2px; }
+.box small { font-weight: 400; color: var(--muted); font-size: 15px; }
+.box.core { background: var(--ink); color: #fff; border-color: var(--ink); text-align: center; padding: 26px 18px; }
+.box.core small { color: #b9c1cc; }
+.box.out { border-left: 6px solid var(--label); }
+.arrow { font-family: var(--mono); font-size: 34px; color: var(--muted); }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: auto; margin-bottom: 40px; }
+.kpi { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px; display: grid; gap: 4px; }
+.kpi span { color: var(--muted); font-size: 16px; }
+.kpi b { font-family: var(--display); font-weight: 400; font-size: 36px; }
+
+/* 2. 전/후 */
+.ba { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1; margin-bottom: 40px; }
+.ba .card { padding: 28px 30px; display: grid; align-content: start; gap: 14px; }
+.ba h3 { margin: 0; font-size: 26px; display: flex; justify-content: space-between; align-items: baseline; }
+.ba h3 b { font-family: var(--mono); font-size: 22px; }
+.ba ol { margin: 0; padding-left: 26px; display: grid; gap: 12px; font-size: 20px; line-height: 1.45; }
+.ba .before h3 b { color: var(--warn); }
+.ba .after { border: 2px solid var(--ink); }
+.ba .after h3 { background: var(--label); margin: -28px -30px 4px; padding: 18px 30px; border-radius: 12px 12px 0 0; }
+.pain { color: var(--warn); font-size: 17px; }
+
+/* 3. 흐름 스크린샷 */
+.shot { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
+.shot img { width: 100%; display: block; border-radius: 6px; }
+.shot .cap { font-size: 18px; display: flex; gap: 12px; align-items: baseline; }
+.shot .cap b { background: var(--ink); color: #fff; font-family: var(--mono); font-size: 14px; padding: 2px 8px; border-radius: 4px; }
+
+/* 4. 스프레드시트 */
+.sheet { flex-shrink: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 14px; }
+.sheet .bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--soft); }
+.sheet .bar b { font-size: 16px; }
+.sheet .bar span { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.grid td { border: 1px solid #e3e6ea; padding: 6px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.grid tr.h td { font-weight: 700; }
+.grid td.n { background: var(--soft); color: var(--muted); text-align: center; width: 34px; }
+.tabs { display: flex; gap: 2px; padding: 0 10px; border-top: 1px solid var(--line); background: var(--soft); }
+.tabs span { padding: 8px 16px; font-size: 14px; color: var(--muted); }
+.tabs span.on { background: var(--paper); color: var(--ink); font-weight: 700; border-bottom: 3px solid var(--ok); }
+.tag { background: var(--label); font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+.mini { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; }
+.grid.wrap td { white-space: normal; overflow: visible; text-overflow: clip; vertical-align: top; line-height: 1.4; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip { background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-size: 17px; }
+.chip b { font-family: var(--mono); }
+
+/* 5. 엑셀 + 메일 */
+.two { display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; align-items: start; margin-bottom: 40px; }
+.mail { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+.mail .bar { padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--muted); background: var(--soft); }
+.mail .body { overflow: hidden; }
+.mail img { width: 100%; display: block; }
+.xl .bar { background: #217346; color: #fff; }
+.right { display: grid; gap: 16px; }
+.chat { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.chat .bar { padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--muted); background: var(--soft); font-weight: 700; }
+.chat .msg { padding: 14px 16px; font-size: 16px; line-height: 1.6; }
+.chat .w { color: var(--warn); }
+.chat u { color: var(--accent); }
+.xl .bar span { color: #d6efe0; }
+
+/* 6. 기능·기술 */
+.feat { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; flex: 1; margin-bottom: 40px; }
+.feat ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.feat li { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; font-size: 19px; display: grid; gap: 2px; }
+.feat li small { color: var(--muted); font-size: 15px; }
+.side { display: grid; gap: 18px; align-content: start; }
+.side .card { padding: 20px 22px; display: grid; gap: 12px; }
+.side h3 { margin: 0; font-size: 18px; color: var(--muted); font-weight: 500; }
+.scope { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 18px; }
+.scope span { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- 1. 표지 -->
+<section class="slide" id="s1">
+  <div class="eyebrow"><span class="tape">업무 자동화 · 온라인 쇼핑몰</span><span>n8n · 판매처 API · Google Sheets</span></div>
+  <h1>스마트스토어 · 쿠팡 주문 취합<br>→ 택배 업로드 엑셀 + 구글시트 자동 생성</h1>
+  <p class="sub">출고일 아침마다 두 판매처의 새 주문을 모아, 택배사에 바로 올릴 엑셀과 정리된 스프레드시트를 만들어 메일로 보내 드립니다.</p>
+  <div class="flow">
+    <div class="col">
+      <div class="box">스마트스토어<small>커머스 API</small></div>
+      <div class="box">쿠팡<small>Wing Open API</small></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="box core">n8n 자동화<small>취합 · 중복 제외 · 검증 · 합포장</small></div>
+    <div class="arrow">→</div>
+    <div class="col">
+      <div class="box out">구글 스프레드시트<small>매일 새 파일 · 탭 3개</small></div>
+      <div class="box out">택배 업로드 엑셀<small>택배사 양식 그대로</small></div>
+      <div class="box out">메일 · 슬랙 알림<small>시트 링크 + 엑셀 첨부</small></div>
+    </div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><span>아침 주문 정리</span><b>매일 40분 → 0분</b></div>
+    <div class="kpi"><span>판매처</span><b>2곳을 한 번에</b></div>
+    <div class="kpi"><span>주소·연락처 오류</span><b>업로드 전 분리</b></div>
+  </div>
+  <div class="foot"><span>자체 제작 데모 · 화면의 주문은 모두 가상 데이터입니다</span><span>시간 절감은 하루 50건 기준 예시</span></div>
+</section>
+
+<!-- 2. 전/후 -->
+<section class="slide" id="s2">
+  <div class="eyebrow"><span class="tape">해결한 문제</span></div>
+  <h2>매일 아침 반복되던 5단계를 없앴습니다</h2>
+  <div class="ba">
+    <div class="card before">
+      <h3>지금 <b>약 40분 / 매일</b></h3>
+      <ol>
+        <li>스마트스토어 주문 엑셀 다운로드 (비밀번호 해제)</li>
+        <li>쿠팡 주문 엑셀 따로 다운로드</li>
+        <li>두 파일 열 순서 맞춰 하나로 합치기</li>
+        <li>택배사 양식에 받는 분·주소·품목 다시 옮기기</li>
+        <li>같은 집 주문 눈으로 찾아 합치기</li>
+      </ol>
+      <p class="pain">옵션·주소를 옮기다 생기는 오배송, 합포장 누락으로 택배비 이중 지출</p>
+    </div>
+    <div class="card after">
+      <h3>자동화 후 <b>0분 · 확인만</b></h3>
+      <ol>
+        <li>08:40 두 판매처 새 주문을 API로 자동 수집</li>
+        <li>이미 보낸 주문은 자동 제외</li>
+        <li>판매처가 달라도 같은 집이면 한 박스로</li>
+        <li>주소·연락처 이상 주문은 '확인필요'로 분리</li>
+        <li>메일함에 시트 링크 + 엑셀 도착 → 업로드</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>자체 제작 데모</span><b>02 / 06</b></div>
+</section>
+
+<!-- 3. 흐름 -->
+<section class="slide" id="s3">
+  <div class="eyebrow"><span class="tape">자동화 흐름</span><span>n8n 워크플로 38개 노드</span></div>
+  <h2>수집 → 취합 → 출력, 두 단계로 동작합니다</h2>
+  <div class="shot"><div class="cap"><b>1단계</b> 스마트스토어 24시간 구간 조회 · 쿠팡 HMAC 서명 조회 → 공통 형식 정리</div><img src="assets/07a_1단계_주문수집.png" alt="1단계 주문 수집 워크플로"></div>
+  <div class="shot"><div class="cap"><b>2단계</b> 중복 제외·검증·합포장 → 새 스프레드시트 생성·서식 → 엑셀 변환 → 메일·슬랙</div><img src="assets/07b_2단계_시트_엑셀_알림.png" alt="2단계 출력 워크플로"></div>
+  <div class="foot"><span>판매처 키를 비워 두면 그 판매처는 건너뜁니다 · 데모 모드 지원</span><b>03 / 06</b></div>
+</section>
+
+<!-- 4. 스프레드시트 -->
+<section class="slide" id="s4">
+  <div class="eyebrow"><span class="tape">결과물 ①</span><span>구글 스프레드시트</span></div>
+  <h2>매일 새 스프레드시트가 만들어집니다</h2>
+  <div class="sheet" id="sheet">
+    <div class="bar"><b>[곡물상회] 2026-11-04 출고 · 택배 6건</b><span>머리글 고정 · 열 너비 자동 · 탭별 색상</span></div>
+    <table class="grid" id="grid"></table>
+    <div class="tabs"><span class="on">택배업로드</span><span>주문전체 (8)</span><span>확인필요 (1)</span></div>
+  </div>
+  <div class="mini">
+    <div class="sheet"><div class="bar"><b>주문전체 탭</b><span>원본 기록 · 판매처별 결제일시·금액</span></div><table class="grid" id="all"></table></div>
+    <div class="sheet"><div class="bar"><b>확인필요 탭</b><span>업로드 파일에서 뺀 주문</span></div><table class="grid" id="iss"></table></div>
+  </div>
+  <div class="foot"><span>원하는 드라이브 폴더에 자동 저장 · 가상 데이터</span><b>04 / 06</b></div>
+</section>
+
+<!-- 5. 엑셀 + 메일 -->
+<section class="slide" id="s5">
+  <div class="eyebrow"><span class="tape">결과물 ②</span><span>택배 업로드 엑셀 · 알림 메일</span></div>
+  <h2>엑셀은 첨부로, 요약은 메일과 슬랙으로</h2>
+  <div class="two">
+    <div class="sheet xl">
+      <div class="bar"><b>2026-11-04_택배업로드.xlsx</b><span>열 이름·순서 변경 가능</span></div>
+      <table class="grid wrap" id="xl"></table>
+    </div>
+    <div class="right">
+    <div class="mail">
+      <div class="bar">받은편지함 · [곡물상회] 2026-11-04 택배 6건 업로드 파일 · 확인 필요 1건</div>
+      <div class="body"><img src="assets/mail.png" alt="알림 메일"></div>
+    </div>
+    <div class="chat">
+      <div class="bar"># 출고알림 · 슬랙 요약</div>
+      <div class="msg"><b>📦 2026-11-04 출고 준비 · 택배 6건</b> (합포장 1)<br>쿠팡 4건 · 스마트스토어 4건<br><span class="w">⚠ 확인 필요 1건: 최유나(주소 없음/불완전)</span><br><u>구글 스프레드시트 열기</u></div>
+    </div>
+    </div>
+  </div>
+  <div class="foot"><span>가상 데이터</span><b>05 / 06</b></div>
+</section>
+
+<!-- 6. 기능·기술 -->
+<section class="slide" id="s6">
+  <div class="eyebrow"><span class="tape">세부 기능 · 기술</span></div>
+  <h2>실제 운영에서 생기는 일까지 처리합니다</h2>
+  <div class="feat">
+    <ul>
+      <li>판매처를 넘나드는 합포장<small>스마트스토어와 쿠팡에서 같은 집으로 간 주문을 한 박스로</small></li>
+      <li>쿠팡 안심번호 처리<small>합포장 시 실제 번호가 있으면 우선 사용, 0503 번호도 정상 인식</small></li>
+      <li>주말 주문 누락 방지<small>월요일은 주말 포함 조회, 24시간 제한 API는 구간을 나눠 조회</small></li>
+      <li>중복 발송 방지<small>알림까지 성공한 주문만 '처리 완료'로 기록, 실패 시 다음 날 자동 재포함</small></li>
+      <li>택배사 양식 자유 변경<small>설정 칸에 "엑셀열=항목" 한 줄씩, 코딩 없이 수정</small></li>
+    </ul>
+    <div class="side">
+      <div class="card">
+        <h3>사용 기술</h3>
+        <div class="chips">
+          <span class="chip">n8n</span><span class="chip">네이버 커머스 API</span><span class="chip">쿠팡 Wing Open API</span>
+          <span class="chip">Google Sheets API</span><span class="chip">Google Drive API</span><span class="chip">Gmail</span><span class="chip">Slack</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>작업 범위</h3>
+        <div class="scope">
+          <span>패키지</span><b>DELUXE 기준</b>
+          <span>작업 기간</span><b>5일</b>
+          <span>포함</span><b>계정 연결 · 양식 맞춤 · 사용 가이드</b>
+          <span>무상 대응</span><b>30일</b>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>자체 제작 데모</span><b>06 / 06</b></div>
+</section>
+
+<script src="assets/sheets.js"></script>
+<script>
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function grid(el, rows, { cols, maxRows = 10, widths = {} }) {
+    const head = rows[0];
+    const idx = cols.map((c) => head.indexOf(c)).filter((i) => i >= 0);
+    const colgroup = `<colgroup><col style="width:34px">${idx.map((i) => `<col style="width:${widths[head[i]] || 'auto'}">`).join('')}</colgroup>`;
+    const body = rows.slice(0, maxRows + 1).map((r, n) => `<tr class="${n ? '' : 'h'}" style="${n ? '' : 'background:#fff1b8'}"><td class="n">${n + 1}</td>${
+      idx.map((i) => { const v = r[i]; return `<td>${head[i] === '합포장' && v && n ? `<span class="tag">${esc(v)}</span>` : esc(v)}</td>`; }).join('')}</tr>`).join('');
+    el.innerHTML = colgroup + body;
+  }
+  const up = window.SHEETS['택배업로드'];
+  grid(document.getElementById('grid'), up, {
+    cols: ['판매처', '받는분성명', '받는분전화번호', '받는분주소', '품목명', '내품수량', '합포장'],
+    widths: { 판매처: '130px', 받는분성명: '90px', 받는분전화번호: '130px', 받는분주소: '280px', 내품수량: '70px', 합포장: '90px' },
+  });
+  grid(document.getElementById('xl'), up, {
+    cols: ['받는분성명', '받는분주소', '품목명', '내품수량'], maxRows: 12,
+    widths: { 받는분성명: '74px', 받는분주소: '190px', 내품수량: '74px' },
+  });
+  const all = window.SHEETS['주문전체'];
+  grid(document.getElementById('all'), all, { cols: ['판매처', '결제일시', '상품명', '결제금액'], maxRows: 3,
+    widths: { 판매처: '110px', 결제일시: '160px', 결제금액: '90px' } });
+  grid(document.getElementById('iss'), window.SHEETS['확인필요'], { cols: ['판매처', '수령인', '문제'], maxRows: 4,
+    widths: { 판매처: '110px', 수령인: '80px' } });
+</script>
+</body>
+</html>
