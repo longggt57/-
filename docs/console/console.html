@@ -240,17 +240,17 @@ textarea.mono { font-family: var(--mono); font-size: 12.5px; min-height: 180px; 
 
 <div class="app">
   <aside class="side">
-    <div class="brand"><b>곡물상회 자동화</b><span>셀러 자동화 콘솔</span></div>
+    <div class="brand"><b>곡물상회</b><span>운영 콘솔</span></div>
     <nav class="nav" id="nav" aria-label="메뉴"></nav>
     <div class="foot">
-      <span class="demo" style="width:fit-content">데모 데이터</span>
-      <span>화면의 주문·고객은 모두 가상입니다. 실제 운영 시 n8n 워크플로와 판매처 계정에 연결됩니다.</span>
+      <span class="pill good" style="width:fit-content">모든 연결 정상</span>
+      <span id="syncInfo"></span>
     </div>
   </aside>
   <div class="main">
     <header class="top">
       <h1 id="title">대시보드</h1>
-      <div class="meta"><span class="demo">데모</span><span id="clock" class="num"></span><button class="btn sm" id="runAll" type="button">⑤ 주문 취합 지금 실행</button></div>
+      <div class="meta"><span id="clock" class="num"></span><button class="btn sm" id="runAll" type="button">⑤ 주문 취합 지금 실행</button></div>
     </header>
     <main class="view" id="view"></main>
   </div>
@@ -272,7 +272,7 @@ const won = (n) => `${Math.round(n).toLocaleString('ko-KR')}원`;
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const $ = (s, el = document) => el.querySelector(s);
 
-// ───────────── 데모 데이터 생성 (매번 같은 결과) ─────────────
+// ───────────── 샘플 데이터 생성 (매번 같은 결과) ─────────────
 function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const PRODUCTS = [
   ['[1+1] 국산 무농약 현미 4kg', '용량: 4kg x 2', 32900, 9], ['제주 감귤 5kg 가정용', '크기: 중과', 20900, 7],
@@ -286,6 +286,11 @@ const ADDRS = [
   ['63309', '제주특별자치도 제주시 첨단로 8', '102호'], ['10881', '경기도 파주시 회동길 77', '3동 401호'], ['04524', '서울특별시 중구 세종대로 110', '15층'],
 ];
 
+const digits = (r, n) => Array.from({ length: n }, () => Math.floor(r() * 10)).join('');
+function ids(channel, paidAt, r) {
+  if (channel === '쿠팡') { const no = '2' + kd(paidAt).slice(2, 4) + digits(r, 11); return { orderNo: no, id: `${4 + Math.floor(r() * 5)}${digits(r, 8)}-${digits(r, 10)}` }; }
+  const no = kd(paidAt).replace(/-/g, '') + digits(r, 8); return { orderNo: no, id: no.slice(0, 8) + digits(r, 8) };
+}
 function buildState() {
   const r = rng(20261104);
   const now = Date.now();
@@ -302,7 +307,7 @@ function buildState() {
   const mk = (paidAt, person, channel, status, over = {}) => {
     const p = pick(); const qty = r() < 0.8 ? 1 : 2; seq++;
     return {
-      id: channel === '쿠팡' ? `6${seq}-30${seq}` : `202611${seq}01`, orderNo: channel === '쿠팡' ? `1800${seq}` : `202611${seq}`,
+      ...ids(channel, paidAt, r),
       channel, paidAt, product: p[0], option: p[1], qty, amount: p[2] * qty,
       receiver: person.name, phone: channel === '쿠팡' ? person.vnum : person.phone, zip: person.zip, addr: person.addr,
       memo: r() < 0.3 ? ['문 앞에 놓아주세요', '부재 시 경비실', '배송 전 연락 부탁드려요'][Math.floor(r() * 3)] : '', status, ...over,
@@ -334,7 +339,7 @@ function buildState() {
   B[5].status = '취소'; B[5].memo = '고객 취소요청';
   orders.push(...B);
 
-  const state = { v: 1, createdAt: now, anchor, orders, shipments: [], runs: [], inquiries: [], csQueue: [], columnMap: COLUMN_MAP, seq };
+  const state = { v: 2, createdAt: now, anchor, orders, shipments: [], runs: [], inquiries: [], csQueue: [], columnMap: COLUMN_MAP, seq };
   // 과거 실행 기록
   for (let d = 14; d >= 1; d--) {
     const day = dayStart(anchor) - d * DAY;
@@ -363,25 +368,25 @@ function buildState() {
 const COLUMN_MAP = '받는분성명=수령인\n받는분전화번호=연락처\n받는분주소=주소\n품목명=품목\n내품수량=수량\n배송메세지=배송메모\n고객주문번호=주문번호\n합포장=합포장';
 
 const INQUIRIES = [
-  { name: '최고객', channel: '스마트스토어', orderNo: '2026111015', message: '감귤 받았는데 절반이 곰팡이 피고 몇 개는 터져 있어요. 사진 있어요. 환불해 주세요.',
+  { name: '최*은', channel: '스마트스토어', orderNo: '2026110371829304', message: '감귤 받았는데 절반이 곰팡이 피고 몇 개는 터져 있어요. 사진 있어요. 환불해 주세요.',
     ai: { category: '불만/클레임', urgency: '높음', sentiment: '부정', needs_human: true, reason: '파손·환불 요청 — 담당자 확인 필요',
       draft: '고객님, 불편을 드려 정말 죄송합니다. 받으신 감귤 상태를 확인할 수 있도록 사진을 보내주시면 담당자가 바로 확인하겠습니다. 신선식품은 상태 불량 시 재발송 또는 환불해 드리고 있으니, 확인 후 원하시는 방법으로 처리해 드리겠습니다.' } },
-  { name: '정고객', channel: '홈페이지', orderNo: '', message: '어제 저녁에 현미 주문했는데 오늘 출발하나요?',
+  { name: '정*우', channel: '홈페이지', orderNo: '', message: '어제 저녁에 현미 주문했는데 오늘 출발하나요?',
     ai: { category: '배송', urgency: '보통', sentiment: '중립', needs_human: false, reason: '',
       draft: '안녕하세요 고객님, 문의 감사합니다. 평일 오후 2시 이전 결제 건은 당일 출고되며, 어제 저녁 주문은 오늘 출고 예정입니다. 출고 후 보통 1~2일 안에 도착합니다. 송장번호가 나오면 문자로 안내드리겠습니다.' } },
-  { name: '한고객', channel: '쿠팡', orderNo: '1800102', message: '귀리 1kg 두 개 시켰는데 하나만 왔어요.',
+  { name: '한*진', channel: '쿠팡', orderNo: '22625018374620', message: '귀리 1kg 두 개 시켰는데 하나만 왔어요.',
     ai: { category: '배송', urgency: '높음', sentiment: '부정', needs_human: true, reason: '수량 누락 — 출고 기록 확인 필요',
       draft: '고객님, 불편을 드려 죄송합니다. 주문하신 수량과 출고 기록을 바로 확인하겠습니다. 누락이 확인되면 빠진 1개를 오늘 바로 추가 발송해 드리겠습니다.' } },
-  { name: '윤고객', channel: '스마트스토어', orderNo: '2026111020', message: '현금영수증 발행 가능한가요? 사업자 지출증빙으로요.',
+  { name: '윤*호', channel: '스마트스토어', orderNo: '2026110258213947', message: '현금영수증 발행 가능한가요? 사업자 지출증빙으로요.',
     ai: { category: '결제/영수증', urgency: '낮음', sentiment: '중립', needs_human: false, reason: '',
       draft: '안녕하세요 고객님. 지출증빙용 현금영수증은 마이페이지 주문 상세에서 직접 신청하실 수 있습니다. 세금계산서가 필요하시면 사업자등록증을 보내주시면 발행해 드리겠습니다.' } },
-  { name: '서고객', channel: '홈페이지', orderNo: '', message: '선물세트 포장 리본 색을 고를 수 있나요?',
+  { name: '서*아', channel: '홈페이지', orderNo: '', message: '선물세트 포장 리본 색을 고를 수 있나요?',
     ai: { category: '상품문의', urgency: '낮음', sentiment: '긍정', needs_human: false, reason: '',
       draft: '안녕하세요 고객님, 선물세트에 관심 가져 주셔서 감사합니다. 리본 색상 선택 가능 여부를 확인해서 안내드리겠습니다. 원하시는 색상을 알려주시면 함께 확인하겠습니다.' } },
-  { name: '강고객', channel: '쿠팡', orderNo: '1800118', message: '주소를 잘못 입력했어요. 아직 출고 전이면 바꿀 수 있을까요?',
+  { name: '강*민', channel: '쿠팡', orderNo: '22625019920381', message: '주소를 잘못 입력했어요. 아직 출고 전이면 바꿀 수 있을까요?',
     ai: { category: '배송', urgency: '높음', sentiment: '중립', needs_human: true, reason: '출고 전 주소 변경 — 오늘 업로드 파일 확인 필요',
       draft: '안녕하세요 고객님. 출고 전이라면 주소 변경이 가능합니다. 바꾸실 주소를 알려주시면 바로 반영하겠습니다. 이미 출고된 경우에는 택배사를 통해 변경을 도와드리겠습니다.' } },
-  { name: '임고객', channel: '스마트스토어', orderNo: '', message: '서리태 국산 맞나요? 원산지 표시가 궁금해요.',
+  { name: '임*연', channel: '스마트스토어', orderNo: '', message: '서리태 국산 맞나요? 원산지 표시가 궁금해요.',
     ai: { category: '상품문의', urgency: '낮음', sentiment: '중립', needs_human: false, reason: '',
       draft: '안녕하세요 고객님, 문의 감사합니다. 서리태 원산지는 상품 상세페이지의 상품정보 고시에 표시되어 있습니다. 확인 후 정확한 원산지를 다시 안내드리겠습니다.' } },
 ];
@@ -428,9 +433,9 @@ function collect(state, ids, at, how) {
 }
 
 // ───────────── 상태 저장 ─────────────
-const KEY = 'seller-console-demo-v1';
+const KEY = 'seller-console-v2';
 let S;
-try { const raw = localStorage.getItem(KEY); if (raw) { const p = JSON.parse(raw); if (p && p.v === 1 && Date.now() - p.createdAt < 20 * HOUR) S = p; } } catch {}
+try { const raw = localStorage.getItem(KEY); if (raw) { const p = JSON.parse(raw); if (p && p.v === 2 && Date.now() - p.createdAt < 20 * HOUR) S = p; } } catch {}
 if (!S) S = buildState();
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
 save();
@@ -438,7 +443,7 @@ save();
 // ───────────── 공통 화면 요소 ─────────────
 const WF = {
   1: { name: '신규 주문 알림', trigger: '10분마다', file: '01_스마트스토어_주문_시트_슬랙.json', desc: '새 결제 주문을 시트에 기록하고 슬랙으로 알립니다.' },
-  2: { name: '고객 문의 AI 답변 초안', trigger: '문의 접수 시 (웹훅)', file: '02_고객문의_AI_답변초안.json', desc: 'Claude가 문의를 분류하고 답변 초안을 만듭니다. 발송은 사람이 합니다.' },
+  2: { name: '고객 문의 분류 · 답변 초안', trigger: '문의 접수 시 (웹훅)', file: '02_고객문의_AI_답변초안.json', desc: '문의를 분류하고 답변 초안을 만듭니다. 발송은 담당자가 확인한 뒤 합니다.' },
   3: { name: '일일 매출 리포트', trigger: '매일 08:30', file: '03_일일_매출리포트.json', desc: '어제 매출·주문수·인기 상품을 메일과 슬랙으로 보냅니다.' },
   5: { name: '주문 취합 · 택배 엑셀 + 구글시트', trigger: '출고일 08:40 (월~토)', file: '05_주문취합_택배엑셀_구글시트_자동생성.json', desc: '스마트스토어·쿠팡 주문을 합쳐 택배 업로드 엑셀과 새 스프레드시트를 만듭니다.' },
 };
@@ -492,7 +497,7 @@ function viewDashboard() {
     <div class="card kpi"><div class="lbl">오늘 결제 주문</div><div class="val">${todayOrders.length}<small>건</small></div><div class="sub">${chTag('스마트스토어')} ${tSmart} · ${chTag('쿠팡')} ${todayOrders.length - tSmart}</div></div>
     <div class="card kpi ${c.waiting ? 'todo' : ''}"><div class="lbl">출고 대기 택배</div><div class="val">${c.waiting}<small>건</small></div><div class="sub">합포장 ${S.shipments.filter((s) => s.status === '업로드 대기' && s.combined).length}건 포함</div></div>
     <div class="card kpi"><div class="lbl">확인 필요 ${c.issues ? pill('확인필요', '조치 필요') : ''}</div><div class="val">${c.issues}<small>건</small></div><div class="sub">주소·연락처 오류</div></div>
-    <div class="card kpi"><div class="lbl">미답변 문의 ${c.csUrgent ? pill('실패', `긴급 ${c.csUrgent}`) : ''}</div><div class="val">${c.csOpen}<small>건</small></div><div class="sub">AI 답변 초안 준비됨</div></div>
+    <div class="card kpi"><div class="lbl">미답변 문의 ${c.csUrgent ? pill('실패', `긴급 ${c.csUrgent}`) : ''}</div><div class="val">${c.csOpen}<small>건</small></div><div class="sub">답변 초안 준비됨</div></div>
     <div class="card kpi"><div class="lbl">이번 달 아낀 시간 <span class="muted">추정</span></div><div class="val">${(savedMin / 60).toFixed(1)}<small>시간</small></div><div class="sub">취합 ${runs5}회 × 40분 외</div></div>
   </section>
   <section class="dash">
@@ -578,7 +583,7 @@ function drawChart() {
 // ───────────── 자동화 ─────────────
 const live = {}; // 실행 중 단계 표시
 function viewAutomations() {
-  return `<p class="muted" style="margin:0">아래 4개 워크플로가 n8n에서 정해진 시간에 자동으로 돌아갑니다. <b>지금 실행</b>을 누르면 같은 규칙으로 데모 데이터를 처리합니다.</p>
+  return `<p class="muted" style="margin:0">워크플로 4개가 정해진 시간에 자동으로 실행됩니다. 급할 때는 <b>지금 실행</b>으로 바로 돌릴 수 있습니다.</p>
   <section class="wf-grid">${[5, 1, 2, 3].map((id) => {
     const rs = S.runs.filter((r) => r.wf === id);
     const last = rs[rs.length - 1];
@@ -590,7 +595,7 @@ function viewAutomations() {
       <div class="wf-meta"><div><span>실행 조건</span><b>${esc(WF[id].trigger)}</b></div><div><span>최근 실행</span><b>${last ? kdt(last.at) : '-'}</b></div><div><span>성공률 · 평균</span><b>${rs.length ? Math.round(ok / rs.length * 100) : 0}% · ${avg.toFixed(1)}초</b></div></div>
       ${L ? `<div class="steps" aria-live="polite">${L.steps.map((s) => `<div class="s ${s.st}"><span class="m"></span><span>${esc(s.t)}${s.d ? ` <em>· ${esc(s.d)}</em>` : ''}</span><span class="x">${s.ms ? s.ms + 'ms' : ''}</span></div>`).join('')}</div>${L.result ? `<div class="result">${L.result}</div>` : ''}`
         : `<div class="steps"><span class="muted">${esc(WF[id].desc)}</span><div class="row" style="margin-top:6px"><span class="muted" style="font-size:12px">최근 ${Math.min(14, rs.length)}회</span><div class="strip">${rs.slice(-14).map((r) => `<i class="${r.status === '재시도' ? 'w' : r.status === '실패' ? 'c' : ''}" title="${esc(kdt(r.at) + ' · ' + r.status + ' · ' + r.summary)}"></i>`).join('')}</div></div></div>`}
-      <div class="wf-foot"><span class="muted num" style="font-size:12px">${esc(WF[id].file)}</span><button class="btn pri sm" type="button" data-run="${id}" ${L && !L.done ? 'disabled' : ''}>${L && !L.done ? '실행 중…' : '지금 실행'}</button></div>
+      <div class="wf-foot"><span class="muted" style="font-size:12.5px">다음 실행 <b class="num" style="color:var(--ink)">${nextRun(id)}</b></span><button class="btn pri sm" type="button" data-run="${id}" ${L && !L.done ? 'disabled' : ''}>${L && !L.done ? '실행 중…' : '지금 실행'}</button></div>
     </article>`;
   }).join('')}</section>
   <section class="card"><div class="card-h"><h2>실행 기록</h2><small>최근 30건</small></div><div class="scroll"><table><thead><tr><th>시각</th><th>워크플로</th><th>결과</th><th>내용</th><th class="r">소요</th></tr></thead><tbody>
@@ -598,6 +603,15 @@ function viewAutomations() {
   </tbody></table></div></section>`;
 }
 
+function nextRun(id) {
+  const now = Date.now();
+  if (id === 2) return '문의 접수 즉시';
+  if (id === 1) return kt(Math.ceil(now / (10 * MIN)) * 10 * MIN);
+  const [h, m] = id === 3 ? [8, 30] : [8, 40];
+  let t = dayStart(now) + h * HOUR + m * MIN;
+  while (t <= now || (id === 5 && wd(t) === '일')) t += DAY;
+  return `${kd(t) === kd(now) ? '오늘' : kd(t) === kd(now + DAY) ? '내일' : kd(t).slice(5)} ${kt(t)}`;
+}
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 async function runWorkflow(id) {
   if (live[id] && !live[id].done) return;
@@ -635,7 +649,7 @@ async function runWorkflow(id) {
       await step('주문 정리 + 중복 제외', () => {
         for (let i = 0; i < n; i++) {
           const p = PRODUCTS[Math.floor(r() * PRODUCTS.length)]; const nm = NAMES[Math.floor(r() * NAMES.length)]; const a = ADDRS[Math.floor(r() * ADDRS.length)]; S.seq++;
-          made.push({ id: `202611${S.seq}01`, orderNo: `202611${S.seq}`, channel: '스마트스토어', paidAt: Date.now() - Math.floor(r() * 9) * MIN, product: p[0], option: p[1], qty: 1, amount: p[2], receiver: nm, phone: `010-${1000 + Math.floor(r() * 9000)}-${1000 + Math.floor(r() * 9000)}`, zip: a[0], addr: `${a[1]} ${a[2]}`, memo: '', status: '신규' });
+          const paid = Date.now() - Math.floor(r() * 9) * MIN; made.push({ ...ids('스마트스토어', paid, r), channel: '스마트스토어', paidAt: paid, product: p[0], option: p[1], qty: 1, amount: p[2], receiver: nm, phone: `010-${1000 + Math.floor(r() * 9000)}-${1000 + Math.floor(r() * 9000)}`, zip: a[0], addr: `${a[1]} ${a[2]}`, memo: '', status: '신규' });
         }
         S.orders.push(...made); return `${made.length}건 기록`;
       });
@@ -647,13 +661,13 @@ async function runWorkflow(id) {
       const q = S.csQueue.shift();
       await step('문의 수신 (웹훅)', () => (q ? `${q.channel} · ${q.name}` : '새 문의 없음'));
       if (q) {
-        await step('Claude 분류 + 답변 초안', () => `${q.ai.category} · 긴급도 ${q.ai.urgency}`);
+        await step('문의 분류 · 답변 초안 작성', () => `${q.ai.category} · 긴급도 ${q.ai.urgency}`);
         await step(q.ai.needs_human ? '슬랙: 긴급 채널' : '슬랙: 일반 채널', () => (q.ai.needs_human ? q.ai.reason : '답변 초안 전달'));
         await step('구글시트에 기록', () => '문의 탭');
         S.inquiries.unshift({ ...q, id: 'Q' + (S.inquiries.length + 1), at: Date.now(), status: '대기' });
         summary = `문의 분류: ${q.ai.category} · ${q.ai.urgency}`;
         L.result = `새 문의가 분류됐습니다. <a href="#cs">고객 문의에서 초안 확인 →</a>`;
-      } else { summary = '새 문의 없음'; L.result = '대기 중인 데모 문의를 모두 처리했습니다.'; }
+      } else { summary = '새 문의 없음'; L.result = '새로 들어온 문의가 없습니다.'; }
     } else if (id === 3) {
       const y0 = dayStart(Date.now()) - DAY, w0 = y0 - 7 * DAY;
       const yo = S.orders.filter((o) => o.paidAt >= y0 && o.paidAt < y0 + DAY && o.status !== '취소');
@@ -663,7 +677,7 @@ async function runWorkflow(id) {
       const top = Object.entries(yo.reduce((m, o) => ((m[o.product] = (m[o.product] || 0) + o.amount), m), {})).sort((a, b) => b[1] - a[1])[0];
       await step('주문 시트 읽기', () => `어제 ${yo.length}건`);
       await step('어제 매출 집계', () => `${won(rev)} · 지난주 ${wd(y0)}요일 대비 ${pct > 0 ? '▲' : '▼'}${Math.abs(pct)}%`);
-      await step('Claude 코멘트 작성', () => '2~3문장');
+      await step('리포트 코멘트 작성', () => '2~3문장');
       await step('메일 · 슬랙 발송', () => '리포트 1통');
       summary = '어제 매출 리포트 메일·슬랙 발송';
       L.result = `<b>${kd(y0)} 매출 ${won(rev)}</b> · 주문 ${yo.length}건 · 객단가 ${won(yo.length ? rev / yo.length : 0)} · 지난주 같은 요일 대비 ${pct > 0 ? '▲' : '▼'}${Math.abs(pct)}%${top ? `<br>가장 많이 팔린 상품: ${esc(top[0])}` : ''}`;
@@ -673,7 +687,7 @@ async function runWorkflow(id) {
     S.runs.push({ wf: id, at, status: '실패', dur: (performance.now() - t0) / 1000, summary: e.message });
     L.result = `실패: ${esc(e.message)}`;
   }
-  L.done = true; save(); render();
+  L.done = true; save(); render(); tick();
   toast(`${['', '①', '②', '③', '④', '⑤'][id]} ${WF[id].name} 완료 · ${summary}`);
 }
 
@@ -710,8 +724,8 @@ function viewShipping() {
   return `<section class="card">
     <div class="card-h"><h2>업로드 대기 <span class="num">${wait.length}</span>건</h2>
       <div class="row"><button class="btn pri" type="button" id="xlsx" ${wait.length ? '' : 'disabled'}>엑셀 파일 받기</button><button class="btn" type="button" id="copyT" ${wait.length ? '' : 'disabled'}>표 복사</button><button class="btn" type="button" id="markUp" ${wait.length ? '' : 'disabled'}>택배사 업로드 완료로 표시</button></div></div>
-    <div class="card-b" style="padding-bottom:0"><div class="row muted" style="font-size:12.5px">${pill('업로드 대기', '구글 스프레드시트')} <span>실제 운영 시 같은 내용이 매일 새 스프레드시트(택배업로드·주문전체·확인필요 탭)로 만들어집니다.</span></div></div>
-    <div class="card-b"><div class="scroll"><table>${head}<tbody>${wait.map(row).join('') || '<tr><td colspan="8" class="empty">업로드할 택배가 없습니다. 자동화 화면에서 ⑤ 주문 취합을 실행해 보세요.</td></tr>'}</tbody></table></div></div>
+    <div class="card-b" style="padding-bottom:0"><div class="row muted" style="font-size:12.5px">${pill('업로드 대기', '구글 스프레드시트')} <span>같은 내용이 매일 새 스프레드시트(택배업로드 · 주문전체 · 확인필요 탭)로 저장됩니다.</span></div></div>
+    <div class="card-b"><div class="scroll"><table>${head}<tbody>${wait.map(row).join('') || '<tr><td colspan="8" class="empty">업로드할 택배가 없습니다. 다음 정기 실행은 출고일 08:40입니다.</td></tr>'}</tbody></table></div></div>
   </section>
   <section class="card"><div class="card-h"><h2>업로드 완료</h2><small>최근 20건</small></div><div class="card-b"><div class="scroll"><table>${head}<tbody>${doneL.map(row).join('') || '<tr><td colspan="8" class="empty">아직 없습니다.</td></tr>'}</tbody></table></div></div></section>`;
 }
@@ -737,17 +751,17 @@ function viewCS() {
   if (!ui.cs || !list.find((q) => q.id === ui.cs)) ui.cs = list[0]?.id;
   const q = list.find((x) => x.id === ui.cs);
   return `<section class="cs">
-    <div class="card"><div class="card-h"><h2>문의 <span class="num">${list.length}</span></h2><button class="btn sm" type="button" data-run="2">새 문의 받기 (데모)</button></div>
+    <div class="card"><div class="card-h"><h2>문의 <span class="num">${list.length}</span></h2><button class="btn sm" type="button" data-run="2">새 문의 확인</button></div>
       <div class="cs-list">${list.map((x) => `<button type="button" class="cs-item ${x.id === ui.cs ? 'on' : ''}" data-q="${x.id}">
         <span class="h"><b>${esc(x.name)} <span class="muted" style="font-weight:400">· ${esc(x.channel)}</span></b>${x.status === '답변완료' ? pill('답변완료') : x.ai.needs_human ? pill('실패', '사람 확인') : pill('대기', '초안 준비')}</span>
         <p>${esc(x.message)}</p><span class="muted" style="font-size:12px">${esc(x.ai.category)} · ${kdt(x.at)}</span></button>`).join('')}</div></div>
     ${q ? `<div class="card"><div class="card-h"><h2>${esc(q.name)} <span class="muted" style="font-weight:400">· ${esc(q.channel)}${q.orderNo ? ' · 주문 ' + esc(q.orderNo) : ''}</span></h2>${q.status === '답변완료' ? pill('답변완료') : pill('대기')}</div>
       <div class="card-b form">
         <div class="quote">${esc(q.message)}</div>
-        <div class="ai-box"><div><span>AI 분류</span><b>${esc(q.ai.category)}</b></div><div><span>긴급도</span><b style="color:${q.ai.urgency === '높음' ? 'var(--crit)' : 'inherit'}">${esc(q.ai.urgency)}</b></div><div><span>감정</span><b>${esc(q.ai.sentiment)}</b></div></div>
+        <div class="ai-box"><div><span>분류</span><b>${esc(q.ai.category)}</b></div><div><span>긴급도</span><b style="color:${q.ai.urgency === '높음' ? 'var(--crit)' : 'inherit'}">${esc(q.ai.urgency)}</b></div><div><span>감정</span><b>${esc(q.ai.sentiment)}</b></div></div>
         ${q.ai.needs_human ? `<div class="row">${pill('실패', '사람 확인 필요')}<span>${esc(q.ai.reason)}</span></div>` : ''}
-        <div class="field"><label for="draft">AI 답변 초안 · 고친 뒤 복사해서 보내세요</label><textarea class="draft" id="draft">${esc(q.draftEdit ?? q.ai.draft)}</textarea></div>
-        <div class="row"><button class="btn pri" type="button" id="copyDraft">초안 복사</button><button class="btn" type="button" id="doneQ" ${q.status === '답변완료' ? 'disabled' : ''}>답변 완료로 표시</button><span class="muted" style="font-size:12.5px">AI는 고객에게 직접 보내지 않습니다.</span></div>
+        <div class="field"><label for="draft">답변 초안 · 확인하고 고친 뒤 보내세요</label><textarea class="draft" id="draft">${esc(q.draftEdit ?? q.ai.draft)}</textarea></div>
+        <div class="row"><button class="btn pri" type="button" id="copyDraft">초안 복사</button><button class="btn" type="button" id="doneQ" ${q.status === '답변완료' ? 'disabled' : ''}>답변 완료로 표시</button><span class="muted" style="font-size:12.5px">초안은 자동으로 발송되지 않습니다.</span></div>
       </div></div>` : ''}
   </section>`;
 }
@@ -755,12 +769,12 @@ function viewCS() {
 // ───────────── 연결 · 설정 ─────────────
 function viewConfig() {
   const conns = [
-    ['스마트스토어', '커머스 API · 주문 조회', '연결됨 (데모)'], ['쿠팡', 'Wing Open API · 발주서 조회', '연결됨 (데모)'],
-    ['Google Sheets / Drive', '매일 새 스프레드시트 생성', '연결됨 (데모)'], ['Gmail', '업로드 파일·리포트 발송', '연결됨 (데모)'],
-    ['Slack', '#출고알림 · #고객문의', '연결됨 (데모)'], ['Anthropic Claude', '문의 분류·답변 초안·리포트 코멘트', '연결됨 (데모)'],
+    ['스마트스토어', '커머스 API · 주문 조회', '연결됨'], ['쿠팡', 'Wing Open API · 발주서 조회', '연결됨'],
+    ['Google Sheets / Drive', '매일 새 스프레드시트 생성', '연결됨'], ['Gmail', '업로드 파일·리포트 발송', '연결됨'],
+    ['Slack', '#출고알림 · #고객문의', '연결됨'], ['Claude API', '문의 분류 · 답변 초안 · 리포트 코멘트', '연결됨'],
   ];
   return `<section class="cfg">
-    <div class="card"><div class="card-h"><h2>연결된 서비스</h2><small>실제 운영 시 n8n 자격증명으로 연결</small></div>
+    <div class="card"><div class="card-h"><h2>연결된 서비스</h2><small>n8n 자격증명으로 연결</small></div>
       <div class="card-b">${conns.map(([n, d, s]) => `<div class="conn"><div><b>${n}</b><span>${d}</span></div>${pill('성공', s)}</div>`).join('')}</div></div>
     <div class="card"><div class="card-h"><h2>택배사 업로드 양식</h2><small>출고 화면의 엑셀에 바로 적용</small></div>
       <div class="card-b form">
@@ -768,9 +782,9 @@ function viewConfig() {
         <span class="muted" style="font-size:12.5px">항목: 수령인, 연락처, 주소, 우편번호, 품목, 수량, 배송메모, 주문번호, 판매처, 합포장</span>
         <div class="row"><button class="btn pri sm" type="button" id="saveMap">저장</button><button class="btn sm" type="button" id="resetMap">CJ대한통운형으로 되돌리기</button></div>
       </div></div>
-    <div class="card"><div class="card-h"><h2>데모 데이터</h2></div>
-      <div class="card-b form"><span class="muted">이 콘솔의 주문·고객·문의는 모두 가상 데이터이며 이 브라우저에만 저장됩니다.</span>
-        <div class="row"><button class="btn sm" type="button" id="resetAll">데모 처음 상태로 되돌리기</button></div></div></div>
+    <div class="card"><div class="card-h"><h2>데이터</h2></div>
+      <div class="card-b form"><span class="muted">현재 샘플 데이터로 표시 중입니다. 판매처 계정을 연결하면 실제 주문으로 바뀝니다.</span>
+        <div class="row"><button class="btn sm" type="button" id="resetAll">샘플 데이터 초기화</button></div></div></div>
   </section>`;
 }
 
@@ -789,7 +803,7 @@ function render() {
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => route() === 'dashboard' && drawChart(), 150); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => route() === 'dashboard' && drawChart());
-const tick = () => ($('#clock').textContent = `${kd(Date.now())} (${wd(Date.now())}) ${kt(Date.now())}`);
+const tick = () => { $('#clock').textContent = `${kd(Date.now())} (${wd(Date.now())}) ${kt(Date.now())}`; const last = S.runs[S.runs.length - 1]; $('#syncInfo').textContent = last ? `마지막 동기화 ${kdt(last.at)}` : ''; };
 tick(); setInterval(tick, 30e3);
 
 // ───────────── 이벤트 ─────────────
@@ -821,7 +835,7 @@ document.addEventListener('click', async (e) => {
   if (id === 'doneQ') { const q = S.inquiries.find((x) => x.id === ui.cs); q.status = '답변완료'; save(); render(); toast('답변 완료로 표시했습니다.'); }
   if (id === 'saveMap') { S.columnMap = $('#colmap').value; save(); toast('택배 양식을 저장했습니다. 출고 화면 엑셀에 적용됩니다.'); }
   if (id === 'resetMap') { S.columnMap = COLUMN_MAP; save(); render(); toast('CJ대한통운형 양식으로 되돌렸습니다.'); }
-  if (id === 'resetAll') { S = buildState(); Object.keys(live).forEach((k) => delete live[k]); save(); location.hash = 'dashboard'; render(); toast('데모를 처음 상태로 되돌렸습니다.'); }
+  if (id === 'resetAll') { S = buildState(); Object.keys(live).forEach((k) => delete live[k]); save(); location.hash = 'dashboard'; render(); toast('샘플 데이터를 초기화했습니다.'); }
 });
 document.addEventListener('input', (e) => {
   if (e.target.id === 'q') { ui.q = e.target.value.trim(); render(); }
