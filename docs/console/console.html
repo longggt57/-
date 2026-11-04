@@ -1,0 +1,844 @@
+<title>셀러 자동화 콘솔</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: 왼쪽 사이드 메뉴 + 오른쪽 작업 화면(콘솔). 운송장 라벨 노랑은 '처리할 일' 표시에만, 버튼은 잉크색 */
+:root {
+  --bg: #eef0f3;        /* 창고 콘크리트 회색 */
+  --panel: #ffffff;
+  --panel-2: #f6f7f9;
+  --ink: #14181d;
+  --ink-2: #3a424d;
+  --muted: #5d6672;
+  --line: #d9dde3;
+  --label: #ffd23f;     /* 운송장 라벨 노랑: 할 일 강조 */
+  --label-ink: #14181d;
+  --btn: #14181d; --btn-ink: #ffffff;
+  --s1: #2a78d6;        /* 스마트스토어 */
+  --s2: #eb6834;        /* 쿠팡 */
+  --good: #0ca30c; --good-bg: #e7f6e7;
+  --warn: #9a6700; --warn-bg: #fff4d6;
+  --crit: #d03b3b; --crit-bg: #fdecec;
+  --info-bg: #e8f0fb;
+  --grid: #e9ecf0;
+  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101317; --panel: #1a1f26; --panel-2: #222831; --ink: #e8ebef; --ink-2: #c3c9d1; --muted: #9aa4b1; --line: #2e3540;
+    --label: #f2c230; --label-ink: #14181d; --btn: #e8ebef; --btn-ink: #101317;
+    --s1: #3987e5; --s2: #d95926;
+    --good: #3fbf5a; --good-bg: #16301c; --warn: #f2c230; --warn-bg: #33290f; --crit: #ff7b7b; --crit-bg: #3a1d1d; --info-bg: #17263a; --grid: #262d36;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101317; --panel: #1a1f26; --panel-2: #222831; --ink: #e8ebef; --ink-2: #c3c9d1; --muted: #9aa4b1; --line: #2e3540;
+  --label: #f2c230; --label-ink: #14181d; --btn: #e8ebef; --btn-ink: #101317;
+  --s1: #3987e5; --s2: #d95926;
+  --good: #3fbf5a; --good-bg: #16301c; --warn: #f2c230; --warn-bg: #33290f; --crit: #ff7b7b; --crit-bg: #3a1d1d; --info-bg: #17263a; --grid: #262d36;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.55; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--s1); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.app { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100%; }
+/* 사이드 메뉴 */
+.side {
+  background: var(--panel); border-right: 1px solid var(--line);
+  padding-block: 18px; padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: 14px;
+  display: flex; flex-direction: column; gap: 18px; position: sticky; top: 0; height: 100vh;
+}
+.brand { display: grid; gap: 2px; padding: 0 6px; }
+.brand b { font-size: 16px; }
+.brand span { color: var(--muted); font-size: 12px; }
+.nav { display: grid; gap: 2px; }
+.nav a {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 8px; color: var(--ink-2); text-decoration: none; font-weight: 500;
+}
+.nav a:hover { background: var(--panel-2); }
+.nav a.on { background: var(--ink); color: var(--panel); }
+.nav .cnt { font-family: var(--mono); font-size: 12px; min-width: 22px; text-align: center; padding: 0 6px; border-radius: 999px; background: var(--panel-2); color: var(--ink); }
+.nav a.on .cnt { background: var(--label); color: var(--label-ink); }
+.nav .cnt.hot { background: var(--label); color: var(--label-ink); }
+.side .foot { margin-top: auto; font-size: 12px; color: var(--muted); padding: 0 6px; display: grid; gap: 8px; }
+
+/* 상단 바 + 본문 */
+.main { min-width: 0; display: flex; flex-direction: column; }
+.top {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding-block: 14px; padding-left: 24px; padding-right: max(24px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.top h1 { font-size: 20px; }
+.top .meta { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 13px; flex-wrap: wrap; }
+.demo { background: var(--label); color: var(--label-ink); font-weight: 700; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+.view { padding-block: 20px 40px; padding-left: 24px; padding-right: max(24px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; align-content: start; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding-right: max(14px, env(safe-area-inset-right, 0px)); gap: 10px; }
+  .nav { display: flex; overflow-x: auto; gap: 4px; padding-bottom: 2px; }
+  .nav a { white-space: nowrap; }
+  .side .foot { display: none; }
+  .top, .view { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+
+/* 공통 요소 */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.card-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.card-h h2 { font-size: 15px; }
+.card-h small { color: var(--muted); font-size: 12.5px; }
+.card-b { padding: 14px 16px; min-width: 0; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 12px; font-weight: 500; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.btn:hover { background: var(--panel-2); }
+.btn.pri { background: var(--btn); color: var(--btn-ink); border-color: var(--btn); }
+.btn.pri:hover { opacity: .9; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.sm { padding: 4px 9px; font-size: 13px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.good { background: var(--good-bg); color: var(--good); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.crit { background: var(--crit-bg); color: var(--crit); }
+.pill.info { background: var(--info-bg); color: var(--ink-2); }
+.pill.mute { background: var(--panel-2); color: var(--muted); }
+.pill.nodot::before { display: none; }
+.ch { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.ch i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.ch.s1 i { background: var(--s1); } .ch.s2 i { background: var(--s2); }
+.tag { background: var(--label); color: var(--label-ink); font-weight: 700; font-size: 11.5px; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.muted { color: var(--muted); }
+.empty { color: var(--muted); padding: 18px 4px; text-align: center; }
+
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
+th { font-weight: 500; color: var(--muted); background: var(--panel-2); position: sticky; top: 0; }
+tr:last-child td { border-bottom: 0; }
+td.w { white-space: normal; min-width: 200px; }
+td.r, th.r { text-align: right; }
+
+/* 대시보드 */
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1180px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .kpis > :last-child { grid-column: span 2; } }
+@media (max-width: 620px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.kpi .lbl { color: var(--muted); font-size: 12.5px; display: flex; justify-content: space-between; gap: 6px; }
+.kpi .val { font-family: var(--mono); font-size: 28px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.kpi .val small { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+.kpi .sub { font-size: 12.5px; color: var(--muted); }
+.kpi.todo { border-color: var(--label); box-shadow: inset 0 3px 0 var(--label); }
+.dash { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 1060px) { .dash { grid-template-columns: minmax(0, 1fr); } }
+.chart-wrap { position: relative; }
+.legend { display: flex; gap: 14px; font-size: 12.5px; color: var(--ink-2); }
+.tip {
+  position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 10px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,.12); min-width: 140px; z-index: 5;
+}
+.tip b { display: block; margin-bottom: 4px; }
+.tip .r { display: flex; justify-content: space-between; gap: 12px; }
+.todo-list { display: grid; gap: 8px; }
+.todo-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); }
+.todo-item .ic { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; font-weight: 700; font-family: var(--mono); }
+.todo-item .ic.y { background: var(--label); color: var(--label-ink); }
+.todo-item .ic.r { background: var(--crit-bg); color: var(--crit); }
+.todo-item .ic.g { background: var(--good-bg); color: var(--good); }
+.todo-item b { display: block; }
+.todo-item span { color: var(--muted); font-size: 12.5px; }
+.timeline { display: grid; }
+.tl { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.tl:last-child { border-bottom: 0; }
+.tl .t { font-family: var(--mono); color: var(--muted); font-size: 12.5px; padding-top: 1px; }
+.tl b { font-weight: 500; }
+.tl span.d { display: block; color: var(--muted); font-size: 12.5px; }
+
+/* 자동화 */
+.wf-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 980px) { .wf-grid { grid-template-columns: minmax(0, 1fr); } }
+.wf { display: grid; grid-template-rows: auto auto 1fr auto; }
+.wf .card-h h2 { display: flex; gap: 8px; align-items: center; }
+.wf .no { font-family: var(--mono); background: var(--ink); color: var(--panel); border-radius: 5px; padding: 0 6px; font-size: 13px; }
+.wf-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.wf-meta div { display: grid; gap: 1px; }
+.wf-meta span { color: var(--muted); font-size: 12px; }
+.wf-meta b { font-family: var(--mono); font-weight: 500; font-size: 13px; }
+.steps { padding: 12px 16px; display: grid; gap: 4px; font-size: 13px; }
+.steps .s { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; align-items: start; color: var(--ink-2); }
+.steps .s .m { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); margin-top: 3px; }
+.steps .s.done .m { border-color: var(--good); background: var(--good); }
+.steps .s.run .m { border-color: var(--s1); border-top-color: transparent; animation: spin .7s linear infinite; }
+.steps .s.fail .m { border-color: var(--crit); background: var(--crit); }
+.steps .s .x { font-family: var(--mono); color: var(--muted); font-size: 12px; }
+.steps .s em { font-style: normal; color: var(--muted); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.strip { display: flex; gap: 3px; align-items: center; }
+.strip i { width: 12px; height: 18px; border-radius: 3px; background: var(--good); opacity: .85; }
+.strip i.w { background: var(--warn); }
+.strip i.c { background: var(--crit); }
+.wf-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.result { margin: 0 16px 12px; padding: 10px 12px; background: var(--panel-2); border-radius: 8px; font-size: 13px; }
+
+/* 필터 */
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); padding: 6px 12px; cursor: pointer; }
+.seg button.on { background: var(--ink); color: var(--panel); }
+.filters input[type=search], .filters select, .field input, .field textarea, .field select {
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 6px 10px;
+}
+.filters input[type=search] { min-width: 200px; }
+
+/* 확인 필요 */
+.issue-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .issue-grid { grid-template-columns: minmax(0, 1fr); } }
+.issue { border-left: 4px solid var(--crit); }
+.field { display: grid; gap: 4px; }
+.field label { font-size: 12px; color: var(--muted); }
+.field input, .field textarea { width: 100%; }
+.form { display: grid; gap: 10px; }
+
+/* 고객 문의 */
+.cs { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 960px) { .cs { grid-template-columns: minmax(0, 1fr); } }
+.cs-list { display: grid; }
+.cs-item { display: grid; gap: 3px; padding: 12px 14px; border-bottom: 1px solid var(--line); cursor: pointer; background: none; border-left: 0; border-right: 0; border-top: 0; text-align: left; width: 100%; }
+.cs-item:hover { background: var(--panel-2); }
+.cs-item.on { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--ink); }
+.cs-item .h { display: flex; justify-content: space-between; gap: 8px; }
+.cs-item p { margin: 0; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quote { background: var(--panel-2); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; }
+.draft { width: 100%; min-height: 140px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--panel); line-height: 1.6; }
+.ai-box { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ai-box div { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; }
+.ai-box span { font-size: 12px; color: var(--muted); }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--panel); padding: 10px 16px; border-radius: 10px; font-size: 13.5px; z-index: 20; max-width: calc(100% - 32px);
+}
+.cfg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .cfg { grid-template-columns: minmax(0, 1fr); } }
+.conn { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.conn:last-child { border-bottom: 0; }
+.conn span { display: block; color: var(--muted); font-size: 12.5px; }
+textarea.mono { font-family: var(--mono); font-size: 12.5px; min-height: 180px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .steps .s.run .m { animation: none; } }
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><b>곡물상회 자동화</b><span>셀러 자동화 콘솔</span></div>
+    <nav class="nav" id="nav" aria-label="메뉴"></nav>
+    <div class="foot">
+      <span class="demo" style="width:fit-content">데모 데이터</span>
+      <span>화면의 주문·고객은 모두 가상입니다. 실제 운영 시 n8n 워크플로와 판매처 계정에 연결됩니다.</span>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <h1 id="title">대시보드</h1>
+      <div class="meta"><span class="demo">데모</span><span id="clock" class="num"></span><button class="btn sm" id="runAll" type="button">⑤ 주문 취합 지금 실행</button></div>
+    </header>
+    <main class="view" id="view"></main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(() => {
+'use strict';
+// ───────────── 시간 유틸 (KST) ─────────────
+const KST = 9 * 3600e3, MIN = 60e3, HOUR = 3600e3, DAY = 86400e3;
+const kd = (ms) => new Date(ms + KST).toISOString().slice(0, 10);
+const kt = (ms) => new Date(ms + KST).toISOString().slice(11, 16);
+const kdt = (ms) => `${kd(ms).slice(5)} ${kt(ms)}`;
+const dayStart = (ms) => Date.parse(kd(ms) + 'T00:00:00+09:00');
+const wd = (ms) => '일월화수목금토'[new Date(ms + KST).getUTCDay()];
+const won = (n) => `${Math.round(n).toLocaleString('ko-KR')}원`;
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = (s, el = document) => el.querySelector(s);
+
+// ───────────── 데모 데이터 생성 (매번 같은 결과) ─────────────
+function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const PRODUCTS = [
+  ['[1+1] 국산 무농약 현미 4kg', '용량: 4kg x 2', 32900, 9], ['제주 감귤 5kg 가정용', '크기: 중과', 20900, 7],
+  ['유기농 귀리 1kg', '', 12900, 5], ['햇 찹쌀 2kg', '', 15900, 3], ['국산 서리태 1kg', '', 18900, 2], ['혼합 잡곡 선물세트', '포장: 선물용', 45000, 1],
+];
+const NAMES = ['김민준', '이서연', '박지호', '최유나', '정하늘', '한소희', '윤도현', '강지민', '조은우', '임수아', '오준서', '서하린', '신도윤', '권나연', '황시우', '송예린', '안주원', '류다은', '배현우', '홍채원', '문지안', '양서준', '고하윤', '노태민'];
+const ADDRS = [
+  ['06236', '서울특별시 강남구 테헤란로 123', '101동 1001호'], ['13529', '경기도 성남시 분당구 판교역로 45', '3층'], ['48058', '부산광역시 해운대구 센텀중앙로 78', '502호'],
+  ['34141', '대전광역시 유성구 대학로 99', '2동 301호'], ['61949', '광주광역시 서구 상무중앙로 12', '1501호'], ['21999', '인천광역시 연수구 송도과학로 32', '1203호'],
+  ['42011', '대구광역시 수성구 동대구로 210', '804호'], ['44776', '울산광역시 남구 삼산로 55', '1102호'], ['16490', '경기도 수원시 팔달구 효원로 3', '201호'],
+  ['63309', '제주특별자치도 제주시 첨단로 8', '102호'], ['10881', '경기도 파주시 회동길 77', '3동 401호'], ['04524', '서울특별시 중구 세종대로 110', '15층'],
+];
+
+function buildState() {
+  const r = rng(20261104);
+  const now = Date.now();
+  // 가장 최근 출고일 08:40 (일요일 제외)
+  let anchor = dayStart(now) + 8 * HOUR + 40 * MIN;
+  if (anchor > now) anchor -= DAY;
+  while (wd(anchor) === '일') anchor -= DAY;
+  const people = NAMES.map((n, i) => {
+    const a = ADDRS[i % ADDRS.length];
+    return { name: n, phone: `010-${String(1000 + Math.floor(r() * 9000))}-${String(1000 + Math.floor(r() * 9000))}`, vnum: `0503-${String(1000 + Math.floor(r() * 9000))}-${String(1000 + Math.floor(r() * 9000))}`, zip: a[0], addr: `${a[1]} ${a[2]}` };
+  });
+  let seq = 1000;
+  const pick = () => { let w = r() * 27, acc = 0; return PRODUCTS.find((p) => (acc += p[3]) >= w) || PRODUCTS[0]; };
+  const mk = (paidAt, person, channel, status, over = {}) => {
+    const p = pick(); const qty = r() < 0.8 ? 1 : 2; seq++;
+    return {
+      id: channel === '쿠팡' ? `6${seq}-30${seq}` : `202611${seq}01`, orderNo: channel === '쿠팡' ? `1800${seq}` : `202611${seq}`,
+      channel, paidAt, product: p[0], option: p[1], qty, amount: p[2] * qty,
+      receiver: person.name, phone: channel === '쿠팡' ? person.vnum : person.phone, zip: person.zip, addr: person.addr,
+      memo: r() < 0.3 ? ['문 앞에 놓아주세요', '부재 시 경비실', '배송 전 연락 부탁드려요'][Math.floor(r() * 3)] : '', status, ...over,
+    };
+  };
+  const orders = [];
+  // 지난 14일 (배송완료/배송중)
+  for (let d = 14; d >= 1; d--) {
+    const base = dayStart(anchor) - d * DAY;
+    const weekend = ['토', '일'].includes(wd(base));
+    const n = Math.round((weekend ? 18 : 28) + r() * 10 + (14 - d) * 0.4);
+    for (let k = 0; k < n; k++) {
+      const t = base + Math.floor(r() * DAY);
+      orders.push(mk(t, people[Math.floor(r() * people.length)], r() < 0.58 ? '스마트스토어' : '쿠팡', d <= 2 ? '배송중' : '배송완료'));
+    }
+  }
+  // 오늘 08:40 처리분 (A) — 합포장·확인필요 포함
+  const A = [];
+  const tA = (i) => anchor - DAY + Math.floor((i + 1) * (DAY / 17));
+  for (let i = 0; i < 15; i++) A.push(mk(tA(i), people[i % people.length], i % 3 === 0 ? '쿠팡' : '스마트스토어', '신규'));
+  A.push(mk(tA(15), people[0], A[0].channel === '쿠팡' ? '스마트스토어' : '쿠팡', '신규')); // 판매처 넘는 합포장
+  A[4].addr = ''; // 주소 누락
+  A[9].phone = '010-1234-567'; // 연락처 오류
+  orders.push(...A);
+  // 08:40 이후 새 주문 (B) — 아직 처리 전
+  const span = Math.max(now - anchor, 40 * MIN);
+  const B = [];
+  for (let i = 0; i < 6; i++) B.push(mk(Math.min(now - MIN, anchor + Math.floor((i + 1) * span / 7)), people[16 + i], i % 2 ? '쿠팡' : '스마트스토어', '신규'));
+  B[5].status = '취소'; B[5].memo = '고객 취소요청';
+  orders.push(...B);
+
+  const state = { v: 1, createdAt: now, anchor, orders, shipments: [], runs: [], inquiries: [], csQueue: [], columnMap: COLUMN_MAP, seq };
+  // 과거 실행 기록
+  for (let d = 14; d >= 1; d--) {
+    const day = dayStart(anchor) - d * DAY;
+    if (wd(day) !== '일') {
+      const at = day + 8 * HOUR + 40 * MIN;
+      const cnt = orders.filter((o) => o.paidAt < at && o.paidAt >= at - (wd(day) === '월' ? 3 : 1) * DAY).length;
+      const retry = d === 5;
+      state.runs.push({ wf: 5, at, status: retry ? '재시도' : '성공', dur: retry ? 14.2 : 6 + r() * 3, summary: retry ? `쿠팡 API 응답 지연 → 2회차 성공 · 택배 ${Math.round(cnt * 0.85)}건` : `주문 ${cnt}건 → 택배 ${Math.round(cnt * 0.86)}건` });
+    }
+    state.runs.push({ wf: 3, at: day + 8 * HOUR + 30 * MIN, status: '성공', dur: 3 + r() * 2, summary: '어제 매출 리포트 메일·슬랙 발송' });
+  }
+  // 오늘 실행: ③ 리포트, ⑤ 취합 (A 처리)
+  state.runs.push({ wf: 3, at: anchor - 10 * MIN, status: '성공', dur: 3.4, summary: '어제 매출 리포트 메일·슬랙 발송' });
+  const res = collect(state, A.map((o) => o.id), anchor, '정기 실행');
+  state.runs.push({ wf: 5, at: anchor, status: '성공', dur: 7.8, summary: res.summary });
+  // ① 신규 주문 알림 (10분마다) — 최근 기록 몇 개
+  for (let k = 6; k >= 1; k--) state.runs.push({ wf: 1, at: now - k * 10 * MIN, status: '성공', dur: 1.2 + r(), summary: k === 3 ? '새 주문 1건 → 슬랙 알림' : '새 주문 없음' });
+  // 고객 문의
+  state.inquiries = INQUIRIES.slice(0, 5).map((q, i) => ({ ...q, id: 'Q' + (i + 1), at: now - (i * 47 + 12) * MIN, status: i >= 3 ? '답변완료' : '대기' }));
+  state.csQueue = INQUIRIES.slice(5);
+  state.inquiries.forEach((q) => state.runs.push({ wf: 2, at: q.at, status: '성공', dur: 4 + r() * 3, summary: `문의 분류: ${q.ai.category} · ${q.ai.urgency}` }));
+  state.runs.sort((a, b) => a.at - b.at);
+  return state;
+}
+
+const COLUMN_MAP = '받는분성명=수령인\n받는분전화번호=연락처\n받는분주소=주소\n품목명=품목\n내품수량=수량\n배송메세지=배송메모\n고객주문번호=주문번호\n합포장=합포장';
+
+const INQUIRIES = [
+  { name: '최고객', channel: '스마트스토어', orderNo: '2026111015', message: '감귤 받았는데 절반이 곰팡이 피고 몇 개는 터져 있어요. 사진 있어요. 환불해 주세요.',
+    ai: { category: '불만/클레임', urgency: '높음', sentiment: '부정', needs_human: true, reason: '파손·환불 요청 — 담당자 확인 필요',
+      draft: '고객님, 불편을 드려 정말 죄송합니다. 받으신 감귤 상태를 확인할 수 있도록 사진을 보내주시면 담당자가 바로 확인하겠습니다. 신선식품은 상태 불량 시 재발송 또는 환불해 드리고 있으니, 확인 후 원하시는 방법으로 처리해 드리겠습니다.' } },
+  { name: '정고객', channel: '홈페이지', orderNo: '', message: '어제 저녁에 현미 주문했는데 오늘 출발하나요?',
+    ai: { category: '배송', urgency: '보통', sentiment: '중립', needs_human: false, reason: '',
+      draft: '안녕하세요 고객님, 문의 감사합니다. 평일 오후 2시 이전 결제 건은 당일 출고되며, 어제 저녁 주문은 오늘 출고 예정입니다. 출고 후 보통 1~2일 안에 도착합니다. 송장번호가 나오면 문자로 안내드리겠습니다.' } },
+  { name: '한고객', channel: '쿠팡', orderNo: '1800102', message: '귀리 1kg 두 개 시켰는데 하나만 왔어요.',
+    ai: { category: '배송', urgency: '높음', sentiment: '부정', needs_human: true, reason: '수량 누락 — 출고 기록 확인 필요',
+      draft: '고객님, 불편을 드려 죄송합니다. 주문하신 수량과 출고 기록을 바로 확인하겠습니다. 누락이 확인되면 빠진 1개를 오늘 바로 추가 발송해 드리겠습니다.' } },
+  { name: '윤고객', channel: '스마트스토어', orderNo: '2026111020', message: '현금영수증 발행 가능한가요? 사업자 지출증빙으로요.',
+    ai: { category: '결제/영수증', urgency: '낮음', sentiment: '중립', needs_human: false, reason: '',
+      draft: '안녕하세요 고객님. 지출증빙용 현금영수증은 마이페이지 주문 상세에서 직접 신청하실 수 있습니다. 세금계산서가 필요하시면 사업자등록증을 보내주시면 발행해 드리겠습니다.' } },
+  { name: '서고객', channel: '홈페이지', orderNo: '', message: '선물세트 포장 리본 색을 고를 수 있나요?',
+    ai: { category: '상품문의', urgency: '낮음', sentiment: '긍정', needs_human: false, reason: '',
+      draft: '안녕하세요 고객님, 선물세트에 관심 가져 주셔서 감사합니다. 리본 색상 선택 가능 여부를 확인해서 안내드리겠습니다. 원하시는 색상을 알려주시면 함께 확인하겠습니다.' } },
+  { name: '강고객', channel: '쿠팡', orderNo: '1800118', message: '주소를 잘못 입력했어요. 아직 출고 전이면 바꿀 수 있을까요?',
+    ai: { category: '배송', urgency: '높음', sentiment: '중립', needs_human: true, reason: '출고 전 주소 변경 — 오늘 업로드 파일 확인 필요',
+      draft: '안녕하세요 고객님. 출고 전이라면 주소 변경이 가능합니다. 바꾸실 주소를 알려주시면 바로 반영하겠습니다. 이미 출고된 경우에는 택배사를 통해 변경을 도와드리겠습니다.' } },
+  { name: '임고객', channel: '스마트스토어', orderNo: '', message: '서리태 국산 맞나요? 원산지 표시가 궁금해요.',
+    ai: { category: '상품문의', urgency: '낮음', sentiment: '중립', needs_human: false, reason: '',
+      draft: '안녕하세요 고객님, 문의 감사합니다. 서리태 원산지는 상품 상세페이지의 상품정보 고시에 표시되어 있습니다. 확인 후 정확한 원산지를 다시 안내드리겠습니다.' } },
+];
+
+// ───────────── 핵심 로직: 주문 취합 (n8n ⑤번 워크플로와 같은 규칙) ─────────────
+const phoneOk = (p) => /^0\d{1,3}-?\d{3,4}-?\d{4}$/.test(String(p || '').replace(/\s/g, ''));
+function problems(o) {
+  const p = [];
+  if (!String(o.receiver || '').trim()) p.push('받는 분 없음');
+  if (!phoneOk(o.phone)) p.push('연락처 형식 오류');
+  if (String(o.addr || '').trim().length < 8) p.push('주소 없음/불완전');
+  return p;
+}
+function collect(state, ids, at, how) {
+  const set = new Set(ids);
+  const targets = state.orders.filter((o) => set.has(o.id));
+  const cancelled = targets.filter((o) => o.status === '취소');
+  const live = targets.filter((o) => o.status === '신규');
+  const ok = [], bad = [];
+  for (const o of live) { const p = problems(o); if (p.length) { o.status = '확인필요'; o.problem = p.join(', '); bad.push(o); } else ok.push(o); }
+  const groups = new Map();
+  for (const o of ok) { const k = `${o.receiver}|${String(o.addr).replace(/\s/g, '')}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(o); }
+  const made = [];
+  for (const g of groups.values()) {
+    state.seq++;
+    const sh = {
+      id: 'S' + state.seq, createdAt: at, how, status: '업로드 대기',
+      channels: [...new Set(g.map((o) => o.channel))], receiver: g[0].receiver,
+      phone: (g.find((o) => o.channel !== '쿠팡') || g[0]).phone, zip: g[0].zip, addr: g[0].addr,
+      items: g.map((o) => `${o.product}${o.option ? `(${o.option})` : ''} x${o.qty}`).join(' / '),
+      qty: g.reduce((s, o) => s + o.qty, 0), memo: [...new Set(g.map((o) => o.memo).filter(Boolean))].join(' / '),
+      orderNos: [...new Set(g.map((o) => o.orderNo))].join(','), orderIds: g.map((o) => o.id), combined: g.length > 1 ? g.length : 0,
+    };
+    g.forEach((o) => { o.status = '출고대기'; o.shipmentId = sh.id; });
+    made.push(sh);
+  }
+  state.shipments.push(...made);
+  const byCh = (ch) => targets.filter((o) => o.channel === ch).length;
+  return {
+    found: targets.length, smart: byCh('스마트스토어'), coupang: byCh('쿠팡'), cancelled: cancelled.length, issues: bad.length,
+    shipments: made.length, combined: made.filter((s) => s.combined).length,
+    summary: targets.length ? `주문 ${targets.length}건 → 택배 ${made.length}건${made.some((s) => s.combined) ? ` (합포장 ${made.filter((s) => s.combined).length})` : ''}${bad.length ? ` · 확인 필요 ${bad.length}` : ''}` : '새 주문 없음',
+  };
+}
+
+// ───────────── 상태 저장 ─────────────
+const KEY = 'seller-console-demo-v1';
+let S;
+try { const raw = localStorage.getItem(KEY); if (raw) { const p = JSON.parse(raw); if (p && p.v === 1 && Date.now() - p.createdAt < 20 * HOUR) S = p; } } catch {}
+if (!S) S = buildState();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+save();
+
+// ───────────── 공통 화면 요소 ─────────────
+const WF = {
+  1: { name: '신규 주문 알림', trigger: '10분마다', file: '01_스마트스토어_주문_시트_슬랙.json', desc: '새 결제 주문을 시트에 기록하고 슬랙으로 알립니다.' },
+  2: { name: '고객 문의 AI 답변 초안', trigger: '문의 접수 시 (웹훅)', file: '02_고객문의_AI_답변초안.json', desc: 'Claude가 문의를 분류하고 답변 초안을 만듭니다. 발송은 사람이 합니다.' },
+  3: { name: '일일 매출 리포트', trigger: '매일 08:30', file: '03_일일_매출리포트.json', desc: '어제 매출·주문수·인기 상품을 메일과 슬랙으로 보냅니다.' },
+  5: { name: '주문 취합 · 택배 엑셀 + 구글시트', trigger: '출고일 08:40 (월~토)', file: '05_주문취합_택배엑셀_구글시트_자동생성.json', desc: '스마트스토어·쿠팡 주문을 합쳐 택배 업로드 엑셀과 새 스프레드시트를 만듭니다.' },
+};
+const ROUTES = [
+  ['dashboard', '대시보드'], ['automations', '자동화'], ['orders', '주문'], ['shipping', '출고'], ['issues', '확인 필요'], ['cs', '고객 문의'], ['config', '연결 · 설정'],
+];
+const chTag = (c) => `<span class="ch ${c === '쿠팡' ? 's2' : 's1'}"><i></i>${esc(c)}</span>`;
+const STATUS_PILL = { 신규: 'info', 출고대기: 'warn', 확인필요: 'crit', 배송중: 'good', 배송완료: 'mute', 취소: 'mute', '업로드 대기': 'warn', '업로드 완료': 'good', 대기: 'warn', 답변완료: 'good', 성공: 'good', 재시도: 'warn', 실패: 'crit' };
+const pill = (s, label) => `<span class="pill ${STATUS_PILL[s] || 'mute'}">${esc(label || s)}</span>`;
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 3600); }
+const counts = () => ({
+  newOrders: S.orders.filter((o) => o.status === '신규').length,
+  waiting: S.shipments.filter((s) => s.status === '업로드 대기').length,
+  issues: S.orders.filter((o) => o.status === '확인필요').length,
+  csOpen: S.inquiries.filter((q) => q.status === '대기').length,
+  csUrgent: S.inquiries.filter((q) => q.status === '대기' && q.ai.needs_human).length,
+});
+
+function renderNav(route) {
+  const c = counts();
+  const badge = { orders: c.newOrders, shipping: c.waiting, issues: c.issues, cs: c.csOpen };
+  const hot = { shipping: c.waiting > 0, issues: c.issues > 0, cs: c.csUrgent > 0 };
+  $('#nav').innerHTML = ROUTES.map(([k, l]) => `<a href="#${k}" class="${k === route ? 'on' : ''}" ${k === route ? 'aria-current="page"' : ''}>${l}${badge[k] ? `<span class="cnt ${hot[k] ? 'hot' : ''}">${badge[k]}</span>` : ''}</a>`).join('');
+}
+
+// ───────────── 대시보드 ─────────────
+function viewDashboard() {
+  const c = counts();
+  const today0 = dayStart(Date.now());
+  const todayOrders = S.orders.filter((o) => o.paidAt >= today0);
+  const tSmart = todayOrders.filter((o) => o.channel === '스마트스토어').length;
+  const month0 = Date.parse(kd(Date.now()).slice(0, 8) + '01T00:00:00+09:00');
+  const runs5 = S.runs.filter((r) => r.wf === 5 && r.at >= month0).length;
+  const runs3 = S.runs.filter((r) => r.wf === 3 && r.at >= month0).length;
+  const runs2 = S.runs.filter((r) => r.wf === 2 && r.at >= month0).length;
+  const savedMin = runs5 * 40 + runs3 * 10 + runs2 * 3;
+  const lastWf5 = [...S.runs].reverse().find((r) => r.wf === 5);
+  const urgentQ = S.inquiries.find((q) => q.status === '대기' && q.ai.needs_human);
+
+  const todo = [];
+  if (c.waiting) todo.push(['y', c.waiting, `택배 ${c.waiting}건 업로드 대기`, `${kt(lastWf5.at)} 자동 생성 · 엑셀을 택배사에 올리면 끝`, '<a class="btn sm pri" href="#shipping">출고로</a>']);
+  if (c.issues) todo.push(['r', c.issues, `확인 필요 ${c.issues}건`, '주소·연락처를 고치면 바로 출고에 들어갑니다', '<a class="btn sm" href="#issues">고치기</a>']);
+  if (urgentQ) todo.push(['r', c.csUrgent, `사람 확인이 필요한 문의 ${c.csUrgent}건`, `${urgentQ.ai.category} · ${urgentQ.ai.reason}`, '<a class="btn sm" href="#cs">문의 보기</a>']);
+  if (c.newOrders) todo.push(['y', c.newOrders, `08:40 이후 새 주문 ${c.newOrders}건`, '다음 정기 실행 때 자동 처리 · 지금 처리할 수도 있습니다', '<button class="btn sm" type="button" data-run="5">지금 실행</button>']);
+  if (!todo.length) todo.push(['g', '✓', '처리할 일이 없습니다', '다음 정기 실행을 기다리는 중', '']);
+
+  const recent = [...S.runs].reverse().slice(0, 7);
+  return `
+  <section class="kpis" aria-label="오늘 요약">
+    <div class="card kpi"><div class="lbl">오늘 결제 주문</div><div class="val">${todayOrders.length}<small>건</small></div><div class="sub">${chTag('스마트스토어')} ${tSmart} · ${chTag('쿠팡')} ${todayOrders.length - tSmart}</div></div>
+    <div class="card kpi ${c.waiting ? 'todo' : ''}"><div class="lbl">출고 대기 택배</div><div class="val">${c.waiting}<small>건</small></div><div class="sub">합포장 ${S.shipments.filter((s) => s.status === '업로드 대기' && s.combined).length}건 포함</div></div>
+    <div class="card kpi"><div class="lbl">확인 필요 ${c.issues ? pill('확인필요', '조치 필요') : ''}</div><div class="val">${c.issues}<small>건</small></div><div class="sub">주소·연락처 오류</div></div>
+    <div class="card kpi"><div class="lbl">미답변 문의 ${c.csUrgent ? pill('실패', `긴급 ${c.csUrgent}`) : ''}</div><div class="val">${c.csOpen}<small>건</small></div><div class="sub">AI 답변 초안 준비됨</div></div>
+    <div class="card kpi"><div class="lbl">이번 달 아낀 시간 <span class="muted">추정</span></div><div class="val">${(savedMin / 60).toFixed(1)}<small>시간</small></div><div class="sub">취합 ${runs5}회 × 40분 외</div></div>
+  </section>
+  <section class="dash">
+    <div class="card">
+      <div class="card-h"><h2>일별 결제 주문 <small>최근 15일</small></h2><div class="legend"><span class="ch s1"><i></i>스마트스토어</span><span class="ch s2"><i></i>쿠팡</span></div></div>
+      <div class="card-b"><div class="chart-wrap" id="chart"></div>
+        <details><summary class="muted" style="cursor:pointer;font-size:12.5px">표로 보기</summary><div class="scroll" id="chartTable"></div></details>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>오늘 할 일</h2><small>${kd(Date.now())} (${wd(Date.now())})</small></div>
+      <div class="card-b todo-list">${todo.map(([cl, n, t, d, a]) => `<div class="todo-item"><div class="ic ${cl}">${n}</div><div><b>${t}</b><span>${d}</span></div>${a}</div>`).join('')}</div>
+    </div>
+  </section>
+  <section class="dash">
+    <div class="card">
+      <div class="card-h"><h2>최근 자동화 실행</h2><a class="btn sm" href="#automations">전체 보기</a></div>
+      <div class="card-b timeline">${recent.map((r) => `<div class="tl"><div class="t">${kd(r.at) === kd(Date.now()) ? kt(r.at) : kd(r.at).slice(5)}</div><div><b>${['', '①', '②', '③', '④', '⑤'][r.wf]} ${esc(WF[r.wf].name)}</b><span class="d">${esc(r.summary)}</span></div>${pill(r.status)}</div>`).join('')}</div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>판매처별 이번 주</h2><small>월요일부터</small></div>
+      <div class="card-b" id="weekSplit"></div>
+    </div>
+  </section>`;
+}
+
+function drawChart() {
+  const el = $('#chart'); if (!el) return;
+  const end = dayStart(Date.now());
+  const days = Array.from({ length: 15 }, (_, i) => end - (14 - i) * DAY);
+  const data = days.map((d) => {
+    const os = S.orders.filter((o) => o.paidAt >= d && o.paidAt < d + DAY);
+    return { d, s1: os.filter((o) => o.channel === '스마트스토어').length, s2: os.filter((o) => o.channel === '쿠팡').length };
+  });
+  const W = Math.max(320, el.clientWidth), H = 240, pl = 34, pr = 8, pt = 12, pb = 28;
+  const max = Math.max(...data.map((x) => x.s1 + x.s2), 1);
+  const step = max > 40 ? 20 : 10; const top = Math.ceil(max / step) * step;
+  const y = (v) => pt + (H - pt - pb) * (1 - v / top);
+  const bw = (W - pl - pr) / data.length; const barW = Math.min(26, bw * 0.62);
+  const cs = getComputedStyle(document.documentElement);
+  const col = { s1: cs.getPropertyValue('--s1').trim(), s2: cs.getPropertyValue('--s2').trim(), grid: cs.getPropertyValue('--grid').trim(), muted: cs.getPropertyValue('--muted').trim(), panel: cs.getPropertyValue('--panel').trim(), ink: cs.getPropertyValue('--ink').trim() };
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="최근 15일 판매처별 결제 주문 막대 차트">`;
+  for (let v = 0; v <= top; v += step) svg += `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" stroke="${col.grid}" stroke-width="1"/><text x="${pl - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="${col.muted}" font-family="IBM Plex Mono, monospace">${v}</text>`;
+  data.forEach((x, i) => {
+    const cx = pl + bw * i + bw / 2, x0 = cx - barW / 2;
+    const y1 = y(x.s1), y0 = y(0), y2 = y(x.s1 + x.s2);
+    const today = i === data.length - 1;
+    if (x.s1) svg += `<rect x="${x0}" y="${y1}" width="${barW}" height="${y0 - y1}" fill="${col.s1}"/>`;
+    if (x.s2) { const h = Math.max(0, y1 - y2 - 2), r = Math.min(4, h / 2); svg += `<path d="M${x0},${y1 - 2} v${-(h - r)} q0,${-r} ${r},${-r} h${barW - 2 * r} q${r},0 ${r},${r} v${h - r} z" fill="${col.s2}"/>`; }
+    if (i % 2 === 0 || today) svg += `<text x="${cx}" y="${H - 9}" text-anchor="middle" font-size="11" fill="${today ? col.ink : col.muted}" font-weight="${today ? 600 : 400}">${today ? '오늘' : kd(x.d).slice(5).replace('-', '/')}</text>`;
+    svg += `<rect class="hit" data-i="${i}" x="${pl + bw * i}" y="${pt}" width="${bw}" height="${H - pt - pb}" fill="transparent"/>`;
+  });
+  svg += '</svg><div class="tip" id="tip" hidden></div>';
+  el.innerHTML = svg;
+  const tip = $('#tip', el);
+  el.querySelectorAll('.hit').forEach((h) => {
+    const show = () => {
+      const x = data[+h.dataset.i];
+      tip.innerHTML = `<b>${kd(x.d)} (${wd(x.d)})</b><div class="r"><span class="ch s1"><i></i>스마트스토어</span><span class="num">${x.s1}</span></div><div class="r"><span class="ch s2"><i></i>쿠팡</span><span class="num">${x.s2}</span></div><div class="r muted"><span>합계</span><span class="num">${x.s1 + x.s2}건</span></div>`;
+      tip.hidden = false;
+      const bx = (+h.getAttribute('x') + bw / 2) / W * el.clientWidth;
+      tip.style.left = Math.min(el.clientWidth - 160, Math.max(0, bx - 75)) + 'px'; tip.style.top = '8px';
+    };
+    h.addEventListener('mouseenter', show); h.addEventListener('focus', show);
+    h.addEventListener('mouseleave', () => (tip.hidden = true));
+  });
+  $('#chartTable').innerHTML = `<table><thead><tr><th>날짜</th><th class="r">스마트스토어</th><th class="r">쿠팡</th><th class="r">합계</th></tr></thead><tbody>${data.map((x) => `<tr><td>${kd(x.d)}</td><td class="r num">${x.s1}</td><td class="r num">${x.s2}</td><td class="r num">${x.s1 + x.s2}</td></tr>`).join('')}</tbody></table>`;
+  // 이번 주 판매처 비중 (가로 막대 1줄 + 수치)
+  const now = Date.now(); const dow = (new Date(now + KST).getUTCDay() + 6) % 7; const w0 = dayStart(now) - dow * DAY;
+  const wk = S.orders.filter((o) => o.paidAt >= w0 && o.status !== '취소');
+  const a = wk.filter((o) => o.channel === '스마트스토어'), b = wk.filter((o) => o.channel === '쿠팡');
+  const sum = (xs) => xs.reduce((s, o) => s + o.amount, 0);
+  const pa = wk.length ? Math.round(a.length / wk.length * 100) : 0;
+  $('#weekSplit').innerHTML = `
+    <div style="display:flex;height:14px;border-radius:4px;overflow:hidden;gap:2px;margin:4px 0 14px">${a.length ? `<div style="flex:${a.length};background:var(--s1)"></div>` : ''}${b.length ? `<div style="flex:${b.length};background:var(--s2)"></div>` : ''}</div>
+    <table><thead><tr><th>판매처</th><th class="r">주문</th><th class="r">비중</th><th class="r">매출</th></tr></thead><tbody>
+      <tr><td>${chTag('스마트스토어')}</td><td class="r num">${a.length}</td><td class="r num">${pa}%</td><td class="r num">${won(sum(a))}</td></tr>
+      <tr><td>${chTag('쿠팡')}</td><td class="r num">${b.length}</td><td class="r num">${wk.length ? 100 - pa : 0}%</td><td class="r num">${won(sum(b))}</td></tr>
+      <tr><td><b>합계</b></td><td class="r num"><b>${wk.length}</b></td><td class="r num">100%</td><td class="r num"><b>${won(sum(wk))}</b></td></tr>
+    </tbody></table>`;
+}
+
+// ───────────── 자동화 ─────────────
+const live = {}; // 실행 중 단계 표시
+function viewAutomations() {
+  return `<p class="muted" style="margin:0">아래 4개 워크플로가 n8n에서 정해진 시간에 자동으로 돌아갑니다. <b>지금 실행</b>을 누르면 같은 규칙으로 데모 데이터를 처리합니다.</p>
+  <section class="wf-grid">${[5, 1, 2, 3].map((id) => {
+    const rs = S.runs.filter((r) => r.wf === id);
+    const last = rs[rs.length - 1];
+    const ok = rs.filter((r) => r.status !== '실패').length;
+    const avg = rs.length ? rs.reduce((s, r) => s + r.dur, 0) / rs.length : 0;
+    const L = live[id];
+    return `<article class="card wf">
+      <div class="card-h"><h2><span class="no">${['', '①', '②', '③', '④', '⑤'][id]}</span>${esc(WF[id].name)}</h2>${pill('성공', '활성')}</div>
+      <div class="wf-meta"><div><span>실행 조건</span><b>${esc(WF[id].trigger)}</b></div><div><span>최근 실행</span><b>${last ? kdt(last.at) : '-'}</b></div><div><span>성공률 · 평균</span><b>${rs.length ? Math.round(ok / rs.length * 100) : 0}% · ${avg.toFixed(1)}초</b></div></div>
+      ${L ? `<div class="steps" aria-live="polite">${L.steps.map((s) => `<div class="s ${s.st}"><span class="m"></span><span>${esc(s.t)}${s.d ? ` <em>· ${esc(s.d)}</em>` : ''}</span><span class="x">${s.ms ? s.ms + 'ms' : ''}</span></div>`).join('')}</div>${L.result ? `<div class="result">${L.result}</div>` : ''}`
+        : `<div class="steps"><span class="muted">${esc(WF[id].desc)}</span><div class="row" style="margin-top:6px"><span class="muted" style="font-size:12px">최근 ${Math.min(14, rs.length)}회</span><div class="strip">${rs.slice(-14).map((r) => `<i class="${r.status === '재시도' ? 'w' : r.status === '실패' ? 'c' : ''}" title="${esc(kdt(r.at) + ' · ' + r.status + ' · ' + r.summary)}"></i>`).join('')}</div></div></div>`}
+      <div class="wf-foot"><span class="muted num" style="font-size:12px">${esc(WF[id].file)}</span><button class="btn pri sm" type="button" data-run="${id}" ${L && !L.done ? 'disabled' : ''}>${L && !L.done ? '실행 중…' : '지금 실행'}</button></div>
+    </article>`;
+  }).join('')}</section>
+  <section class="card"><div class="card-h"><h2>실행 기록</h2><small>최근 30건</small></div><div class="scroll"><table><thead><tr><th>시각</th><th>워크플로</th><th>결과</th><th>내용</th><th class="r">소요</th></tr></thead><tbody>
+    ${[...S.runs].reverse().slice(0, 30).map((r) => `<tr><td class="num">${kdt(r.at)}</td><td>${['', '①', '②', '③', '④', '⑤'][r.wf]} ${esc(WF[r.wf].name)}</td><td>${pill(r.status)}</td><td class="w">${esc(r.summary)}</td><td class="r num">${r.dur.toFixed(1)}초</td></tr>`).join('')}
+  </tbody></table></div></section>`;
+}
+
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+async function runWorkflow(id) {
+  if (live[id] && !live[id].done) return;
+  const L = (live[id] = { steps: [], done: false, result: '' });
+  const at = Date.now(); const t0 = performance.now();
+  const step = async (t, fn) => {
+    const s = { t, st: 'run', d: '' }; L.steps.push(s); paint();
+    await new Promise((r) => setTimeout(r, reduce ? 0 : 320 + Math.random() * 380));
+    try { s.d = (await fn()) || ''; s.st = 'done'; } catch (e) { s.st = 'fail'; s.d = e.message; throw e; }
+    s.ms = Math.round(120 + Math.random() * 600); paint();
+  };
+  const paint = () => { if (route() === 'automations') render(); };
+  if (route() !== 'automations') location.hash = 'automations'; else render();
+  let summary = '';
+  try {
+    if (id === 5) {
+      const fresh = S.orders.filter((o) => o.status === '신규' || (o.status === '취소' && !o.handled));
+      const sm = fresh.filter((o) => o.channel === '스마트스토어'), cp = fresh.filter((o) => o.channel === '쿠팡');
+      await step('스마트스토어 주문 조회', () => `결제완료 ${sm.length}건 (24시간 구간 2회 조회)`);
+      await step('쿠팡 발주서 조회', () => `결제완료 ${cp.length}건 (HMAC 서명)`);
+      await step('이미 처리한 주문 제외', () => `처리 기록 ${S.orders.filter((o) => o.shipmentId).length}건과 대조`);
+      let res;
+      await step('검증 · 합포장', () => { res = collect(S, fresh.map((o) => o.id), at, '수동 실행'); fresh.forEach((o) => (o.handled = true)); return `확인 필요 ${res.issues}건 · 취소 제외 ${res.cancelled}건 · 합포장 ${res.combined}건`; });
+      if (res.shipments) {
+        await step('구글 스프레드시트 새 파일 만들기', () => `[곡물상회] ${kd(at)} 출고 · 택배 ${res.shipments}건 (탭 3개)`);
+        await step('택배 업로드 엑셀 만들기', () => `${kd(at)}_택배업로드.xlsx`);
+        await step('메일 · 슬랙 알림', () => '시트 링크 + 엑셀 첨부');
+      } else await step('출고 대상 없음 알림', () => '메일로 알림');
+      summary = res.summary;
+      L.result = res.shipments ? `<b>택배 ${res.shipments}건</b>이 출고 목록에 추가됐습니다. <a href="#shipping">출고 화면에서 엑셀 받기 →</a>` : '새로 처리할 주문이 없습니다.';
+    } else if (id === 1) {
+      const n = 1 + Math.floor(Math.random() * 3); const r = rng(Date.now() & 0xffff);
+      await step('스마트스토어 변경 주문 조회', () => `최근 15분 · 새 결제 ${n}건`);
+      const made = [];
+      await step('주문 정리 + 중복 제외', () => {
+        for (let i = 0; i < n; i++) {
+          const p = PRODUCTS[Math.floor(r() * PRODUCTS.length)]; const nm = NAMES[Math.floor(r() * NAMES.length)]; const a = ADDRS[Math.floor(r() * ADDRS.length)]; S.seq++;
+          made.push({ id: `202611${S.seq}01`, orderNo: `202611${S.seq}`, channel: '스마트스토어', paidAt: Date.now() - Math.floor(r() * 9) * MIN, product: p[0], option: p[1], qty: 1, amount: p[2], receiver: nm, phone: `010-${1000 + Math.floor(r() * 9000)}-${1000 + Math.floor(r() * 9000)}`, zip: a[0], addr: `${a[1]} ${a[2]}`, memo: '', status: '신규' });
+        }
+        S.orders.push(...made); return `${made.length}건 기록`;
+      });
+      await step('구글시트에 기록', () => '주문 탭에 추가');
+      await step('슬랙 알림', () => `🛒 신규 주문 ${made.length}건 · ${won(made.reduce((s, o) => s + o.amount, 0))}`);
+      summary = `새 주문 ${made.length}건 → 슬랙 알림`;
+      L.result = `새 주문 <b>${made.length}건</b>이 들어왔습니다. ⑤ 주문 취합을 실행하면 바로 출고 목록에 들어갑니다.`;
+    } else if (id === 2) {
+      const q = S.csQueue.shift();
+      await step('문의 수신 (웹훅)', () => (q ? `${q.channel} · ${q.name}` : '새 문의 없음'));
+      if (q) {
+        await step('Claude 분류 + 답변 초안', () => `${q.ai.category} · 긴급도 ${q.ai.urgency}`);
+        await step(q.ai.needs_human ? '슬랙: 긴급 채널' : '슬랙: 일반 채널', () => (q.ai.needs_human ? q.ai.reason : '답변 초안 전달'));
+        await step('구글시트에 기록', () => '문의 탭');
+        S.inquiries.unshift({ ...q, id: 'Q' + (S.inquiries.length + 1), at: Date.now(), status: '대기' });
+        summary = `문의 분류: ${q.ai.category} · ${q.ai.urgency}`;
+        L.result = `새 문의가 분류됐습니다. <a href="#cs">고객 문의에서 초안 확인 →</a>`;
+      } else { summary = '새 문의 없음'; L.result = '대기 중인 데모 문의를 모두 처리했습니다.'; }
+    } else if (id === 3) {
+      const y0 = dayStart(Date.now()) - DAY, w0 = y0 - 7 * DAY;
+      const yo = S.orders.filter((o) => o.paidAt >= y0 && o.paidAt < y0 + DAY && o.status !== '취소');
+      const wo = S.orders.filter((o) => o.paidAt >= w0 && o.paidAt < w0 + DAY && o.status !== '취소');
+      const rev = yo.reduce((s, o) => s + o.amount, 0), prev = wo.reduce((s, o) => s + o.amount, 0);
+      const pct = prev ? Math.round((rev - prev) / prev * 1000) / 10 : 0;
+      const top = Object.entries(yo.reduce((m, o) => ((m[o.product] = (m[o.product] || 0) + o.amount), m), {})).sort((a, b) => b[1] - a[1])[0];
+      await step('주문 시트 읽기', () => `어제 ${yo.length}건`);
+      await step('어제 매출 집계', () => `${won(rev)} · 지난주 ${wd(y0)}요일 대비 ${pct > 0 ? '▲' : '▼'}${Math.abs(pct)}%`);
+      await step('Claude 코멘트 작성', () => '2~3문장');
+      await step('메일 · 슬랙 발송', () => '리포트 1통');
+      summary = '어제 매출 리포트 메일·슬랙 발송';
+      L.result = `<b>${kd(y0)} 매출 ${won(rev)}</b> · 주문 ${yo.length}건 · 객단가 ${won(yo.length ? rev / yo.length : 0)} · 지난주 같은 요일 대비 ${pct > 0 ? '▲' : '▼'}${Math.abs(pct)}%${top ? `<br>가장 많이 팔린 상품: ${esc(top[0])}` : ''}`;
+    }
+    S.runs.push({ wf: id, at, status: '성공', dur: (performance.now() - t0) / 1000, summary });
+  } catch (e) {
+    S.runs.push({ wf: id, at, status: '실패', dur: (performance.now() - t0) / 1000, summary: e.message });
+    L.result = `실패: ${esc(e.message)}`;
+  }
+  L.done = true; save(); render();
+  toast(`${['', '①', '②', '③', '④', '⑤'][id]} ${WF[id].name} 완료 · ${summary}`);
+}
+
+// ───────────── 주문 ─────────────
+const ui = { ch: '전체', st: '전체', q: '', cs: null };
+function viewOrders() {
+  const list = S.orders.filter((o) => (ui.ch === '전체' || o.channel === ui.ch) && (ui.st === '전체' || o.status === ui.st) &&
+    (!ui.q || `${o.receiver} ${o.product} ${o.orderNo}`.includes(ui.q))).sort((a, b) => b.paidAt - a.paidAt);
+  const sts = ['전체', '신규', '출고대기', '확인필요', '배송중', '배송완료', '취소'];
+  return `<div class="filters">
+      <div class="seg" role="group" aria-label="판매처">${['전체', '스마트스토어', '쿠팡'].map((c) => `<button type="button" data-ch="${c}" class="${ui.ch === c ? 'on' : ''}">${c}</button>`).join('')}</div>
+      <select id="stSel" aria-label="상태">${sts.map((s) => `<option ${ui.st === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+      <input type="search" id="q" placeholder="받는 분, 상품, 주문번호" value="${esc(ui.q)}" aria-label="검색">
+      <span class="muted">${list.length}건</span>
+    </div>
+    <section class="card"><div class="scroll" style="max-height:640px"><table><thead><tr><th>결제일시</th><th>판매처</th><th>주문번호</th><th>상품</th><th class="r">수량</th><th class="r">금액</th><th>받는 분</th><th>상태</th></tr></thead><tbody>
+      ${list.slice(0, 300).map((o) => `<tr><td class="num">${kdt(o.paidAt)}</td><td>${chTag(o.channel)}</td><td class="num">${esc(o.orderNo)}</td><td class="w">${esc(o.product)}${o.option ? ` <span class="muted">(${esc(o.option)})</span>` : ''}</td><td class="r num">${o.qty}</td><td class="r num">${won(o.amount)}</td><td>${esc(o.receiver)}</td><td>${pill(o.status)}${o.problem ? ` <span class="muted" style="font-size:12px">${esc(o.problem)}</span>` : ''}</td></tr>`).join('') || '<tr><td colspan="8" class="empty">조건에 맞는 주문이 없습니다.</td></tr>'}
+    </tbody></table></div></section>`;
+}
+
+// ───────────── 출고 ─────────────
+function cols() {
+  return String(S.columnMap).split('\n').map((l) => l.trim()).filter((l) => l && l.includes('=') && !l.startsWith('#')).map((l) => {
+    const i = l.indexOf('='); const src = l.slice(i + 1).trim(); const fx = src.match(/^"(.*)"$/);
+    const F = { 수령인: 'receiver', 연락처: 'phone', 주소: 'addr', 품목: 'items', 수량: 'qty', 배송메모: 'memo', 주문번호: 'orderNos', 우편번호: 'zip' };
+    return { h: l.slice(0, i).trim(), get: fx ? () => fx[1] : src === '합포장' ? (s) => (s.combined ? `${s.combined}건 합침` : '') : src === '판매처' ? (s) => s.channels.join('+') : (s) => s[F[src]] ?? '' };
+  });
+}
+function viewShipping() {
+  const wait = S.shipments.filter((s) => s.status === '업로드 대기');
+  const doneL = S.shipments.filter((s) => s.status === '업로드 완료').slice(-20).reverse();
+  const row = (s) => `<tr><td>${s.channels.map(chTag).join(' ')}</td><td>${esc(s.receiver)}</td><td class="num">${esc(s.phone)}</td><td class="w">${esc(s.addr)}</td><td class="w">${esc(s.items)}</td><td class="r num">${s.qty}</td><td>${s.combined ? `<span class="tag">${s.combined}건 합침</span>` : ''}</td><td class="muted">${esc(s.memo)}</td></tr>`;
+  const head = '<thead><tr><th>판매처</th><th>받는 분</th><th>연락처</th><th>주소</th><th>품목</th><th class="r">수량</th><th>합포장</th><th>배송메모</th></tr></thead>';
+  return `<section class="card">
+    <div class="card-h"><h2>업로드 대기 <span class="num">${wait.length}</span>건</h2>
+      <div class="row"><button class="btn pri" type="button" id="xlsx" ${wait.length ? '' : 'disabled'}>엑셀 파일 받기</button><button class="btn" type="button" id="copyT" ${wait.length ? '' : 'disabled'}>표 복사</button><button class="btn" type="button" id="markUp" ${wait.length ? '' : 'disabled'}>택배사 업로드 완료로 표시</button></div></div>
+    <div class="card-b" style="padding-bottom:0"><div class="row muted" style="font-size:12.5px">${pill('업로드 대기', '구글 스프레드시트')} <span>실제 운영 시 같은 내용이 매일 새 스프레드시트(택배업로드·주문전체·확인필요 탭)로 만들어집니다.</span></div></div>
+    <div class="card-b"><div class="scroll"><table>${head}<tbody>${wait.map(row).join('') || '<tr><td colspan="8" class="empty">업로드할 택배가 없습니다. 자동화 화면에서 ⑤ 주문 취합을 실행해 보세요.</td></tr>'}</tbody></table></div></div>
+  </section>
+  <section class="card"><div class="card-h"><h2>업로드 완료</h2><small>최근 20건</small></div><div class="card-b"><div class="scroll"><table>${head}<tbody>${doneL.map(row).join('') || '<tr><td colspan="8" class="empty">아직 없습니다.</td></tr>'}</tbody></table></div></div></section>`;
+}
+
+// ───────────── 확인 필요 ─────────────
+function viewIssues() {
+  const list = S.orders.filter((o) => o.status === '확인필요');
+  if (!list.length) return '<section class="card"><div class="card-b empty">확인할 주문이 없습니다. 주소나 연락처에 문제가 있는 주문은 자동으로 여기에 모입니다.</div></section>';
+  return `<p class="muted" style="margin:0">주소·연락처가 이상해서 택배 파일에서 뺀 주문입니다. 판매자센터에서 확인한 정보로 고치면 바로 출고 목록에 들어갑니다.</p>
+  <section class="issue-grid">${list.map((o) => `<form class="card issue" data-id="${esc(o.id)}">
+    <div class="card-h"><h2>${esc(o.receiver || '(이름 없음)')} · ${chTag(o.channel)}</h2>${pill('확인필요', o.problem)}</div>
+    <div class="card-b form">
+      <div class="muted" style="font-size:12.5px">주문 ${esc(o.orderNo)} · ${esc(o.product)} x${o.qty} · ${kdt(o.paidAt)}</div>
+      <div class="field"><label for="p_${esc(o.id)}">연락처</label><input id="p_${esc(o.id)}" name="phone" value="${esc(o.phone)}"></div>
+      <div class="field"><label for="a_${esc(o.id)}">주소</label><input id="a_${esc(o.id)}" name="addr" value="${esc(o.addr)}" placeholder="도로명 주소 + 상세 주소"></div>
+      <div class="row"><button class="btn pri sm" type="submit">고치고 출고에 넣기</button><span class="muted err" style="font-size:12.5px"></span></div>
+    </div></form>`).join('')}</section>`;
+}
+
+// ───────────── 고객 문의 ─────────────
+function viewCS() {
+  const list = [...S.inquiries].sort((a, b) => (a.status === b.status ? b.at - a.at : a.status === '대기' ? -1 : 1));
+  if (!ui.cs || !list.find((q) => q.id === ui.cs)) ui.cs = list[0]?.id;
+  const q = list.find((x) => x.id === ui.cs);
+  return `<section class="cs">
+    <div class="card"><div class="card-h"><h2>문의 <span class="num">${list.length}</span></h2><button class="btn sm" type="button" data-run="2">새 문의 받기 (데모)</button></div>
+      <div class="cs-list">${list.map((x) => `<button type="button" class="cs-item ${x.id === ui.cs ? 'on' : ''}" data-q="${x.id}">
+        <span class="h"><b>${esc(x.name)} <span class="muted" style="font-weight:400">· ${esc(x.channel)}</span></b>${x.status === '답변완료' ? pill('답변완료') : x.ai.needs_human ? pill('실패', '사람 확인') : pill('대기', '초안 준비')}</span>
+        <p>${esc(x.message)}</p><span class="muted" style="font-size:12px">${esc(x.ai.category)} · ${kdt(x.at)}</span></button>`).join('')}</div></div>
+    ${q ? `<div class="card"><div class="card-h"><h2>${esc(q.name)} <span class="muted" style="font-weight:400">· ${esc(q.channel)}${q.orderNo ? ' · 주문 ' + esc(q.orderNo) : ''}</span></h2>${q.status === '답변완료' ? pill('답변완료') : pill('대기')}</div>
+      <div class="card-b form">
+        <div class="quote">${esc(q.message)}</div>
+        <div class="ai-box"><div><span>AI 분류</span><b>${esc(q.ai.category)}</b></div><div><span>긴급도</span><b style="color:${q.ai.urgency === '높음' ? 'var(--crit)' : 'inherit'}">${esc(q.ai.urgency)}</b></div><div><span>감정</span><b>${esc(q.ai.sentiment)}</b></div></div>
+        ${q.ai.needs_human ? `<div class="row">${pill('실패', '사람 확인 필요')}<span>${esc(q.ai.reason)}</span></div>` : ''}
+        <div class="field"><label for="draft">AI 답변 초안 · 고친 뒤 복사해서 보내세요</label><textarea class="draft" id="draft">${esc(q.draftEdit ?? q.ai.draft)}</textarea></div>
+        <div class="row"><button class="btn pri" type="button" id="copyDraft">초안 복사</button><button class="btn" type="button" id="doneQ" ${q.status === '답변완료' ? 'disabled' : ''}>답변 완료로 표시</button><span class="muted" style="font-size:12.5px">AI는 고객에게 직접 보내지 않습니다.</span></div>
+      </div></div>` : ''}
+  </section>`;
+}
+
+// ───────────── 연결 · 설정 ─────────────
+function viewConfig() {
+  const conns = [
+    ['스마트스토어', '커머스 API · 주문 조회', '연결됨 (데모)'], ['쿠팡', 'Wing Open API · 발주서 조회', '연결됨 (데모)'],
+    ['Google Sheets / Drive', '매일 새 스프레드시트 생성', '연결됨 (데모)'], ['Gmail', '업로드 파일·리포트 발송', '연결됨 (데모)'],
+    ['Slack', '#출고알림 · #고객문의', '연결됨 (데모)'], ['Anthropic Claude', '문의 분류·답변 초안·리포트 코멘트', '연결됨 (데모)'],
+  ];
+  return `<section class="cfg">
+    <div class="card"><div class="card-h"><h2>연결된 서비스</h2><small>실제 운영 시 n8n 자격증명으로 연결</small></div>
+      <div class="card-b">${conns.map(([n, d, s]) => `<div class="conn"><div><b>${n}</b><span>${d}</span></div>${pill('성공', s)}</div>`).join('')}</div></div>
+    <div class="card"><div class="card-h"><h2>택배사 업로드 양식</h2><small>출고 화면의 엑셀에 바로 적용</small></div>
+      <div class="card-b form">
+        <div class="field"><label for="colmap">한 줄에 하나씩: 엑셀열=항목 · 고정값은 운임구분="선불"</label><textarea id="colmap" class="mono">${esc(S.columnMap)}</textarea></div>
+        <span class="muted" style="font-size:12.5px">항목: 수령인, 연락처, 주소, 우편번호, 품목, 수량, 배송메모, 주문번호, 판매처, 합포장</span>
+        <div class="row"><button class="btn pri sm" type="button" id="saveMap">저장</button><button class="btn sm" type="button" id="resetMap">CJ대한통운형으로 되돌리기</button></div>
+      </div></div>
+    <div class="card"><div class="card-h"><h2>데모 데이터</h2></div>
+      <div class="card-b form"><span class="muted">이 콘솔의 주문·고객·문의는 모두 가상 데이터이며 이 브라우저에만 저장됩니다.</span>
+        <div class="row"><button class="btn sm" type="button" id="resetAll">데모 처음 상태로 되돌리기</button></div></div></div>
+  </section>`;
+}
+
+// ───────────── 라우팅 · 렌더 ─────────────
+const VIEWS = { dashboard: viewDashboard, automations: viewAutomations, orders: viewOrders, shipping: viewShipping, issues: viewIssues, cs: viewCS, config: viewConfig };
+const route = () => { const h = location.hash.slice(1); return VIEWS[h] ? h : 'dashboard'; };
+function render() {
+  const r = route();
+  renderNav(r);
+  $('#title').textContent = ROUTES.find(([k]) => k === r)[1];
+  const focusId = document.activeElement?.id; const caret = document.activeElement?.selectionStart;
+  $('#view').innerHTML = VIEWS[r]();
+  if (r === 'dashboard') drawChart();
+  if (focusId === 'q') { const q = $('#q'); q?.focus(); try { q.setSelectionRange(caret, caret); } catch {} }
+}
+window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => route() === 'dashboard' && drawChart(), 150); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => route() === 'dashboard' && drawChart());
+const tick = () => ($('#clock').textContent = `${kd(Date.now())} (${wd(Date.now())}) ${kt(Date.now())}`);
+tick(); setInterval(tick, 30e3);
+
+// ───────────── 이벤트 ─────────────
+document.addEventListener('click', async (e) => {
+  const run = e.target.closest('[data-run]'); if (run) { runWorkflow(+run.dataset.run); return; }
+  const ch = e.target.closest('[data-ch]'); if (ch) { ui.ch = ch.dataset.ch; render(); return; }
+  const qi = e.target.closest('[data-q]'); if (qi) { ui.cs = qi.dataset.q; render(); return; }
+  const id = e.target.id;
+  if (id === 'runAll') runWorkflow(5);
+  if (id === 'xlsx') {
+    const wait = S.shipments.filter((s) => s.status === '업로드 대기'); const C = cols();
+    if (!window.XLSX) return toast('엑셀 도구를 불러오지 못했습니다. 표 복사를 써 주세요.');
+    const ws = XLSX.utils.aoa_to_sheet([C.map((c) => c.h), ...wait.map((s) => C.map((c) => c.get(s)))]);
+    ws['!cols'] = C.map((c) => ({ wch: Math.min(60, Math.max(c.h.length * 2 + 2, ...wait.map((s) => String(c.get(s)).length + 2))) }));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '택배업로드');
+    try { XLSX.writeFile(wb, `${kd(Date.now())}_택배업로드.xlsx`); toast('엑셀 저장을 시작했습니다. 저장이 막힌 화면에서는 표 복사를 써 주세요.'); } catch { toast('이 화면에서는 파일 저장이 막혀 있습니다. 표 복사를 써 주세요.'); }
+  }
+  if (id === 'copyT') {
+    const wait = S.shipments.filter((s) => s.status === '업로드 대기'); const C = cols();
+    const tsv = [C.map((c) => c.h).join('\t'), ...wait.map((s) => C.map((c) => String(c.get(s)).replace(/[\t\n]+/g, ' ')).join('\t'))].join('\n');
+    try { await navigator.clipboard.writeText(tsv); toast(`${wait.length}줄을 복사했습니다. 엑셀 A1 칸에 붙여넣으세요.`); } catch { toast('복사가 막혔습니다. 표를 드래그해서 복사해 주세요.'); }
+  }
+  if (id === 'markUp') {
+    const wait = S.shipments.filter((s) => s.status === '업로드 대기');
+    wait.forEach((s) => { s.status = '업로드 완료'; S.orders.filter((o) => o.shipmentId === s.id).forEach((o) => (o.status = '배송중')); });
+    save(); render(); toast(`택배 ${wait.length}건을 업로드 완료로 표시했습니다. 주문 상태가 배송중으로 바뀌었습니다.`);
+  }
+  if (id === 'copyDraft') { const t = $('#draft').value; try { await navigator.clipboard.writeText(t); toast('초안을 복사했습니다.'); } catch { $('#draft').select(); toast('복사가 막혔습니다. 선택된 글을 Ctrl+C로 복사하세요.'); } }
+  if (id === 'doneQ') { const q = S.inquiries.find((x) => x.id === ui.cs); q.status = '답변완료'; save(); render(); toast('답변 완료로 표시했습니다.'); }
+  if (id === 'saveMap') { S.columnMap = $('#colmap').value; save(); toast('택배 양식을 저장했습니다. 출고 화면 엑셀에 적용됩니다.'); }
+  if (id === 'resetMap') { S.columnMap = COLUMN_MAP; save(); render(); toast('CJ대한통운형 양식으로 되돌렸습니다.'); }
+  if (id === 'resetAll') { S = buildState(); Object.keys(live).forEach((k) => delete live[k]); save(); location.hash = 'dashboard'; render(); toast('데모를 처음 상태로 되돌렸습니다.'); }
+});
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'q') { ui.q = e.target.value.trim(); render(); }
+  if (e.target.id === 'draft') { const q = S.inquiries.find((x) => x.id === ui.cs); if (q) { q.draftEdit = e.target.value; save(); } }
+});
+document.addEventListener('change', (e) => { if (e.target.id === 'stSel') { ui.st = e.target.value; render(); } });
+document.addEventListener('submit', (e) => {
+  const f = e.target.closest('form.issue'); if (!f) return; e.preventDefault();
+  const o = S.orders.find((x) => x.id === f.dataset.id);
+  const next = { ...o, phone: f.phone.value.trim(), addr: f.addr.value.trim() };
+  const p = problems(next);
+  if (p.length) { $('.err', f).textContent = `아직 문제가 있습니다: ${p.join(', ')}`; return; }
+  Object.assign(o, { phone: next.phone, addr: next.addr, status: '신규', problem: '' });
+  const res = collect(S, [o.id], Date.now(), '확인 후 수동 추가');
+  save(); render(); toast(res.shipments ? `${o.receiver}님 주문을 출고 목록에 넣었습니다.` : '처리하지 못했습니다.');
+});
+
+render();
+})();
+</script>
