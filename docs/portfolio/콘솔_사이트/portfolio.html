@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>운영 콘솔 포트폴리오</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&family=Do+Hyeon&display=swap">
+<style>
+/* 크몽 포트폴리오 1024×768: 위 제목 영역 + 아래 브라우저 창 속 실제 사이트 화면(아래로 이어지게 잘림) */
+:root {
+  --bg: #e9ecf0; --ink: #14181d; --muted: #5b6470; --line: #cfd5dc; --label: #ffd23f; --chrome: #f6f7f9;
+  --display: "Do Hyeon", "IBM Plex Sans KR", sans-serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #777; font-family: var(--body); color: var(--ink); }
+.p { width: 1024px; height: 768px; background: var(--bg); position: relative; overflow: hidden; margin: 0 auto 20px; padding: 38px 56px 0; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.tape { background: var(--label); font-weight: 700; padding: 4px 12px; transform: rotate(-1.2deg); display: inline-block; font-size: 15px; }
+.meta { font-size: 13px; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 400; font-size: 40px; line-height: 1.15; margin: 14px 0 6px; text-wrap: balance; }
+.sub { font-size: 16px; color: var(--muted); margin: 0; }
+.win {
+  position: absolute; left: 56px; right: 56px; top: 196px;
+  background: #fff; border: 1px solid var(--line); border-radius: 12px 12px 0 0; overflow: hidden;
+  box-shadow: 0 20px 50px rgba(20, 24, 29, .18);
+}
+.bar { height: 30px; background: var(--chrome); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 7px; padding: 0 12px; }
+.bar i { width: 10px; height: 10px; border-radius: 50%; background: #d5d9df; }
+.bar .url { margin-left: 14px; flex: 1; max-width: 380px; height: 18px; border-radius: 6px; background: #fff; border: 1px solid var(--line); font-family: var(--mono); font-size: 10.5px; color: var(--muted); display: flex; align-items: center; padding: 0 8px; }
+.win img { display: block; width: 100%; }
+.note { position: absolute; right: 72px; top: 160px; display: flex; gap: 8px; }
+.note span { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; font-size: 13px; }
+.note b { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<section class="p" id="p1">
+  <div class="top"><span class="tape">온라인 쇼핑몰 · 운영 콘솔 구축</span><span class="meta">화면 예시 · 샘플 데이터</span></div>
+  <h1>주문 · 출고 · 문의를 한 화면에서 보는 운영 대시보드</h1>
+  <p class="sub">스마트스토어 · 쿠팡 주문과 자동화 실행 결과를 모아, 오늘 처리할 일부터 보여줍니다.</p>
+  <div class="win"><div class="bar"><i></i><i></i><i></i><span class="url">console.곡물상회 / 대시보드</span></div><img src="assets/cap_dash.png" alt="운영 콘솔 대시보드 화면"></div>
+</section>
+
+<section class="p" id="p2">
+  <div class="top"><span class="tape">자동화 실행 · n8n 연동</span><span class="meta">화면 예시 · 샘플 데이터</span></div>
+  <h1>자동화 4개의 실행 상태와 처리 단계를 바로 확인</h1>
+  <p class="sub">주문 취합 · 신규 주문 알림 · 문의 분류 · 매출 리포트. 급할 땐 버튼 하나로 즉시 실행합니다.</p>
+  <div class="win"><div class="bar"><i></i><i></i><i></i><span class="url">console.곡물상회 / 자동화</span></div><img src="assets/cap_auto.png" alt="자동화 실행 화면"></div>
+</section>
+
+<section class="p" id="p3">
+  <div class="top"><span class="tape">고객 문의 · 답변 초안</span><span class="meta">화면 예시 · 샘플 데이터</span></div>
+  <h1>문의는 자동 분류, 긴급 건은 먼저, 답변은 초안부터</h1>
+  <p class="sub">판매처별 문의를 모아 분류 · 긴급도를 표시하고, 담당자는 초안을 확인한 뒤 보냅니다.</p>
+  <div class="win"><div class="bar"><i></i><i></i><i></i><span class="url">console.곡물상회 / 고객 문의</span></div><img src="assets/cap_cs.png" alt="고객 문의 화면"></div>
+</section>
+
+</body>
+</html>
