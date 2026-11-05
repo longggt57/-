@@ -28,6 +28,11 @@
 ## Category
 Programming & Tech → AI Development / Workflow Automation (n8n가 선택지에 있으면 n8n)
 
+## Industry (업종 · 서비스 정보/포트폴리오 항목에 나오면 선택)
+- 1순위: **E-commerce**
+- 함께 고를 수 있으면: **Retail**
+- 포트폴리오 이미지의 샘플 가게(곡물 판매)에 맞추려면: **Food & Beverage**
+
 ## Search tags (5)
 `n8n` · `shopify automation` · `workflow automation` · `google sheets automation` · `ecommerce automation`
 
