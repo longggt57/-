@@ -25,8 +25,10 @@
 - I will automate your Shopify and Amazon orders with n8n and Google Sheets
 - I will build n8n automations that turn your daily orders into a ready shipping file
 
-## Category
-Programming & Tech → AI Development / Workflow Automation (n8n가 선택지에 있으면 n8n)
+## Category (서비스 · 포트폴리오 프로젝트 공통)
+- 1순위: **Programming & Tech → AI Coding → AI Integrations**
+- 목록에 **AI Agents**나 **Automation(n8n)** 하위 항목이 보이면 그쪽도 괜찮습니다. 서비스 유형(Service type)에 n8n이 있으면 n8n을 고르세요.
+- 메뉴 이름은 Fiverr가 자주 바꾸니, 등록 화면 드롭다운에서 가장 가까운 이름을 고르면 됩니다.
 
 ## Industry (업종 · 서비스 정보/포트폴리오 항목에 나오면 선택)
 - 1순위: **E-commerce**
