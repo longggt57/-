@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fiverr Gig Images v2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Archivo+Black&display=swap">
+<style>
+/* Fiverr gig images 1280x769 for "n8n / ERP / CRM AI automation". Main: ink background + label yellow, workflow nodes. Subs: light, console screenshot as proof. */
+:root {
+  --bg: #eef0f3; --paper: #fff; --ink: #14181d; --ink2: #1f252d; --muted: #5b6470; --line: #d3d8df;
+  --label: #ffd23f; --s1: #2a78d6; --s2: #eb6834; --good: #2fbf5a;
+  --display: "Archivo Black", "IBM Plex Sans", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #777; font-family: var(--body); color: var(--ink); }
+.g { width: 1280px; height: 769px; position: relative; overflow: hidden; margin: 0 auto 20px; padding: 56px 60px; display: flex; flex-direction: column; gap: 22px; background: var(--bg); }
+.tape { background: var(--label); color: var(--ink); font-weight: 700; padding: 6px 14px; transform: rotate(-1.2deg); display: inline-block; font-size: 18px; width: fit-content; }
+h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; line-height: 1.06; letter-spacing: -0.01em; }
+h2 { font-size: 46px; }
+
+/* MAIN */
+.main { background: var(--ink); color: #fff; display: grid; grid-template-columns: 500px 1fr; gap: 28px; align-items: center; }
+.main::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,.07) 1.2px, transparent 1.2px); background-size: 22px 22px; }
+.main > * { position: relative; }
+.main .left { display: grid; gap: 24px; }
+.main h1 { font-size: 60px; }
+.main h1 em { font-style: normal; color: var(--label); }
+.main .sub { font-size: 22px; color: #c3c9d1; margin: 0; line-height: 1.45; max-width: 30ch; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.pills span { border: 1px solid #3a424d; color: #e8ebef; border-radius: 999px; padding: 6px 14px; font-size: 16px; font-weight: 500; }
+.pills span.y { background: var(--label); color: var(--ink); border-color: var(--label); font-weight: 700; }
+
+.wf { display: grid; grid-template-columns: 1fr 44px 150px 44px 1fr; align-items: center; }
+.col { display: grid; gap: 12px; }
+.node { background: var(--ink2); border: 1px solid #343c47; border-radius: 12px; padding: 12px 14px; display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: center; }
+.node i { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-style: normal; font-family: var(--mono); font-weight: 600; font-size: 14px; color: var(--ink); }
+.node b { font-size: 16px; display: block; color: #fff; }
+.node small { font-size: 12.5px; color: #9aa4b1; white-space: nowrap; }
+.node b { white-space: nowrap; }
+.hub { background: var(--label); color: var(--ink); border-radius: 16px; padding: 22px 16px; text-align: center; display: grid; gap: 6px; box-shadow: 0 0 0 6px rgba(255,210,63,.18); }
+.hub b { font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1; }
+.hub small { font-size: 13px; font-weight: 600; }
+.hub .ai { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.hub .ai span { background: var(--ink); color: #fff; font-size: 11.5px; font-weight: 600; border-radius: 999px; padding: 2px 8px; }
+.arrow { position: relative; height: 2px; background: repeating-linear-gradient(90deg, #6b7480 0 6px, transparent 6px 11px); margin: 0 8px; }
+.arrow::after { content: ""; position: absolute; right: -2px; top: -5px; border: 6px solid transparent; border-left-color: #6b7480; }
+
+/* SUB 1 */
+.s1 .shot { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 18px 40px rgba(20,24,29,.14); flex: 1; min-height: 0; }
+.s1 .shot img { display: block; width: 100%; }
+.callouts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.callouts div { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.callouts b { display: block; font-size: 18px; }
+.callouts span { color: var(--muted); font-size: 15px; }
+
+/* SUB 2 */
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.step { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 26px 24px; display: grid; gap: 10px; align-content: start; }
+.step .n { width: 36px; height: 36px; border-radius: 10px; background: var(--ink); color: #fff; display: grid; place-items: center; font-family: var(--mono); font-weight: 600; }
+.step b { font-size: 23px; }
+.step span { color: var(--muted); font-size: 18px; line-height: 1.45; }
+.get { background: var(--ink); color: #fff; border-radius: 14px; padding: 22px 26px; display: grid; gap: 14px; }
+.get h3 { margin: 0; font-size: 21px; color: var(--label); }
+.works { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+#s2 { justify-content: center; }
+.works b { font-size: 17px; color: var(--muted); font-weight: 500; margin-right: 4px; }
+.works span { background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 7px 15px; font-size: 16px; font-weight: 500; }
+.get ul { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 24px; }
+.get li { font-size: 19px; display: flex; gap: 10px; align-items: baseline; }
+.get li::before { content: "✓"; color: var(--good); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- MAIN -->
+<section class="g main" id="m">
+  <div class="left">
+    <span class="tape">n8n · Make.com · GPT · Claude · Gemini</span>
+    <h1>AI automation for your <em>CRM</em> &amp; <em>ERP</em></h1>
+    <p class="sub">Stop copying data between apps. Your routine work runs on its own, built with n8n.</p>
+    <div class="pills"><span class="y">Custom workflows</span><span>CRM setup</span><span>Database design</span></div>
+  </div>
+  <div class="wf" aria-label="Workflow: apps to n8n to results">
+    <div class="col">
+      <div class="node"><i style="background:#86b6ef">CR</i><div><b>CRM</b><small>leads · deals</small></div></div>
+      <div class="node"><i style="background:#f3a07a">ER</i><div><b>ERP</b><small>orders · stock</small></div></div>
+      <div class="node"><i style="background:#9fd9b5">FM</i><div><b>Forms</b><small>web · email</small></div></div>
+    </div>
+    <div class="arrow"></div>
+    <div class="hub"><b>n8n</b><small>workflow + AI</small><div class="ai"><span>GPT</span><span>Claude</span><span>Gemini</span></div></div>
+    <div class="arrow"></div>
+    <div class="col">
+      <div class="node"><i style="background:#ffd23f">DB</i><div><b>Database</b><small>Sheets · Airtable</small></div></div>
+      <div class="node"><i style="background:#c9b8f5">@</i><div><b>Email</b><small>reports · replies</small></div></div>
+      <div class="node"><i style="background:#f5b8d0">#</i><div><b>Slack</b><small>alerts</small></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SUB 1 -->
+<section class="g s1" id="s1">
+  <span class="tape">Operations dashboard</span>
+  <h2>See every automation running in one place</h2>
+  <div class="shot"><img src="portfolio/02_automations.png" alt="Automations screen"></div>
+  <div class="callouts">
+    <div><b>Run history</b><span>Every run logged</span></div>
+    <div><b>Step by step</b><span>See what each run did</span></div>
+    <div><b>Run now</b><span>Trigger on demand</span></div>
+    <div><b>To-do list</b><span>What needs a person</span></div>
+  </div>
+</section>
+
+<!-- SUB 2 -->
+<section class="g" id="s2">
+  <span class="tape">How it works</span>
+  <h2>No technical skills needed on your side</h2>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><b>Tell me your task</b><span>Describe your day or send a short screen recording.</span></div>
+    <div class="step"><div class="n">2</div><b>Approve the plan</b><span>You get a clear workflow plan before anything is built.</span></div>
+    <div class="step"><div class="n">3</div><b>I build &amp; test</b><span>Built in your n8n and tested with your real apps.</span></div>
+    <div class="step"><div class="n">4</div><b>You take over</b><span>Walkthrough plus a simple guide for small changes.</span></div>
+  </div>
+  <div class="get">
+    <h3>What you get</h3>
+    <ul>
+      <li>Working n8n workflow</li><li>Error alerts &amp; retries</li><li>Settings in one place</li>
+      <li>Runs in your accounts</li><li>Walkthrough video</li><li>Support after delivery</li>
+    </ul>
+  </div>
+  <div class="works"><b>Works with</b><span>HubSpot</span><span>Salesforce</span><span>Google Sheets</span><span>Airtable</span><span>Shopify</span><span>Gmail</span><span>Slack</span><span>Webhooks &amp; APIs</span></div>
+</section>
+
+</body>
+</html>
