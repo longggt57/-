@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Automation Showreel</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<style>
+/* 1920×1080 showreel. Every frame is drawn by render(t) — no CSS animation — so frames can be captured one by one. */
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #000; }
+.stage { width: 1920px; height: 1080px; position: relative; overflow: hidden; font-family: "Manrope", system-ui, sans-serif; color: #fff;
+  background: radial-gradient(ellipse at 50% 45%, #131a25 0%, #080b11 55%, #030406 100%); }
+.bgplane { position: absolute; left: -600px; top: -500px; width: 3120px; height: 2300px; transform-origin: 50% 55%; }
+.grid { position: absolute; inset: 0; background-image:
+  linear-gradient(rgba(120, 150, 190, .085) 1px, transparent 1px), linear-gradient(90deg, rgba(120, 150, 190, .085) 1px, transparent 1px),
+  linear-gradient(rgba(120, 150, 190, .04) 1px, transparent 1px), linear-gradient(90deg, rgba(120, 150, 190, .04) 1px, transparent 1px);
+  background-size: 160px 160px, 160px 160px, 32px 32px, 32px 32px; }
+.scene { position: absolute; inset: 0; opacity: 0; }
+.plane { position: absolute; width: 2400px; height: 1500px; left: -240px; top: -190px; transform-origin: 50% 55%; }
+svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.node { position: absolute; width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: 22px; background: linear-gradient(160deg, #272c37, #171a21); border: 2px solid #3b4250;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .06); display: grid; place-items: center; }
+.node svg { width: 54px; height: 54px; }
+.node.trig { border-color: #ff5a4f; background: linear-gradient(160deg, #e43c34, #a91d18); box-shadow: 0 0 0 5px rgba(255, 70, 60, .18), 0 0 44px rgba(255, 70, 60, .75), 0 0 100px rgba(255, 70, 60, .35); }
+.node.lit { border-color: #4be3a0; box-shadow: 0 0 0 4px rgba(75, 227, 160, .14), 0 0 34px rgba(75, 227, 160, .5); }
+.node.hub { width: 168px; height: 168px; margin: -84px 0 0 -84px; border-radius: 36px; border-color: #7cc8ff; box-shadow: 0 0 0 8px rgba(110, 190, 255, .12), 0 0 70px rgba(110, 190, 255, .55), 0 0 160px rgba(110, 190, 255, .25); }
+.node.hub svg { width: 92px; height: 92px; }
+.ring { position: absolute; width: 270px; height: 270px; margin: -135px 0 0 -135px; border-radius: 50%; border: 3px solid transparent; border-top-color: rgba(160, 215, 255, .85); border-left-color: rgba(160, 215, 255, .3); filter: drop-shadow(0 0 10px rgba(130, 200, 255, .8)); }
+.lbl { position: absolute; transform: translate(-50%, 0); margin-top: 62px; color: #eef2f7; font-size: 21px; font-weight: 700; white-space: nowrap; text-align: center; text-shadow: 0 2px 8px #000; line-height: 1.25; }
+.lbl small { display: block; font-size: 15px; color: #8f99a8; font-weight: 600; }
+.lbl.big { margin-top: 98px; font-size: 27px; }
+.cap { position: absolute; left: 96px; top: 84px; max-width: 1400px; z-index: 3; }
+.cap p { max-width: 980px; }
+.cap .k { font-size: 18px; font-weight: 800; letter-spacing: .2em; color: #7cc8ff; }
+.cap h1 { margin: 12px 0 10px; font-size: 52px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; text-shadow: 0 2px 16px #000; }
+.cap p { margin: 0; color: #aab4c3; font-size: 24px; line-height: 1.5; font-weight: 600; text-shadow: 0 2px 10px #000; }
+.vig { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0, 0, 0, .7) 100%); z-index: 5; }
+/* intro / outro */
+.center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 22px; }
+.center h1 { margin: 0; font-size: 104px; font-weight: 800; letter-spacing: -.035em; line-height: 1.02; }
+.center h1 span { display: inline-block; }
+.center p { margin: 0; font-size: 30px; color: #aab4c3; font-weight: 600; }
+.accent { background: linear-gradient(90deg, #7cc8ff, #4be3a0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.chips { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; max-width: 1300px; margin: 18px auto 0; }
+.chips span { font-size: 22px; font-weight: 700; padding: 12px 22px; border-radius: 14px; background: rgba(30, 38, 52, .8); border: 1px solid #2f3b50; color: #dfe7f2; }
+.pill { display: inline-flex; align-items: center; gap: 12px; margin: 0 auto; font-size: 20px; font-weight: 700; letter-spacing: .16em; color: #7cc8ff; }
+.pill i { width: 10px; height: 10px; border-radius: 50%; background: #4be3a0; box-shadow: 0 0 14px #4be3a0; }
+/* dashboard scene */
+.win { position: absolute; border-radius: 16px; overflow: hidden; background: #fff; box-shadow: 0 40px 100px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 255, 255, .08); }
+.win .bar { height: 34px; background: #e9ecf1; display: flex; gap: 8px; align-items: center; padding: 0 14px; }
+.win .bar i { width: 12px; height: 12px; border-radius: 50%; background: #c6cad2; }
+.win img { display: block; width: 100%; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="bgplane" id="bg"><div class="grid"></div></div>
+  <div id="scenes"></div>
+  <div class="vig"></div>
+</div>
+<script>
+const IC = {
+  sheet: '<svg viewBox="0 0 40 40"><path d="M10 3h14l8 8v24a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="#1fa463"/><path d="M24 3l8 8h-6a2 2 0 0 1-2-2z" fill="#8ed1b1"/><rect x="13" y="17" width="14" height="13" rx="1" fill="#fff"/><path d="M13 21.5h14M13 25.5h14M19 17v13" stroke="#1fa463" stroke-width="1.6"/></svg>',
+  gmail: '<svg viewBox="0 0 40 40"><path d="M5 11v19a2 2 0 0 0 2 2h4V17l9 7 9-7v15h4a2 2 0 0 0 2-2V11l-15 11z" fill="#ea4335"/><path d="M5 11l15 11 15-11-2.5-2.5L20 17.5 7.5 8.5z" fill="#c5221f"/><path d="M5 11v19a2 2 0 0 0 2 2h4V17z" fill="#4285f4"/><path d="M35 11v19a2 2 0 0 1-2 2h-4V17z" fill="#34a853"/><path d="M29 17l6-6v0l-2.5-2.5L29 11z" fill="#fbbc04"/></svg>',
+  slack: '<svg viewBox="0 0 40 40"><rect x="17" y="5" width="6" height="14" rx="3" fill="#36c5f0"/><rect x="5" y="17" width="14" height="6" rx="3" fill="#2eb67d"/><rect x="17" y="21" width="6" height="14" rx="3" fill="#ecb22e"/><rect x="21" y="17" width="14" height="6" rx="3" fill="#e01e5a"/></svg>',
+  notion: '<svg viewBox="0 0 40 40"><rect x="7" y="6" width="26" height="28" rx="4" fill="#fff"/><path d="M14 27V13l12 14V13" stroke="#111" stroke-width="3" fill="none" stroke-linejoin="round"/></svg>',
+  ai: '<svg viewBox="0 0 40 40" fill="none" stroke="#e8f3ff" stroke-width="2" stroke-linecap="round"><path d="M16 8a5 5 0 0 0-5 5 5 5 0 0 0-3 8 5 5 0 0 0 3 7 5 5 0 0 0 9 2V10a4 4 0 0 0-4-2zM24 8a5 5 0 0 1 5 5 5 5 0 0 1 3 8 5 5 0 0 1-3 7 5 5 0 0 1-9 2"/><path d="M20 15h-4M20 22h-5M20 15h5M20 22h4"/></svg>',
+  clock: '<svg viewBox="0 0 40 40" fill="none" stroke="#e9edf3" stroke-width="2.4" stroke-linecap="round"><circle cx="20" cy="22" r="12"/><path d="M20 15v7l5 3M16 6h8M20 6v4"/></svg>',
+  hook: '<svg viewBox="0 0 40 40" fill="none" stroke="#ffd9d6" stroke-width="2.6" stroke-linecap="round"><circle cx="20" cy="11" r="5"/><circle cx="10" cy="28" r="5"/><circle cx="30" cy="28" r="5"/><path d="M17 15l-5 8M15 28h10M23 15l5 8"/></svg>',
+  form: '<svg viewBox="0 0 40 40" fill="none" stroke="#3ad1c4" stroke-width="2.4" stroke-linecap="round"><rect x="9" y="7" width="22" height="27" rx="3"/><path d="M15 5h10v5H15zM14 18h12M14 23h12M14 28h7"/></svg>',
+  code: '<svg viewBox="0 0 40 40" fill="none" stroke="#ff9f1c" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 9c-3 0-4 1-4 4v3c0 2-1 4-3 4 2 0 3 2 3 4v3c0 3 1 4 4 4M25 9c3 0 4 1 4 4v3c0 2 1 4 3 4-2 0-3 2-3 4v3c0 3-1 4-4 4"/></svg>',
+  merge: '<svg viewBox="0 0 40 40" fill="none" stroke="#4fd1e8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h8c5 0 6 16 12 16h4M8 28h8M28 24l4 4-4 4"/></svg>',
+  branch: '<svg viewBox="0 0 40 40" fill="none" stroke="#3ddc97" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20h8l8-9h8M16 20l8 9h8M28 7l4 4-4 4M28 25l4 4-4 4"/></svg>',
+  xlsx: '<svg viewBox="0 0 40 40"><rect x="8" y="5" width="24" height="30" rx="3" fill="#1d6f42"/><path d="M14 13l12 14M26 13L14 27" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
+  bag: '<svg viewBox="0 0 40 40" fill="none" stroke="#7fe08a" stroke-width="2.4" stroke-linejoin="round"><path d="M9 14h22l-2 20H11z"/><path d="M15 17v-5a5 5 0 0 1 10 0v5" stroke-linecap="round"/></svg>',
+  box: '<svg viewBox="0 0 40 40" fill="none" stroke="#ffb347" stroke-width="2.4" stroke-linejoin="round"><path d="M6 13l14-7 14 7v15l-14 7-14-7z"/><path d="M6 13l14 7 14-7M20 20v15"/></svg>',
+  web: '<svg viewBox="0 0 40 40" fill="none" stroke="#b9a4ff" stroke-width="2.4" stroke-linejoin="round"><rect x="6" y="8" width="28" height="24" rx="3"/><path d="M6 14h28M11 20h12M11 25h8"/></svg>',
+  phone: '<svg viewBox="0 0 40 40" fill="none" stroke="#e9edf3" stroke-width="2.4" stroke-linejoin="round"><path d="M12 6h6l2 7-4 3a16 16 0 0 0 8 8l3-4 7 2v6a3 3 0 0 1-3 3C18 31 9 22 9 9a3 3 0 0 1 3-3z"/></svg>',
+  dash: '<svg viewBox="0 0 40 40" fill="none" stroke-width="2.4"><rect x="6" y="8" width="28" height="24" rx="3" stroke="#e9edf3"/><path d="M12 26v-5M18 26v-9M24 26v-6M30 26V14" stroke="#7cc8ff" stroke-linecap="round"/></svg>',
+  edit: '<svg viewBox="0 0 40 40" fill="none" stroke="#7b8cff" stroke-width="2.4" stroke-linejoin="round"><path d="M27 7l6 6-15 15H12v-6z"/><path d="M8 33h24"/></svg>',
+};
+const B = '#47b4ff', G = '#3ddc97', W = '#cfe7ff';
+// ───── timeline ─────
+const GRAPHS = {
+  hero: { k: 'HOW IT WORKS', t: 'One engine for all your busywork', d: 'Orders, inquiries and requests flow in. n8n + AI process them. Sheets, files, alerts and your CRM update on their own.', dense: true, build: 6,
+    n: [['a', 6, 0, 'bag', 'Online Store Orders'], ['b', 6, 24, 'box', 'Marketplace Orders'], ['d', 6, 48, 'hook', 'Customer Inquiry', '', 'trig'], ['e', 6, 72, 'form', 'Client Request'], ['f', 6, 96, 'clock', 'Daily 8:30 AM'],
+        ['m', 27, 10, 'merge', 'Merge Orders'], ['p', 27, 36, 'code', 'Clean & Bundle'], ['q', 27, 62, 'edit', 'Prepare Inquiry'], ['r', 27, 88, 'code', 'Sales Summary'],
+        ['h', 51, 48, 'ai', 'AI Automation Engine', 'n8n + Claude', 'hub'],
+        ['o1', 81, 0, 'sheet', 'Google Sheets'], ['o2', 81, 19, 'xlsx', 'Shipping Excel'], ['o3', 81, 38, 'gmail', 'Email & Reports'], ['o4', 81, 57, 'slack', 'Slack Alerts', '', 'lit'], ['o5', 81, 76, 'notion', 'Deals Database'], ['o6', 81, 95, 'dash', 'CRM Dashboard', '', 'lit']],
+    e: [['a', 'm', B], ['b', 'm', B], ['a', 'p', B], ['b', 'p', B], ['d', 'q', B], ['e', 'q', B], ['f', 'r', B], ['a', 'r', B], ['b', 'r', B],
+        ['m', 'h', B], ['p', 'h', B], ['q', 'h', B], ['r', 'h', B], ['e', 'h', B],
+        ['h', 'o1', W], ['h', 'o2', W], ['h', 'o3', W], ['h', 'o4', G], ['h', 'o5', W], ['h', 'o6', G]] },
+  orders: { k: 'WORKFLOW 01', t: 'Orders → Shipping File + Google Sheet', d: 'Every morning, orders from every channel are merged, bundled and turned into a carrier upload file and a clean sheet.', build: 3.2,
+    n: [['t', 6, 55, 'clock', 'Every day 8:40 AM', 'Schedule', 'trig'], ['a', 22, 30, 'bag', 'Store Orders'], ['b', 22, 80, 'box', 'Marketplace Orders'], ['m', 38, 55, 'merge', 'Merge Orders'], ['c', 53, 55, 'code', 'Bundle & Clean Addresses'],
+        ['x', 69, 28, 'xlsx', 'Shipping Upload .xlsx'], ['s', 69, 82, 'sheet', 'Google Sheet'], ['g', 87, 55, 'gmail', 'Email to Team', '', 'lit']],
+    e: [['t', 'a', B], ['t', 'b', B], ['a', 'm', B], ['b', 'm', B], ['m', 'c', B], ['c', 'x', W], ['c', 's', W], ['x', 'g', G], ['s', 'g', G]] },
+  inquiry: { k: 'WORKFLOW 02', t: 'AI Customer Inquiry Assistant', d: 'Claude reads every new inquiry, sorts it and drafts a reply. Urgent ones ping your team on Slack right away.', build: 3.2,
+    n: [['t', 7, 55, 'hook', 'New Inquiry', 'Webhook', 'trig'], ['a', 25, 55, 'edit', 'Prepare Message'], ['h', 46, 55, 'ai', 'Claude', 'Classify · Draft Reply', 'hub'], ['i', 66, 55, 'branch', 'Urgent?'],
+        ['k', 87, 25, 'slack', 'Ping the Team', '', 'lit'], ['s', 87, 55, 'sheet', 'Save Draft'], ['g', 87, 85, 'gmail', 'Reply Draft']],
+    e: [['t', 'a', B], ['a', 'h', B], ['h', 'i', W], ['i', 'k', G], ['i', 's', W], ['i', 'g', W]] },
+  crm: { k: 'WORKFLOW 03', t: 'CRM & Subscription Sync', d: 'Every hour, all sales channels are combined, matched to customers and subscriptions, and pushed to your CRM.', build: 3.2,
+    n: [['t', 6, 55, 'clock', 'Every hour', 'Schedule', 'trig'], ['a', 23, 18, 'bag', 'Online Store'], ['b', 23, 42, 'box', 'Marketplace'], ['c', 23, 66, 'sheet', 'Wholesale Sheet'], ['d', 23, 90, 'phone', 'Phone Orders'],
+        ['m', 41, 55, 'merge', 'Combine Channels'], ['h', 58, 55, 'code', 'Match Customers'], ['u', 76, 30, 'dash', 'Update CRM', '', 'lit'], ['s', 76, 80, 'clock', 'Delivery Schedule'], ['k', 93, 55, 'slack', 'Alert Issues']],
+    e: [['t', 'a', B], ['t', 'b', B], ['t', 'c', B], ['t', 'd', B], ['a', 'm', B], ['b', 'm', B], ['c', 'm', B], ['d', 'm', B], ['m', 'h', W], ['h', 'u', G], ['h', 's', W], ['u', 'k', W], ['s', 'k', W]] },
+};
+const TL = [ // [id, start, end]
+  ['intro', 0, 5.6], ['hero', 5, 18.2], ['orders', 17.6, 25], ['inquiry', 24.4, 31.8], ['crm', 31.2, 38.6], ['dash', 38, 44.6], ['outro', 44, 50],
+];
+const DURATION = 50;
+const FADE = 0.6;
+// ───── helpers ─────
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const ease = (x) => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const easeOut = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const PW = 2400, PH = 1500;
+const scenesEl = document.getElementById('scenes');
+const S = {};
+function buildGraph(id) {
+  const sc = GRAPHS[id]; const root = document.createElement('div'); root.className = 'scene'; scenesEl.appendChild(root);
+  const plane = document.createElement('div'); plane.className = 'plane'; root.appendChild(plane);
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'wires'); svg.setAttribute('viewBox', `0 0 ${PW} ${PH}`); plane.appendChild(svg);
+  const X0 = sc.dense ? 520 : 440, XW = sc.dense ? 1540 : 1600, Y0 = sc.dense ? 450 : 440, YH = sc.dense ? 730 : 780;
+  const pos = {}; sc.n.forEach(([nid, x, y]) => (pos[nid] = [X0 + x / 100 * XW, Y0 + y / 100 * YH]));
+  const kind = (nid) => sc.n.find((n) => n[0] === nid)[6];
+  const half = (nid) => (kind(nid) === 'hub' ? 84 : 52);
+  const xs = sc.n.map((n) => n[1]); const xmin = Math.min(...xs), xmax = Math.max(...xs);
+  const appear = (nid) => { const x = sc.n.find((n) => n[0] === nid)[1]; return 0.5 + (x - xmin) / (xmax - xmin || 1) * sc.build; };
+  svg.innerHTML = `<defs><filter id="gl_${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter><filter id="gl2_${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter></defs>`;
+  const wires = sc.e.map(([f, t, col], i) => {
+    const [x1, y1] = pos[f], [x2, y2] = pos[t]; const a = x1 + half(f), b = x2 - half(t); const dx = Math.max(80, (b - a) * 0.5);
+    const d = `M${a},${y1} C${a + dx},${y1} ${b - dx},${y2} ${b},${y2}`;
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const gap = 20 + (i % 3) * 8;
+    g.innerHTML = `<path d="${d}" stroke="${col}" stroke-width="10" fill="none" opacity=".28" filter="url(#gl_${id})"/><path d="${d}" stroke="${col}" stroke-width="2.4" fill="none" opacity=".9"/>
+      <path class="pt" d="${d}" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-dasharray="0.1 ${gap}" fill="none" filter="url(#gl2_${id})" opacity=".9"/><path class="pt" d="${d}" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-dasharray="0.1 ${gap}" fill="none"/>
+      <circle cx="${a}" cy="${y1}" r="5.5" fill="#0d1016" stroke="#8b95a5" stroke-width="2"/><circle cx="${b}" cy="${y2}" r="5.5" fill="#0d1016" stroke="#8b95a5" stroke-width="2"/>`;
+    svg.appendChild(g);
+    const paths = g.querySelectorAll('path'); const len = paths[1].getTotalLength();
+    paths[0].style.strokeDasharray = paths[1].style.strokeDasharray = `${len} ${len}`;
+    const start = appear(f) + 0.25, dur = 0.5 + len / 2400;
+    return { g, paths, len, start, dur, off: i * 13 };
+  });
+  const sx = (x) => x / PW * 100 + '%', sy = (y) => y / PH * 100 + '%';
+  const nodes = sc.n.map(([nid, , , icon, label, sub, k]) => {
+    const [x, y] = pos[nid]; const els = [];
+    let ring = null;
+    if (k === 'hub') { ring = document.createElement('div'); ring.className = 'ring'; ring.style.left = sx(x); ring.style.top = sy(y); plane.appendChild(ring); }
+    const el = document.createElement('div'); el.className = 'node ' + (k || ''); el.style.left = sx(x); el.style.top = sy(y); el.innerHTML = IC[icon]; plane.appendChild(el);
+    const l = document.createElement('div'); l.className = 'lbl' + (k === 'hub' ? ' big' : ''); l.style.left = sx(x); l.style.top = sy(y); l.innerHTML = label + (sub ? `<small>${sub}</small>` : ''); plane.appendChild(l);
+    return { el, l, ring, k, at: appear(nid) };
+  });
+  const cap = document.createElement('div'); cap.className = 'cap'; cap.innerHTML = `<div class="k">${sc.k}</div><h1>${sc.t}</h1><p>${sc.d}</p>`; root.appendChild(cap);
+  S[id] = { root, plane, wires, nodes, cap, kind: 'graph', dense: sc.dense };
+}
+Object.keys(GRAPHS).forEach(buildGraph);
+// intro
+(() => {
+  const root = document.createElement('div'); root.className = 'scene'; scenesEl.appendChild(root);
+  root.innerHTML = `<div class="center"><div class="pill"><i></i>AI AUTOMATION · n8n · CRM</div><h1><span>Stop</span> <span>doing</span> <span>it</span> <span>by</span> <span>hand.</span><br><span class="accent">Automate</span> <span class="accent">the</span> <span class="accent">busywork.</span></h1><p>Workflows, AI assistants and custom dashboards built around how you work.</p></div>`;
+  S.intro = { root, kind: 'intro', words: root.querySelectorAll('h1 span'), pill: root.querySelector('.pill'), p: root.querySelector('p') };
+})();
+// dashboard
+(() => {
+  const root = document.createElement('div'); root.className = 'scene'; scenesEl.appendChild(root);
+  root.innerHTML = `<div class="cap"><div class="k">CUSTOM DASHBOARDS</div><h1>A dashboard your team will actually use</h1><p>Revenue, orders, customers and automation runs on one screen.</p></div>
+    <div class="win" id="w1" style="width:880px;left:170px;top:300px"><div class="bar"><i></i><i></i><i></i></div><img src="../portfolio/sales_01_dashboard.png"></div>
+    <div class="win" id="w2" style="width:780px;left:980px;top:370px"><div class="bar"><i></i><i></i><i></i></div><img src="../portfolio/01_dashboard.png"></div>`;
+  S.dash = { root, kind: 'dash', w1: root.querySelector('#w1'), w2: root.querySelector('#w2'), cap: root.querySelector('.cap') };
+})();
+// outro
+(() => {
+  const root = document.createElement('div'); root.className = 'scene'; scenesEl.appendChild(root);
+  const tools = ['n8n', 'Make', 'OpenAI', 'Gemini', 'Claude', 'Google Sheets', 'Excel', 'Notion', 'Slack', 'Gmail', 'Airtable', 'APIs & Webhooks'];
+  root.innerHTML = `<div class="center"><h1><span>Tell me what you</span><br><span>repeat every day.</span></h1><p class="o2" style="font-size:38px;color:#fff;font-weight:700"><span class="accent">I'll turn it into an automation.</span></p><div class="chips">${tools.map((t) => `<span>${t}</span>`).join('')}</div></div>`;
+  S.outro = { root, kind: 'outro', lines: root.querySelectorAll('h1 span'), p: root.querySelector('.o2'), chips: root.querySelectorAll('.chips span') };
+})();
+// ───── render(t) ─────
+const bg = document.getElementById('bg');
+function rise(el, p, dy = 26) { el.style.opacity = easeOut(p); el.style.transform = `translateY(${(1 - easeOut(p)) * dy}px)`; }
+function render(t) {
+  bg.style.transform = `perspective(1700px) rotateX(${16 + Math.sin(t / 9) * 1.2}deg) rotateZ(${-3 + Math.sin(t / 13) * 0.8}deg) translateY(${(t * 14) % 160}px)`;
+  for (const [id, s, e] of TL) {
+    const sc = S[id]; const lt = t - s; const dur = e - s;
+    if (t < s || t > e) { sc.root.style.opacity = 0; sc.root.style.display = 'none'; continue; }
+    sc.root.style.display = '';
+    const fin = ease(lt / FADE), fout = ease((e - t) / FADE);
+    sc.root.style.opacity = Math.min(fin, fout);
+    const zoom = 1 + 0.035 * (lt / dur);
+    if (sc.kind === 'graph') {
+      const k = sc.dense ? 0.86 : 1;
+      sc.plane.style.transform = `perspective(1900px) rotateX(${15 - 3 * ease(lt / dur)}deg) rotateZ(${-2.5 + 1.5 * ease(lt / dur)}deg) scale(${k * zoom}) translateX(${-20 * (lt / dur)}px)`;
+      sc.nodes.forEach((n) => { const p = (lt - n.at) / 0.55; const v = easeOut(p); n.el.style.opacity = v; n.el.style.transform = `scale(${0.7 + 0.3 * v})`; n.l.style.opacity = easeOut((lt - n.at - 0.15) / 0.5);
+        if (n.ring) { n.ring.style.opacity = v; n.ring.style.transform = `rotate(${t * 70}deg)`; n.el.style.transform += ` scale(${1 + 0.03 * Math.sin(t * 3)})`; } });
+      sc.wires.forEach((w) => { const p = ease((lt - w.start) / w.dur); w.paths[0].style.strokeDashoffset = w.paths[1].style.strokeDashoffset = w.len * (1 - p);
+        const q = clamp((lt - w.start - w.dur * 0.8) / 0.5); w.paths[2].style.opacity = 0.9 * q; w.paths[3].style.opacity = q;
+        const off = -(t * 70 + w.off); w.paths[2].style.strokeDashoffset = w.paths[3].style.strokeDashoffset = off;
+        w.g.querySelectorAll('circle').forEach((c) => (c.style.opacity = p > 0 ? 1 : 0)); });
+      rise(sc.cap, (lt - 0.3) / 0.8);
+    } else if (sc.kind === 'intro') {
+      rise(sc.pill, (lt - 0.2) / 0.7, 14);
+      sc.words.forEach((w, i) => { const p = (lt - 0.5 - i * 0.16) / 0.6; w.style.opacity = easeOut(p); w.style.transform = `translateY(${(1 - easeOut(p)) * 40}px)`; w.style.filter = `blur(${(1 - easeOut(p)) * 8}px)`; });
+      rise(sc.p, (lt - 2.1) / 0.8);
+      sc.root.querySelector('.center').style.transform = `scale(${1 + 0.03 * lt / dur})`;
+    } else if (sc.kind === 'dash') {
+      rise(sc.cap, (lt - 0.2) / 0.8);
+      const p1 = easeOut((lt - 0.5) / 1.1), p2 = easeOut((lt - 1.1) / 1.1);
+      sc.w1.style.opacity = p1; sc.w1.style.transform = `perspective(2200px) rotateY(${12 - 4 * lt / dur}deg) rotateX(4deg) translateY(${(1 - p1) * 80}px) scale(${0.96 + 0.04 * lt / dur})`;
+      sc.w2.style.opacity = p2; sc.w2.style.transform = `perspective(2200px) rotateY(${-10 + 4 * lt / dur}deg) rotateX(4deg) translateY(${(1 - p2) * 80 - 10 * lt / dur}px)`;
+    } else if (sc.kind === 'outro') {
+      sc.lines.forEach((w, i) => { const p = (lt - 0.3 - i * 0.35) / 0.7; w.style.opacity = easeOut(p); w.style.transform = `translateY(${(1 - easeOut(p)) * 36}px)`; w.style.filter = `blur(${(1 - easeOut(p)) * 8}px)`; });
+      rise(sc.p, (lt - 1.2) / 0.8);
+      sc.chips.forEach((c, i) => rise(c, (lt - 2 - i * 0.08) / 0.5, 16));
+      if (id === 'outro' && e === DURATION) sc.root.style.opacity = Math.min(fin, ease((e - t) / 1.2));
+    }
+  }
+}
+window.render = render; window.DURATION = DURATION;
+render(+(new URLSearchParams(location.search).get('t') || 8));
+</script>
+</body>
+</html>
