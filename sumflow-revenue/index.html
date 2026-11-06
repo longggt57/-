@@ -1,0 +1,344 @@
+<title>SumFlow Revenue Hub</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a workspace page (breadcrumb, title, view tabs) over database-style blocks; numbers in mono, formulas marked with Σ like a spreadsheet. Single white theme by design. */
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --ink:#2b2f31; --muted:#76797b; --line:#e8e9e7; --soft:#f6f7f5; --hover:#eeefec;
+  --accent:#27946a; --accent-soft:#e6f4ee;
+  --t1:#27946a; --t2:#3a7fc4; --t3:#df7f2c;
+  --ok:#27946a; --warn:#b98113; --crit:#cf4436; --info:#3a7fc4;
+  --font:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--info);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.page{max-width:1280px;margin:0 auto;padding-block:20px 56px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+
+.crumbs{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px;flex-wrap:wrap}
+.crumbs .sep{opacity:.5}
+.head{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.head h1{margin:0;font-size:30px;font-weight:700;letter-spacing:-.025em;text-wrap:balance}
+.head p{margin:4px 0 0;color:var(--muted);max-width:640px}
+.head .spacer{flex:1}
+.demo{font-size:12px;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);background:color-mix(in srgb,var(--warn) 7%,transparent);padding:3px 9px;border-radius:99px;white-space:nowrap}
+.sync{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;white-space:nowrap}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs a{padding:9px 12px;color:var(--muted);text-decoration:none;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;display:flex;gap:7px;align-items:center}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--ink)}
+.tabs svg{width:15px;height:15px}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.kpi{padding:14px 16px;display:grid;gap:3px;border-right:1px solid var(--line);margin-right:-1px;border-bottom:1px solid var(--line);margin-bottom:-1px}
+.kpi .k{font-size:12px;color:var(--muted)}
+.kpi .v{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.02em}
+.kpi .d{font-size:12px;color:var(--muted)}
+.up{color:var(--ok)} .down{color:var(--crit)}
+
+.block{border:1px solid var(--line);border-radius:10px;min-width:0;display:flex;flex-direction:column}
+.block-h{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--soft);border-bottom:1px solid var(--line);border-radius:10px 10px 0 0;flex-wrap:wrap}
+.block-h h2{margin:0;font-size:14px;font-weight:600}
+.sq{width:12px;height:12px;border-radius:3px;background:var(--accent);flex:none}
+.block-h .meta{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.viewchip{display:inline-flex;gap:5px;align-items:center;font-size:12px;color:var(--muted);border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:2px 8px;white-space:nowrap}
+.block-b{padding:14px 14px 16px;min-width:0}
+.hint{font-size:12px;color:var(--muted);margin:0 0 10px}
+
+.ov{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.5fr) minmax(0,1.35fr);gap:14px;align-items:start}
+.chart svg{display:block;width:100%;height:auto}
+.chart text{fill:var(--muted);font-family:var(--mono);font-size:10.5px}
+.chart .lbl-strong{fill:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);justify-content:center}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.donut .c1{font-family:var(--mono);font-size:24px;font-weight:600;fill:var(--ink)}
+.donut .c2{font-size:11px;fill:var(--muted);font-family:var(--font)}
+.team-rows{display:grid;gap:6px;margin-top:12px}
+.team-rows div{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;font-size:13px}
+.team-rows .sw{width:9px;height:9px;border-radius:2px}
+
+details.tg{border-radius:8px}
+details.tg + details.tg{margin-top:4px}
+details.tg summary{list-style:none;cursor:pointer;display:flex;gap:8px;align-items:center;padding:7px 8px;border-radius:6px;font-weight:600}
+details.tg summary::-webkit-details-marker{display:none}
+details.tg summary:hover{background:var(--hover)}
+details.tg summary::before{content:"";width:0;height:0;border-left:6px solid var(--muted);border-top:4px solid transparent;border-bottom:4px solid transparent;transition:transform .12s}
+details.tg[open] summary::before{transform:rotate(90deg)}
+details.tg summary .s{margin-left:auto;font-weight:400;color:var(--muted);font-size:12px}
+details.tg .in{padding:6px 4px 10px 22px}
+
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.months{display:flex;gap:4px;overflow-x:auto;max-width:100%}
+.months button{flex:none;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer;color:var(--muted)}
+.months button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.months button .dt{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warn);margin-left:5px;vertical-align:1px}
+.sel{border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--bg)}
+.btn{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:500;font-size:13px;color:var(--ink);white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-size:12px;font-weight:500;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;background:var(--bg)}
+th .ic{font-family:var(--mono);margin-right:5px;opacity:.75}
+td{padding:7px 10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+th:last-child,td:last-child{border-right:0}
+td.r,th.r{text-align:right}
+tbody tr:hover td{background:var(--soft)}
+tr.flag td{background:color-mix(in srgb,var(--warn) 8%,var(--bg))}
+tfoot td{font-weight:600;background:var(--soft);border-bottom:0}
+.cell-in{width:46px;border:1px solid transparent;background:transparent;border-radius:4px;padding:3px 5px;text-align:right;font-family:var(--mono)}
+.cell-in.reason{width:190px;text-align:left;font-family:var(--font)}
+.cell-in:hover{border-color:var(--line)}
+.cell-in:focus{border-color:var(--info);background:var(--bg)}
+.formula{color:var(--ink)}
+.team-chip{--c:var(--muted);display:inline-flex;align-items:center;font-size:12px;padding:1px 8px;border-radius:5px;color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);font-weight:500}
+.status{--c:var(--muted);display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--c)}
+.status::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c)}
+.st-Paid{--c:var(--ok)} .st-Sent{--c:var(--info)} .st-Overdue{--c:var(--crit)} .st-Draft{--c:var(--muted)}
+.need{font-size:11px;color:var(--warn);font-weight:600;margin-left:6px}
+.lock{font-size:12px;color:var(--muted)}
+
+.settle{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
+.reasons{display:grid;gap:10px}
+.reason-row{display:grid;gap:4px}
+.reason-row .top{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.track{height:8px;background:var(--soft);border-radius:99px;overflow:hidden}
+.track span{display:block;height:100%;background:var(--warn);border-radius:99px}
+
+.rules{display:grid;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.rule{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+.rule:last-child{border-bottom:0}
+.rule h3{margin:0 0 5px;font-size:14px}
+.rule .flow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+.rule .flow span.k{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em}
+.rule .last{font-size:12px;color:var(--muted);margin-top:5px}
+.switch{position:relative;width:40px;height:22px;flex:none}
+.switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.switch span{position:absolute;inset:0;border-radius:99px;background:#cfd3d0;pointer-events:none;transition:background .15s}
+.switch span::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+.switch input:checked + span{background:var(--accent)}
+.switch input:checked + span::after{transform:translateX(18px)}
+.switch input:focus-visible + span{outline:2px solid var(--info);outline-offset:2px}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:40;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:1180px){.ov{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)}.ov .teams{grid-column:1 / -1}}
+@media (max-width:820px){.ov,.settle{grid-template-columns:minmax(0,1fr)}.page{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}.head h1{font-size:24px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="page">
+  <div class="crumbs"><span>Northline Studio</span><span class="sep">/</span><span>Finance</span><span class="sep">/</span><span>Revenue Hub</span></div>
+  <div class="head">
+    <div><h1>Revenue Hub</h1><p>Invoices are built from client contracts every month. Discounts, totals, team revenue and payouts update on their own.</p></div>
+    <div class="spacer"></div>
+    <span class="sync"><i></i>Synced with Stripe · 9:12 AM</span>
+    <span class="demo">Demo · sample data</span>
+  </div>
+  <nav class="tabs" id="tabs" aria-label="Views">
+    <a href="#overview" data-v="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>Overview</a>
+    <a href="#billing" data-v="billing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg>Monthly billing</a>
+    <a href="#settlement" data-v="settlement"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c.7-3.4 3-5.2 6-5.2s5.3 1.8 6 5.2M17 7h5M19.5 4.5v5"/></svg>Team payouts</a>
+    <a href="#automations" data-v="automations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Automations</a>
+  </nav>
+  <div id="view" style="display:flex;flex-direction:column;gap:14px"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- data (deterministic sample) ---------- */
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(20261106), pick=a=>a[Math.floor(R()*a.length)];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'];
+const CLOSED=10, CUR=10; // Jan–Oct closed, Nov is this month's draft
+const TEAMS={growth:{name:'Growth team',short:'Growth',c:'--t1',rate:10},content:{name:'Content team',short:'Content',c:'--t2',rate:8},perf:{name:'Performance team',short:'Performance',c:'--t3',rate:12}};
+const PLANS={Starter:2500,Standard:3500,Growth:4500,Premium:6000};
+const clients=[
+ ['Bluebird Dental','growth','Standard',0,10],['Harbor Fitness','perf','Premium',0,10],['Juniper Bakery','content','Starter',0,10],
+ ['Northwind Realty','growth','Premium',0,10],['Cedar Law Group','content','Standard',0,8],['Pixel Toy Co.','perf','Growth',0,10],
+ ['Summit Physio','growth','Starter',1,10],['Lumen Skincare','content','Premium',2,10],['Oakline Furniture','perf','Standard',0,8],
+ ['Riverstone Cafe','content','Starter',3,10],['Atlas Movers','perf','Standard',4,10],['Kite Language School','growth','Growth',5,10],
+ ['Maple Vet Clinic','growth','Standard',6,10],['Nova Eyewear','perf','Premium',7,10],['Brightpath Tutors','content','Standard',0,9],['Solace Spa','growth','Starter',9,10]
+].map(([name,team,plan,start,end])=>({name,team,plan,fee:PLANS[plan],start,end}));
+const REASONS=['Annual prepay','Multi-brand bundle','Referral reward','Service delay credit'];
+const rows=[];
+clients.forEach(c=>{for(let m=c.start;m<=Math.min(c.end,CUR);m++){
+  let addon=R()<.2?pick([150,300,450,600]):0, disc=0, reason='';
+  if(m===c.start&&c.start>0){disc=50;reason='Launch promo (first month)'}
+  else{const r=R(); if(r<.04){disc=50;reason='Service delay credit'} else if(r<.13){disc=20;reason=pick(['Annual prepay','Multi-brand bundle'])} else if(r<.27){disc=10;reason=pick(['Referral reward','Multi-brand bundle'])}}
+  let status=m<9?'Paid':m===9?(R()<.78?'Paid':pick(['Sent','Sent','Overdue'])):'Draft';
+  rows.push({client:c.name,team:c.team,plan:c.plan,fee:c.fee,m,addon,disc,reason,status});
+}});
+// make one Nov row need attention, for the demo
+const flagRow=rows.find(r=>r.m===CUR&&r.client==='Harbor Fitness'); if(flagRow){flagRow.disc=25;flagRow.reason=''}
+
+const sub=r=>r.fee+r.addon, fin=r=>Math.round(sub(r)*(1-r.disc/100));
+const usd=n=>'$'+Math.round(n).toLocaleString('en-US'), k=n=>'$'+(n/1000).toFixed(1)+'k';
+const monthRows=m=>rows.filter(r=>r.m===m);
+const monthTotal=(m,t)=>monthRows(m).filter(r=>!t||r.team===t).reduce((a,r)=>a+fin(r),0);
+const series=t=>MONTHS.slice(0,CLOSED).map((_,m)=>monthTotal(m,t));
+const teamChip=t=>`<span class="team-chip" style="--c:var(${TEAMS[t].c})">${TEAMS[t].short}</span>`;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2600)}
+function nice(v,steps=4){const raw=v/steps,p=10**Math.floor(Math.log10(raw)),s=[1,2,2.5,5,10].find(x=>x*p>=raw)*p;return{max:s*steps,step:s}}
+
+let state={month:CUR,team:'all',smonth:CLOSED-1,open:{growth:true}};
+
+/* ---------- charts ---------- */
+function donut(){
+  const tt=Object.keys(TEAMS).map(t=>[t,series(t).reduce((a,b)=>a+b,0)]), total=tt.reduce((a,b)=>a+b[1],0), r=62, C=2*Math.PI*r;
+  let off=0, s=`<svg viewBox="0 0 170 170" role="img" aria-label="Revenue Jan to Oct by team, total ${usd(total)}"><circle cx="85" cy="85" r="${r}" fill="none" stroke="var(--soft)" stroke-width="16"/>`;
+  tt.forEach(([t,v])=>{const len=v/total*C;s+=`<circle cx="85" cy="85" r="${r}" fill="none" stroke="var(${TEAMS[t].c})" stroke-width="16" stroke-dasharray="${len-2} ${C-len+2}" stroke-dashoffset="${-off}" transform="rotate(-90 85 85)"><title>${TEAMS[t].name}: ${usd(v)}</title></circle>`;off+=len});
+  s+=`<text x="85" y="88" text-anchor="middle" class="c1">${k(total)}</text><text x="85" y="106" text-anchor="middle" class="c2">Jan–Oct total</text></svg>`;
+  const list=tt.sort((a,b)=>b[1]-a[1]).map(([t,v])=>`<div><span class="sw" style="background:var(${TEAMS[t].c})"></span><span>${TEAMS[t].name}</span><span class="num">${usd(v)}</span><span class="num" style="color:var(--muted)">${Math.round(v/total*100)}%</span></div>`).join('');
+  return `<div class="chart donut" style="max-width:230px;margin:0 auto">${s}</div><div class="team-rows">${list}</div>`;
+}
+function lineChart(){
+  const v=series(), W=520,H=270,L=46,Rm=22,T=26,B=28, n=v.length, {max,step}=nice(Math.max(...v)*1.08);
+  const x=i=>L+i*(W-L-Rm)/(n-1), y=val=>T+(H-T-B)*(1-val/max);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly revenue, January to October">`;
+  for(let g=0;g<=max+1;g+=step) s+=`<line x1="${L}" x2="${W-Rm}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)"/><text x="${L-8}" y="${y(g)+4}" text-anchor="end">${g?'$'+g/1000+'k':'$0'}</text>`;
+  const pts=v.map((val,i)=>[x(i),y(val)]);
+  s+=`<path d="M${pts.map(p=>p.join(',')).join(' L')} L${x(n-1)},${y(0)} L${x(0)},${y(0)} Z" fill="var(--accent)" fill-opacity=".09"/>`;
+  s+=`<path d="M${pts.map(p=>p.join(',')).join(' L')}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+  const mx=v.indexOf(Math.max(...v));
+  v.forEach((val,i)=>{s+=`<circle cx="${x(i)}" cy="${y(val)}" r="${i===mx||i===n-1?4:3}" fill="${i===mx?'var(--accent)':'var(--bg)'}" stroke="var(--accent)" stroke-width="2"><title>${MONTHS[i]}: ${usd(val)}</title></circle>`;
+    s+=`<text x="${x(i)+(i===0?13:0)}" y="${y(val)-10}" text-anchor="${i===n-1?'end':'middle'}" ${i===mx||i===n-1?'class="lbl-strong"':''}>${k(val)}</text>`;
+    s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${MONTHS[i]}</text>`});
+  return s+'</svg>';
+}
+function teamBars(t){
+  const v=series(t), W=420,H=200,L=40,Rm=6,T=22,B=24,n=v.length,{max,step}=nice(Math.max(...v)*1.1), stepX=(W-L-Rm)/n, bw=stepX*.62, y=val=>T+(H-T-B)*(1-val/max), mx=v.indexOf(Math.max(...v));
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${TEAMS[t].name} monthly revenue">`;
+  for(let g=0;g<=max+1;g+=step) s+=`<line x1="${L}" x2="${W-Rm}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)"/><text x="${L-6}" y="${y(g)+4}" text-anchor="end">${g?'$'+g/1000+'k':'$0'}</text>`;
+  v.forEach((val,i)=>{const bx=L+i*stepX+(stepX-bw)/2;
+    s+=`<rect x="${bx}" y="${y(val)}" width="${bw}" height="${y(0)-y(val)}" rx="2" fill="var(${TEAMS[t].c})" fill-opacity="${i===mx?1:.55}"><title>${MONTHS[i]}: ${usd(val)}</title></rect>`;
+    if(i===mx||i===n-1) s+=`<text x="${bx+bw/2}" y="${y(val)-6}" text-anchor="middle" class="lbl-strong">${k(val)}</text>`;
+    s+=`<text x="${bx+bw/2}" y="${H-7}" text-anchor="middle">${MONTHS[i].slice(0,3)}</text>`});
+  return s+'</svg>';
+}
+function groupBars(){
+  const ts=Object.keys(TEAMS), all=ts.map(series), W=420,H=210,L=40,Rm=6,T=12,B=24,n=CLOSED,{max,step}=nice(Math.max(...all.flat())*1.05),stepX=(W-L-Rm)/n,bw=stepX*.24,y=val=>T+(H-T-B)*(1-val/max);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Team revenue by month">`;
+  for(let g=0;g<=max+1;g+=step) s+=`<line x1="${L}" x2="${W-Rm}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)"/><text x="${L-6}" y="${y(g)+4}" text-anchor="end">${g?'$'+g/1000+'k':'$0'}</text>`;
+  for(let i=0;i<n;i++){ts.forEach((t,j)=>{const bx=L+i*stepX+stepX*.14+j*bw;s+=`<rect x="${bx}" y="${y(all[j][i])}" width="${bw-1}" height="${y(0)-y(all[j][i])}" fill="var(${TEAMS[t].c})"><title>${MONTHS[i]} · ${TEAMS[t].short}: ${usd(all[j][i])}</title></rect>`});
+    s+=`<text x="${L+i*stepX+stepX/2}" y="${H-7}" text-anchor="middle">${MONTHS[i]}</text>`}
+  return s+'</svg>';
+}
+
+/* ---------- views ---------- */
+function vOverview(){
+  const v=series(), ytd=v.reduce((a,b)=>a+b,0), oct=v[CLOSED-1], sep=v[CLOSED-2], mom=(oct-sep)/sep*100;
+  const closedRows=rows.filter(r=>r.m<CLOSED), subT=closedRows.reduce((a,r)=>a+sub(r),0), avgDisc=(1-ytd/subT)*100;
+  const open=monthRows(CLOSED-1).filter(r=>r.status==='Sent'||r.status==='Overdue'), openAmt=open.reduce((a,r)=>a+fin(r),0), overdue=open.filter(r=>r.status==='Overdue').length;
+  const active=new Set(monthRows(CUR).map(r=>r.client)).size;
+  const toggles=Object.keys(TEAMS).map(t=>{const sv=series(t);return `<details class="tg" data-t="${t}" ${state.open[t]?'open':''}><summary><span class="sq" style="background:var(${TEAMS[t].c})"></span>${TEAMS[t].name}<span class="s num">${k(sv.reduce((a,b)=>a+b,0))}</span></summary><div class="in chart">${teamBars(t)}</div></details>`}).join('');
+  return `
+  <div class="kpis">
+    <div class="kpi"><span class="k">Revenue, Jan–Oct</span><span class="v">${usd(ytd)}</span><span class="d">After discounts</span></div>
+    <div class="kpi"><span class="k">October revenue</span><span class="v">${usd(oct)}</span><span class="d"><span class="${mom>=0?'up':'down'}">${mom>=0?'▲':'▼'} ${Math.abs(mom).toFixed(1)}%</span> vs. September</span></div>
+    <div class="kpi"><span class="k">Average discount</span><span class="v">${avgDisc.toFixed(1)}%</span><span class="d">${usd(subT-ytd)} given away this year</span></div>
+    <div class="kpi"><span class="k">Unpaid October invoices</span><span class="v" style="color:${overdue?'var(--crit)':'inherit'}">${usd(openAmt)}</span><span class="d">${open.length} invoices · ${overdue} overdue</span></div>
+    <div class="kpi"><span class="k">Active clients</span><span class="v">${active}</span><span class="d">On contract in November</span></div>
+  </div>
+  <div class="ov">
+    <section class="block"><div class="block-h"><span class="sq"></span><h2>Total revenue, 2026</h2><span class="meta"><span class="viewchip">◔ By team</span></span></div><div class="block-b">${donut()}</div></section>
+    <section class="block"><div class="block-h"><span class="sq" style="background:var(--t3)"></span><h2>Monthly revenue</h2><span class="meta"><span class="viewchip">Σ Final amount</span><span class="viewchip">Jan–Oct</span></span></div><div class="block-b chart">${lineChart()}<div class="legend"><span><i style="background:var(--accent)"></i>Revenue after discounts · peak month filled</span></div></div></section>
+    <section class="block teams"><div class="block-h"><span class="sq" style="background:var(--t2)"></span><h2>Each team's monthly revenue</h2></div><div class="block-b"><p class="hint">Open a team to see its months. The best month is shown in full color.</p>${toggles}
+      <details class="tg" data-t="compare" ${state.open.compare?'open':''}><summary><span class="sq" style="background:var(--muted)"></span>Compare all teams</summary><div class="in chart">${groupBars()}<div class="legend">${Object.values(TEAMS).map(T=>`<span><i style="background:var(${T.c})"></i>${T.short}</span>`).join('')}</div></div></details></div></section>
+  </div>`;
+}
+
+function vBilling(){
+  const m=state.month, locked=m<CLOSED-1, list=monthRows(m).filter(r=>state.team==='all'||r.team===state.team).sort((a,b)=>a.team.localeCompare(b.team)||b.fee-a.fee);
+  const tot=f=>list.reduce((a,r)=>a+f(r),0);
+  const drafts=list.filter(r=>r.status==='Draft').length, flags=list.filter(r=>r.disc>=20&&!r.reason.trim()).length;
+  const monthsHtml=MONTHS.map((n,i)=>`<button data-m="${i}" aria-pressed="${i===m}">${n}${i===CUR?'<span class="dt" title="Draft month"></span>':''}</button>`).join('');
+  const body=list.map(r=>{const i=rows.indexOf(r), flag=r.disc>=20&&!r.reason.trim();
+    return `<tr class="${flag?'flag':''}"><td><b>${esc(r.client)}</b></td><td>${teamChip(r.team)}</td><td>${r.plan}</td><td class="r num">${usd(r.fee)}</td><td class="r num">${usd(r.addon)}</td><td class="r num formula">${usd(sub(r))}</td>
+    <td class="r num">${locked?r.disc+'%':`<input class="cell-in" id="d${i}" data-i="${i}" data-f="disc" type="number" min="0" max="100" step="5" value="${r.disc}" aria-label="Discount for ${esc(r.client)}">%`}</td>
+    <td class="r num formula"><b>${usd(fin(r))}</b></td>
+    <td>${locked?esc(r.reason):`<input class="cell-in reason" id="r${i}" data-i="${i}" data-f="reason" value="${esc(r.reason)}" placeholder="Add a reason" aria-label="Discount reason for ${esc(r.client)}">`}${flag?'<span class="need">Reason needed</span>':''}</td>
+    <td><span class="status st-${r.status}">${r.status}</span></td></tr>`}).join('');
+  return `
+  <div class="toolbar"><div class="months" id="months">${monthsHtml}</div>
+    <select class="sel" id="teamSel" aria-label="Team"><option value="all">All teams</option>${Object.entries(TEAMS).map(([t,T])=>`<option value="${t}" ${state.team===t?'selected':''}>${T.name}</option>`).join('')}</select></div>
+  <section class="block"><div class="block-h"><span class="sq"></span><h2>${MONTHS[m]} 2026 invoices</h2>
+    <span class="meta">${locked?'<span class="lock">Month closed · locked</span>':m===CUR?'<span class="viewchip">Draft · built from contracts on Nov 1</span>':'<span class="viewchip">Open for corrections</span>'}
+    ${m===CUR?`<button class="btn primary" id="sendAll" ${drafts&&!flags?'':'disabled'}>Send ${drafts} invoices</button>`:''}</span></div>
+  <div class="block-b">
+    <p class="hint">Σ columns are formulas: Subtotal = monthly fee + add-ons, Final = subtotal × (1 − discount). Change a discount and every total, chart and payout updates. Discounts of 20% or more need a reason before invoices can go out.${flags?` <b style="color:var(--warn)">${flags} row${flags>1?'s need':' needs'} a reason.</b>`:''}</p>
+    <div class="table-wrap"><table>
+    <thead><tr><th><span class="ic">≡</span>Client</th><th><span class="ic">◇</span>Team</th><th><span class="ic">◇</span>Plan</th><th class="r"><span class="ic">#</span>Monthly fee</th><th class="r"><span class="ic">#</span>Add-ons</th><th class="r"><span class="ic">Σ</span>Subtotal</th><th class="r"><span class="ic">#</span>Discount</th><th class="r"><span class="ic">Σ</span>Final amount</th><th><span class="ic">≡</span>Discount reason</th><th><span class="ic">◉</span>Invoice</th></tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr><td>${list.length} clients</td><td></td><td></td><td class="r num">${usd(tot(r=>r.fee))}</td><td class="r num">${usd(tot(r=>r.addon))}</td><td class="r num">${usd(tot(sub))}</td><td class="r num">${(tot(sub)?(1-tot(fin)/tot(sub))*100:0).toFixed(1)}%</td><td class="r num">${usd(tot(fin))}</td><td></td><td></td></tr></tfoot>
+    </table></div></div></section>`;
+}
+
+function vSettlement(){
+  const m=state.smonth, ts=Object.keys(TEAMS);
+  const data=ts.map(t=>{const rs=monthRows(m).filter(r=>r.team===t), s=rs.reduce((a,r)=>a+sub(r),0), f=rs.reduce((a,r)=>a+fin(r),0), unpaid=rs.filter(r=>r.status!=='Paid').length;return{t,n:rs.length,s,disc:s-f,f,com:f*TEAMS[t].rate/100,unpaid}});
+  const T=f=>data.reduce((a,d)=>a+d[f],0);
+  const yr=rows.filter(r=>r.m<CLOSED&&r.disc>0), byR={}; yr.forEach(r=>{const key=r.reason.startsWith('Launch')?'Launch promo (first month)':(r.reason||'No reason given');byR[key]=(byR[key]||0)+(sub(r)-fin(r))});
+  const rs=Object.entries(byR).sort((a,b)=>b[1]-a[1]), rmax=rs[0]?rs[0][1]:1;
+  return `
+  <div class="toolbar"><label for="smSel" class="hint" style="margin:0">Payout month</label><select class="sel" id="smSel">${MONTHS.slice(0,CLOSED).map((n,i)=>`<option value="${i}" ${i===m?'selected':''}>${n} 2026</option>`).join('')}</select></div>
+  <div class="settle">
+    <section class="block"><div class="block-h"><span class="sq"></span><h2>Team payouts, ${MONTHS[m]} 2026</h2><span class="meta"><span class="viewchip">Σ Commission = revenue × rate</span></span></div>
+      <div class="block-b"><div class="table-wrap"><table><thead><tr><th>Team</th><th class="r">Clients</th><th class="r">Subtotal</th><th class="r">Discounts</th><th class="r">Revenue</th><th class="r">Rate</th><th class="r">Commission</th><th>Status</th></tr></thead>
+      <tbody>${data.map(d=>`<tr><td>${teamChip(d.t)}</td><td class="r num">${d.n}</td><td class="r num">${usd(d.s)}</td><td class="r num" style="color:var(--warn)">−${usd(d.disc)}</td><td class="r num"><b>${usd(d.f)}</b></td><td class="r num">${TEAMS[d.t].rate}%</td><td class="r num"><b>${usd(d.com)}</b></td><td>${d.unpaid?`<span class="status st-Sent">Waiting on ${d.unpaid} invoice${d.unpaid>1?'s':''}</span>`:'<span class="status st-Paid">Ready to pay</span>'}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>Total</td><td class="r num">${T('n')}</td><td class="r num">${usd(T('s'))}</td><td class="r num">−${usd(T('disc'))}</td><td class="r num">${usd(T('f'))}</td><td></td><td class="r num">${usd(T('com'))}</td><td></td></tr></tfoot></table></div>
+      <p class="hint" style="margin-top:10px">Commission is paid only on invoices marked Paid in Stripe. Teams with unpaid invoices wait until payment arrives.</p></div></section>
+    <section class="block"><div class="block-h"><span class="sq" style="background:var(--warn)"></span><h2>Where discounts went, Jan–Oct</h2></div>
+      <div class="block-b reasons">${rs.map(([n,v])=>`<div class="reason-row"><div class="top"><span>${esc(n)}</span><span class="num">${usd(v)}</span></div><div class="track"><span style="width:${v/rmax*100}%"></span></div></div>`).join('')}</div></section>
+  </div>`;
+}
+
+const rules=[
+ {name:'Build monthly invoices',when:'1st of every month, 6:00 AM',then:'Create a draft row for every active contract with fee and plan filled in',on:true,last:'Nov 1 · 15 rows created'},
+ {name:'Discount guardrail',when:'Discount is 20% or more',then:'Require a reason and block sending until it is filled in',on:true,last:'Today · 1 row flagged'},
+ {name:'Send invoices',when:'Drafts approved',then:'Create Stripe invoices and email them to each client',on:true,last:'Oct 2 · 15 invoices sent'},
+ {name:'Payment sync',when:'Stripe payment received',then:'Mark the invoice Paid and update revenue',on:true,last:'Today 9:12 AM · 2 payments'},
+ {name:'Overdue follow-up',when:'Invoice unpaid 7 days after due date',then:'Send a reminder email and post in #finance on Slack',on:true,last:'Nov 4 · 1 reminder'},
+ {name:'Month-end close',when:'Last business day, 6:00 PM',then:'Lock the month, calculate team commission and send the PDF report',on:true,last:'Oct 30 · October closed'},
+ {name:'Churn alert',when:'Contract ends within 30 days',then:'Notify the account owner to start renewal talks',on:false,last:'Off'}
+];
+function vAutomations(){
+  return `<p class="hint" style="margin:0">These run on n8n with Stripe, Google Sheets and Slack. Turn one off and its step becomes manual.</p>
+  <div class="rules">${rules.map((r,i)=>`<div class="rule"><div><h3>${r.name}</h3><div class="flow"><span class="k">WHEN</span><span>${esc(r.when)}</span><span style="color:var(--muted)">→</span><span class="k">THEN</span><span>${esc(r.then)}</span></div><div class="last">Last run: ${r.on?esc(r.last):'Off'}</div></div><label class="switch"><input type="checkbox" id="ru${i}" data-r="${i}" ${r.on?'checked':''} aria-label="Turn ${esc(r.name)} on or off"><span></span></label></div>`).join('')}</div>`;
+}
+
+const VIEWS={overview:vOverview,billing:vBilling,settlement:vSettlement,automations:vAutomations};
+function render(){
+  let v=location.hash.slice(1); if(!VIEWS[v]) v='overview';
+  document.querySelectorAll('#tabs a').forEach(a=>a.setAttribute('aria-current',a.dataset.v===v?'page':'false'));
+  document.getElementById('view').innerHTML=VIEWS[v](); bind(v);
+}
+function bind(v){
+  const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+  if(v==='overview') $$('details.tg').forEach(d=>d.addEventListener('toggle',()=>{state.open[d.dataset.t]=d.open}));
+  if(v==='billing'){
+    $$('#months button').forEach(b=>b.onclick=()=>{state.month=+b.dataset.m;render()});
+    $('#teamSel').onchange=e=>{state.team=e.target.value;render()};
+    $$('.cell-in').forEach(inp=>inp.onchange=()=>{const r=rows[+inp.dataset.i];
+      if(inp.dataset.f==='disc'){let d=Math.max(0,Math.min(100,Math.round(+inp.value||0)));r.disc=d;toast(`${r.client}: final amount is now ${usd(fin(r))}`)}else r.reason=inp.value;
+      render(); const n=document.getElementById(inp.id); if(n&&inp.dataset.f==='disc') n.focus()});
+    const s=$('#sendAll'); if(s) s.onclick=()=>{let n=0;monthRows(CUR).forEach(r=>{if(r.status==='Draft'){r.status='Sent';n++}});render();toast(`${n} invoices sent through Stripe (demo: nothing was actually sent)`)};
+  }
+  if(v==='settlement') $('#smSel').onchange=e=>{state.smonth=+e.target.value;render()};
+  if(v==='automations') $$('[data-r]').forEach(c=>c.onchange=()=>{const r=rules[+c.dataset.r];r.on=c.checked;render();toast(`"${r.name}" turned ${r.on?'on':'off'}`)});
+}
+window.addEventListener('hashchange',render);
+render();
+</script>
