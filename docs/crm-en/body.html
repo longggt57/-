@@ -1,0 +1,486 @@
+<div class="app">
+  <aside class="side">
+    <div class="brand"><b>Fernlight Skincare</b><span>Customer care CRM</span></div>
+    <nav class="nav" id="nav" aria-label="Menu"></nav>
+    <div class="foot">
+      <span class="pill good" style="width:fit-content">All channels connected</span>
+      <span id="syncInfo"></span>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <h1 id="title">Dashboard</h1>
+      <div class="meta"><span id="clock" class="num"></span><button class="btn sm" id="runTriage" type="button">Check new messages</button></div>
+    </header>
+    <main class="view" id="view"></main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+'use strict';
+// ───────────── Time helpers (viewer's local time) ─────────────
+const TZ = -new Date().getTimezoneOffset() * 60e3, MIN = 60e3, HOUR = 3600e3, DAY = 86400e3;
+const kd = (ms) => new Date(ms + TZ).toISOString().slice(0, 10);
+const kt = (ms) => new Date(ms + TZ).toISOString().slice(11, 16);
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const md = (ms) => { const d = kd(ms); return `${MON[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}`; };
+const kdt = (ms) => `${md(ms)} ${kt(ms)}`;
+const dayStart = (ms) => new Date(kd(ms) + 'T00:00:00').getTime();
+const wd = (ms) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(ms + TZ).getUTCDay()];
+const ago = (ms) => { const m = Math.round((Date.now() - ms) / MIN); return m < 1 ? 'just now' : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : md(ms); };
+const usd = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = (s, el = document) => el.querySelector(s);
+const plural = (n, w, p) => `${n} ${n === 1 ? w : (p || w + 's')}`;
+const fmtMin = (m) => (m < 60 ? `${Math.round(m)}m` : `${(m / 60).toFixed(1)}h`);
+function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+// ───────────── Sample content ─────────────
+const PEOPLE = [
+  ['Megan Clarke', 'Austin, TX'], ['Daniel Brooks', 'Denver, CO'], ['Aisha Rahman', 'Chicago, IL'], ['Jordan Lee', 'Seattle, WA'], ['Sofia Alvarez', 'Miami, FL'],
+  ['Hannah Moore', 'Portland, OR'], ['Chris Walker', 'Boston, MA'], ['Priya Nair', 'San Jose, CA'], ['Tyler Grant', 'Atlanta, GA'], ['Emily Chen', 'New York, NY'],
+  ['Marcus Bell', 'Phoenix, AZ'], ['Laura Kim', 'Minneapolis, MN'], ['Nina Patel', 'Raleigh, NC'], ['Ryan Scott', 'Nashville, TN'], ['Olivia Ross', 'San Diego, CA'],
+  ['Kevin Diaz', 'Dallas, TX'], ['Grace Hall', 'Columbus, OH'], ['Ben Turner', 'Salt Lake City, UT'], ['Zoe Martin', 'Philadelphia, PA'], ['Sam Rivera', 'Tampa, FL'],
+];
+const PRODUCTS = ['Vitamin C Brightening Serum', 'Daily Barrier Moisturizer', 'Gentle Foaming Cleanser', 'Overnight Repair Mask', 'Mineral SPF 30', 'Travel Kit'];
+// [category, urgency, sentiment, needsHuman, reason, subject, message, draft(friendly), draft(concise)]
+const TEMPLATES = [
+  ['Shipping', 'Medium', 'Neutral', false, '', 'Where is my order?', 'Hi, I ordered 6 days ago and the tracking hasn\'t moved since Monday. Can you check where my package is?',
+    'Hi {first}, thanks for reaching out and sorry for the wait! I checked order {order}: it left our warehouse on time, but the carrier scan has been paused since Monday. I\'ve opened a trace with the carrier and will email you an update within 24 hours. If it doesn\'t move by Friday, we\'ll send a replacement right away.',
+    'Hi {first}, order {order} shipped on time but the carrier scan stalled Monday. I\'ve opened a trace and will update you within 24 hours. If it hasn\'t moved by Friday, we\'ll ship a replacement.'],
+  ['Returns', 'High', 'Negative', true, 'Skin reaction mentioned: needs a person', 'Reaction to the serum', 'I used the Vitamin C serum for three days and my cheeks got red and itchy. I want to return it.',
+    'Hi {first}, I\'m so sorry about the irritation. Please stop using the serum, and if the redness doesn\'t settle, check with a doctor. You don\'t need to send the bottle back: I can refund you in full right away. Would you like a refund or to try our fragrance-free Barrier Moisturizer instead?',
+    'Hi {first}, sorry about the irritation. Please stop using the serum. No need to return it: I can refund you in full or send our fragrance-free moisturizer instead. Which do you prefer?'],
+  ['Product question', 'Low', 'Neutral', false, '', 'Sensitive skin?', 'Is the Daily Barrier Moisturizer okay for really sensitive skin? I react to most fragrances.',
+    'Hi {first}, great question! The Daily Barrier Moisturizer is fragrance-free and dermatologist-tested on sensitive skin. We still suggest a patch test on your inner arm for 24 hours first. Happy to help if you have any other questions!',
+    'Hi {first}, yes: it\'s fragrance-free and tested on sensitive skin. We recommend a 24-hour patch test first.'],
+  ['Billing', 'High', 'Negative', true, 'Possible double charge: check payments', 'Charged twice', 'I just noticed two charges for the same order on my card. Please fix this.',
+    'Hi {first}, I\'m sorry for the worry. I can see two payment attempts on order {order}; one should be an authorization that drops off within 3–5 days. I\'m confirming with our payment provider now and will reply today with a clear answer. If both were captured, I\'ll refund the duplicate immediately.',
+    'Hi {first}, I see two payment attempts on order {order}. I\'m confirming with our payment provider and will reply today. If both were captured, the duplicate is refunded immediately.'],
+  ['Subscription', 'Low', 'Neutral', false, '', 'Skip next delivery', 'How do I skip next month\'s delivery? I still have plenty of moisturizer left.',
+    'Hi {first}, of course! You can skip it from your account under Subscriptions › Skip next delivery. I\'ve also skipped it for you just now, so your next box will ship the following month. Enjoy the rest of your moisturizer!',
+    'Hi {first}, done: I\'ve skipped next month\'s delivery for you. You can also manage this under Subscriptions in your account.'],
+  ['Wholesale', 'Medium', 'Positive', true, 'Sales lead: forward to wholesale', 'Wholesale for my salon', 'I own a small salon and would love to stock your cleanser and mask. Do you offer wholesale pricing?',
+    'Hi {first}, thank you for thinking of us for your salon! We do offer wholesale pricing for licensed salons and spas. I\'m passing your message to our wholesale lead, who will send you our price sheet and minimums within one business day.',
+    'Hi {first}, yes, we offer wholesale for salons. Our wholesale lead will send our price sheet within one business day.'],
+  ['Damaged item', 'High', 'Negative', true, 'Damaged item: approve replacement', 'Bottle arrived leaking', 'My cleanser arrived with the pump broken and half of it leaked into the box.',
+    'Hi {first}, I\'m sorry your cleanser arrived like that! Could you reply with a quick photo of the bottle? As soon as I have it, I\'ll ship a replacement at no cost. No need to send the damaged one back.',
+    'Hi {first}, sorry about that. Please send a photo and I\'ll ship a free replacement. No need to return the damaged bottle.'],
+  ['Order change', 'High', 'Neutral', false, '', 'Wrong address', 'I just placed an order and used my old address by mistake. Can you change it?',
+    'Hi {first}, no problem! Your order {order} hasn\'t shipped yet. Please reply with the correct address and I\'ll update it before it leaves the warehouse today.',
+    'Hi {first}, order {order} hasn\'t shipped. Reply with the correct address and I\'ll update it today.'],
+  ['Discount', 'Low', 'Neutral', false, '', 'Code not working', 'The code WELCOME15 from your email says it\'s invalid at checkout.',
+    'Hi {first}, sorry about that! WELCOME15 works on first orders over $30, so it may not apply if the cart is below that. I\'ve added a 15% credit to your account so you can use it on your next order anytime.',
+    'Hi {first}, WELCOME15 applies to first orders over $30. I\'ve added a 15% credit to your account for your next order.'],
+  ['Feedback', 'Low', 'Positive', false, '', 'Love the moisturizer', 'Just wanted to say the moisturizer has completely changed my winter skin. Will you restock the travel size?',
+    'Hi {first}, this made our day, thank you! The travel size is back in stock next week. I\'ve added you to the restock alert so you\'ll get an email the moment it\'s live.',
+    'Hi {first}, thank you! The travel size restocks next week, and I\'ve added you to the alert.'],
+  ['Product question', 'Low', 'Neutral', false, '', 'Is it vegan?', 'Is the Gentle Foaming Cleanser vegan and cruelty-free?',
+    'Hi {first}, yes! The Gentle Foaming Cleanser is vegan and cruelty-free, and none of our products are tested on animals. You can find the full ingredient list on the product page.',
+    'Hi {first}, yes: it\'s vegan and cruelty-free. Full ingredients are on the product page.'],
+  ['Order change', 'High', 'Negative', true, 'Cancellation after shipping: check status', 'Cancel my order', 'Please cancel my order, I ordered the wrong product.',
+    'Hi {first}, I\'m on it. If order {order} hasn\'t left the warehouse I\'ll cancel it and refund you in full. If it has already shipped, you can return it unopened within 30 days for a full refund. I\'ll confirm which applies within the hour.',
+    'Hi {first}, I\'ll cancel order {order} if it hasn\'t shipped and refund you. If it has, you can return it unopened within 30 days. I\'ll confirm within the hour.'],
+];
+const CHANNELS = ['Email', 'Chat', 'Amazon', 'Email', 'Chat', 'Email'];
+// [rating, product, text, draft]
+const REVIEW_T = [
+  [5, 0, 'Brighter skin in two weeks. Worth every penny.', 'Thank you, {first}! Two weeks is right when most people start seeing the glow. We\'re so glad it\'s working for you.'],
+  [4, 1, 'Really nice texture and no greasy feel. A little pricey though.', 'Thanks for the honest review, {first}! Tip: the subscribe option saves 15% on every refill if you\'d like to keep it in your routine.'],
+  [2, 0, 'Broke me out on my chin after a week. Not for me.', 'Hi {first}, we\'re sorry the serum didn\'t agree with your skin. Please reach out to our team: we\'ll make it right with a refund or an exchange for something gentler.'],
+  [1, 4, 'Took almost two weeks to arrive. Product is fine but shipping was awful.', 'Hi {first}, we\'re sorry about the slow delivery; that\'s not the experience we want for you. Our team has reached out by email with a credit for your next order.'],
+  [5, 5, 'Bought as a gift for my sister and she loved the packaging.', 'That\'s lovely to hear, {first}! Thank you for sharing Fernlight with your sister.'],
+  [3, 3, 'Works well but the scent is stronger than I expected.', 'Thanks for the feedback, {first}! The mask has a light lavender note. If you prefer unscented, our Daily Barrier Moisturizer is fragrance-free.'],
+  [5, 2, 'Gentle, rinses clean, and lasts forever.', 'Thank you, {first}! A little goes a long way with this one. We appreciate the review.'],
+  [4, 4, 'No white cast, which is rare for mineral sunscreen.', 'Thanks, {first}! Getting rid of the white cast took a lot of testing, so this means a lot to us.'],
+];
+
+function buildState() {
+  const r = rng(20261106);
+  const now = Date.now();
+  const customers = PEOPLE.map(([name, loc], i) => {
+    const orders = 1 + Math.floor(r() * 9);
+    const ltv = orders * (28 + r() * 40);
+    const since = now - (40 + Math.floor(r() * 700)) * DAY;
+    const seg = orders >= 7 ? 'VIP' : orders === 1 ? 'New' : 'Regular';
+    return { id: 'C' + (i + 1), name, loc, email: `${name.split(' ')[0].toLowerCase()[0]}***@${['gmail.com', 'outlook.com', 'yahoo.com', 'icloud.com'][i % 4]}`, orders, ltv, since, seg, tags: [] };
+  });
+  customers[1].tags.push('At risk'); customers[3].tags.push('At risk');
+  customers.forEach((c) => { if (c.orders >= 4 && r() < 0.5) c.tags.push('Subscriber'); });
+  let ord = 40100;
+  const convs = [];
+  // Recent conversations (full detail)
+  const live = [
+    [0, 1, 25, 'Open'], [1, 2, 70, 'Open'], [2, 3, 130, 'Open'], [3, 6, 190, 'Open'], [4, 7, 260, 'Open'], [5, 11, 330, 'Open'],
+    [6, 0, 420, 'Waiting'], [7, 4, 520, 'Resolved'], [8, 5, 640, 'Resolved'], [9, 9, 760, 'Resolved'], [10, 8, 900, 'Resolved'], [11, 10, 1100, 'Resolved'],
+  ];
+  live.forEach(([ci, ti, minsAgo, status], k) => {
+    const t = TEMPLATES[ti]; const c = customers[ci]; ord += 7 + Math.floor(r() * 30);
+    const at = now - minsAgo * MIN; const first = c.name.split(' ')[0]; const order = `#${ord}`;
+    const fill = (s) => s.replace(/\{first\}/g, first).replace(/\{order\}/g, order);
+    const conv = { id: 'T' + (1000 + k), cid: c.id, channel: CHANNELS[k % CHANNELS.length], subject: t[5], category: t[0], urgency: t[1], sentiment: t[2],
+      needsHuman: t[3], reason: t[4], order, at, status, unread: status === 'Open' && k % 2 === 0,
+      messages: [{ from: 'in', text: t[6], at }], drafts: { Friendly: fill(t[7]), Concise: fill(t[8]) }, tone: 'Friendly' };
+    if (status !== 'Open') {
+      const frt = 3 + r() * 16;
+      conv.messages.push({ from: 'out', text: conv.drafts.Friendly, at: at + frt * MIN, by: 'Sent after review' });
+      conv.frt = frt;
+    }
+    convs.push(conv);
+  });
+  // 14-day history for charts
+  const history = [];
+  for (let d = 14; d >= 1; d--) {
+    const base = dayStart(now) - d * DAY; const weekend = ['Sat', 'Sun'].includes(wd(base));
+    const total = Math.round((weekend ? 14 : 24) + r() * 10);
+    const ai = Math.round(total * (0.62 + r() * 0.12) + (14 - d) * 0.3);
+    history.push({ d: base, ai: Math.min(ai, total), manual: Math.max(0, total - ai), frt: 7 + r() * 4 + d * 0.9, csat: 4.4 + r() * 0.4 });
+  }
+  const catCounts = { Shipping: 41, Returns: 18, 'Product question': 36, Billing: 9, Subscription: 22, 'Order change': 15, Discount: 12, 'Damaged item': 7, Feedback: 14, Wholesale: 3 };
+  // Reviews
+  const reviews = REVIEW_T.map(([rating, p, text, draft], i) => {
+    const c = customers[(i * 3 + 2) % customers.length]; const first = c.name.split(' ')[0];
+    return { id: 'R' + (i + 1), cid: c.id, rating, product: PRODUCTS[p], text, at: now - (i * 190 + 40) * MIN, status: i >= 5 ? 'Replied' : 'Needs reply', draft: draft.replace(/\{first\}/g, first), source: i % 3 === 0 ? 'Amazon' : 'Website' };
+  });
+  const ratingHist = { 5: 312, 4: 141, 3: 38, 2: 17, 1: 11 };
+  const runs = [];
+  for (let d = 7; d >= 1; d--) {
+    const day = dayStart(now) - d * DAY;
+    runs.push({ wf: 'reviews', at: day + 9 * HOUR + 5 * MIN, status: 'Success', dur: 5 + r() * 3, summary: `${2 + Math.floor(r() * 4)} reviews → reply drafts` });
+    runs.push({ wf: 'crm', at: day + 2 * HOUR, status: d === 4 ? 'Retried' : 'Success', dur: 11 + r() * 5, summary: d === 4 ? 'Shopify API rate limit → succeeded on retry' : `${30 + Math.floor(r() * 40)} customer profiles updated` });
+    if (wd(day) === 'Mon') runs.push({ wf: 'report', at: day + 9 * HOUR, status: 'Success', dur: 6.2, summary: 'Weekly support report sent' });
+  }
+  convs.slice().reverse().forEach((c) => {
+    runs.push({ wf: 'triage', at: c.at + 20e3, status: 'Success', dur: 3 + r() * 3, summary: `${c.category} · ${c.urgency}${c.needsHuman ? ' → needs a person' : ' → draft ready'}` });
+    if (c.needsHuman) runs.push({ wf: 'escalate', at: c.at + 40e3, status: 'Success', dur: 1.4, summary: `${c.reason.split(':')[0]} → Slack #support-urgent` });
+  });
+  runs.sort((a, b) => a.at - b.at);
+  return { v: 1, createdAt: now, customers, convs, history, catCounts, reviews, ratingHist, runs, queue: [1, 6, 9], rqueue: [[5, 1, 'Absorbs fast and my skin feels calm. Repurchasing.', 'Thank you, {first}! Calm skin is exactly what we hoped for. See you at your next refill.']], kb: KB, seq: 2000, ord };
+}
+const KB = {
+  'Shipping': 'Orders ship within 1 business day. Standard delivery 3–5 business days, free over $40. If tracking stalls for 3+ days, open a carrier trace and offer a replacement after 5 days.',
+  'Returns & refunds': '30-day returns on unopened items. Opened items: refund or exchange if the customer had a reaction or is unhappy; no need to return the product. Always advise stopping use after a reaction.',
+  'Subscriptions': 'Subscribers save 15%. They can skip, swap or cancel anytime under Subscriptions in their account. Agents may skip a delivery on request.',
+  'Tone & escalation': 'Warm, plain language, no medical claims. Escalate to a person: skin reactions, billing errors, damaged items, wholesale leads, cancellations after shipping.',
+};
+
+// ───────────── State ─────────────
+const KEY = 'fernlight-crm-v1';
+let S;
+try { const raw = localStorage.getItem(KEY); if (raw) { const p = JSON.parse(raw); if (p && p.v === 1 && Date.now() - p.createdAt < 20 * HOUR) S = p; } } catch {}
+if (!S) S = buildState();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+save();
+const cust = (id) => S.customers.find((c) => c.id === id);
+
+// ───────────── Shared UI ─────────────
+const WF = {
+  triage: { name: 'Inquiry triage & reply drafts', trigger: 'On every new message', desc: 'Sorts each message by topic, urgency and tone, then writes a reply draft from your policies.' },
+  escalate: { name: 'Escalation & routing', trigger: 'When a person is needed', desc: 'Sends refunds, reactions, billing and sales leads to the right person in Slack.' },
+  reviews: { name: 'Review reply drafts', trigger: 'Daily 9:05 AM', desc: 'Collects new website and Amazon reviews and drafts on-brand replies.' },
+  crm: { name: 'Customer profile sync', trigger: 'Nightly 2:00 AM', desc: 'Updates orders, lifetime value and segments from Shopify.' },
+  report: { name: 'Weekly support report', trigger: 'Mondays 9:00 AM', desc: 'Volume, response time, top topics and review score, emailed to the team.' },
+};
+const ROUTES = [['dashboard', 'Dashboard'], ['inbox', 'Inbox'], ['reviews', 'Reviews'], ['customers', 'Customers'], ['automations', 'Automations'], ['knowledge', 'Policies'], ['config', 'Connections']];
+const PILL = { Open: 'warn', Waiting: 'info', Resolved: 'good', High: 'crit', Medium: 'warn', Low: 'mute', Success: 'good', Retried: 'warn', Failed: 'crit', 'Needs reply': 'warn', Replied: 'good' };
+const pill = (s, label) => `<span class="pill ${PILL[s] || 'mute'}">${esc(label || s)}</span>`;
+const stars = (n) => `<span class="stars" aria-label="${n} out of 5">${'★'.repeat(n)}<i>${'★'.repeat(5 - n)}</i></span>`;
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 3600); }
+const counts = () => ({
+  open: S.convs.filter((c) => c.status === 'Open').length,
+  urgent: S.convs.filter((c) => c.status === 'Open' && c.needsHuman).length,
+  reviews: S.reviews.filter((r) => r.status === 'Needs reply').length,
+});
+function renderNav(route) {
+  const c = counts(); const badge = { inbox: c.open, reviews: c.reviews }; const hot = { inbox: c.urgent > 0, reviews: c.reviews > 0 };
+  $('#nav').innerHTML = ROUTES.map(([k, l]) => `<a href="#${k}" class="${k === route ? 'on' : ''}" ${k === route ? 'aria-current="page"' : ''}>${l}${badge[k] ? `<span class="cnt ${hot[k] ? 'hot' : ''}">${badge[k]}</span>` : ''}</a>`).join('');
+}
+
+// ───────────── Dashboard ─────────────
+function viewDashboard() {
+  const c = counts();
+  const today0 = dayStart(Date.now());
+  const todayConvs = S.convs.filter((x) => x.at >= today0);
+  const resolved = S.convs.filter((x) => x.frt != null);
+  const frts = resolved.map((x) => x.frt).sort((a, b) => a - b);
+  const medFrt = frts.length ? frts[Math.floor(frts.length / 2)] : 0;
+  const last7 = S.history.slice(-7);
+  const tot7 = last7.reduce((s, d) => s + d.ai + d.manual, 0), ai7 = last7.reduce((s, d) => s + d.ai, 0);
+  const prev7 = S.history.slice(-14, -7); const frtPrev = prev7.reduce((s, d) => s + d.frt, 0) / 7, frtNow = last7.reduce((s, d) => s + d.frt, 0) / 7;
+  const rt = Object.entries(S.ratingHist); const nR = rt.reduce((s, [, v]) => s + v, 0); const avgR = rt.reduce((s, [k, v]) => s + k * v, 0) / nR;
+  const cats = Object.entries(S.catCounts).sort((a, b) => b[1] - a[1]); const maxC = cats[0][1];
+  const urgentList = S.convs.filter((x) => x.status === 'Open' && x.needsHuman).slice(0, 4);
+  return `
+  <section class="kpis" aria-label="Today">
+    <div class="card kpi"><div class="lbl">New messages today</div><div class="val">${todayConvs.length}</div><div class="sub">${S.history.slice(-1)[0] ? `${S.history.slice(-1)[0].ai + S.history.slice(-1)[0].manual} yesterday` : ''}</div></div>
+    <div class="card kpi ${c.open ? 'todo' : ''}"><div class="lbl">Open conversations ${c.urgent ? pill('High', `${c.urgent} urgent`) : ''}</div><div class="val">${c.open}</div><div class="sub">Reply drafts ready</div></div>
+    <div class="card kpi"><div class="lbl">First response (median)</div><div class="val">${fmtMin(medFrt)}</div><div class="sub">7-day avg ${fmtMin(frtNow)} · was ${fmtMin(frtPrev)}</div></div>
+    <div class="card kpi"><div class="lbl">Sent from AI drafts</div><div class="val">${Math.round(ai7 / tot7 * 100)}<small>%</small></div><div class="sub">${ai7} of ${tot7} replies, last 7 days</div></div>
+    <div class="card kpi"><div class="lbl">Review score</div><div class="val">${avgR.toFixed(2)}</div><div class="sub">${stars(Math.round(avgR))} ${nR} reviews</div></div>
+  </section>
+  <section class="dash">
+    <div class="card">
+      <div class="card-h"><h2>Replies per day <small>last 14 days</small></h2><div class="legend"><span class="ch s1"><i></i>From AI draft</span><span class="ch s2"><i></i>Written manually</span></div></div>
+      <div class="card-b"><div class="chart-wrap" id="chart"></div>
+        <details><summary class="muted" style="cursor:pointer;font-size:12.5px">Show as table</summary><div class="scroll" id="chartTable"></div></details></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Needs a person</h2><a class="btn sm" href="#inbox">Open inbox</a></div>
+      <div class="card-b todo-list">${urgentList.map((x) => `<a class="todo-item" style="text-decoration:none;color:inherit" href="#inbox" data-open="${x.id}"><div class="ic r">!</div><div><b>${esc(cust(x.cid).name)} · ${esc(x.subject)}</b><span>${esc(x.reason)}</span></div><span class="chan">${esc(x.channel)}</span></a>`).join('') || '<div class="todo-item"><div class="ic g">✓</div><div><b>Nothing urgent</b><span>All escalations handled</span></div><span></span></div>'}</div>
+    </div>
+  </section>
+  <section class="dash">
+    <div class="card"><div class="card-h"><h2>Top topics <small>last 30 days</small></h2></div>
+      <div class="card-b cat">${cats.map(([k, v]) => `<div class="r"><span>${esc(k)}</span><div class="bar"><i style="width:${v / maxC * 100}%"></i></div><span class="num" style="text-align:right">${v}</span></div>`).join('')}</div></div>
+    <div class="card"><div class="card-h"><h2>Recent automation runs</h2><a class="btn sm" href="#automations">View all</a></div>
+      <div class="card-b timeline">${[...S.runs].reverse().slice(0, 6).map((r) => `<div class="tl"><div class="t">${kd(r.at) === kd(Date.now()) ? kt(r.at) : md(r.at)}</div><div><b>${esc(WF[r.wf].name)}</b><span class="d">${esc(r.summary)}</span></div>${pill(r.status)}</div>`).join('')}</div></div>
+  </section>`;
+}
+function drawChart() {
+  const el = $('#chart'); if (!el) return;
+  const data = S.history.map((h) => ({ d: h.d, s1: h.ai, s2: h.manual }));
+  const W = Math.max(320, el.clientWidth), H = 230, pl = 34, pr = 8, pt = 12, pb = 28;
+  const max = Math.max(...data.map((x) => x.s1 + x.s2), 1); const step = max > 40 ? 20 : 10; const top = Math.ceil(max / step) * step;
+  const y = (v) => pt + (H - pt - pb) * (1 - v / top); const bw = (W - pl - pr) / data.length; const barW = Math.min(26, bw * 0.62);
+  const cs = getComputedStyle(document.documentElement);
+  const col = { s1: cs.getPropertyValue('--s1').trim(), s2: cs.getPropertyValue('--s2').trim(), grid: cs.getPropertyValue('--grid').trim(), muted: cs.getPropertyValue('--muted').trim(), ink: cs.getPropertyValue('--ink').trim() };
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Replies per day, AI drafts versus manual, last 14 days">`;
+  for (let v = 0; v <= top; v += step) svg += `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" stroke="${col.grid}"/><text x="${pl - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="${col.muted}" font-family="IBM Plex Mono, monospace">${v}</text>`;
+  data.forEach((x, i) => {
+    const cx = pl + bw * i + bw / 2, x0 = cx - barW / 2, y1 = y(x.s1), y0 = y(0), y2 = y(x.s1 + x.s2); const last = i === data.length - 1;
+    if (x.s1) svg += `<rect x="${x0}" y="${y1}" width="${barW}" height="${y0 - y1}" fill="${col.s1}"/>`;
+    if (x.s2) { const h = Math.max(0, y1 - y2 - 2), rr = Math.min(4, h / 2); svg += `<path d="M${x0},${y1 - 2} v${-(h - rr)} q0,${-rr} ${rr},${-rr} h${barW - 2 * rr} q${rr},0 ${rr},${rr} v${h - rr} z" fill="${col.s2}"/>`; }
+    if (i % 2 === 1 || last) svg += `<text x="${cx}" y="${H - 9}" text-anchor="middle" font-size="11" fill="${last ? col.ink : col.muted}" font-weight="${last ? 600 : 400}">${last ? 'Yesterday' : md(x.d)}</text>`;
+    svg += `<rect class="hit" data-i="${i}" x="${pl + bw * i}" y="${pt}" width="${bw}" height="${H - pt - pb}" fill="transparent"/>`;
+  });
+  svg += '</svg><div class="tip" id="tip" hidden></div>';
+  el.innerHTML = svg; const tip = $('#tip', el);
+  el.querySelectorAll('.hit').forEach((h) => {
+    h.addEventListener('mouseenter', () => {
+      const x = data[+h.dataset.i];
+      tip.innerHTML = `<b>${wd(x.d)}, ${md(x.d)}</b><div class="r"><span class="ch s1"><i></i>AI draft</span><span class="num">${x.s1}</span></div><div class="r"><span class="ch s2"><i></i>Manual</span><span class="num">${x.s2}</span></div><div class="r muted"><span>Total</span><span class="num">${x.s1 + x.s2}</span></div>`;
+      tip.hidden = false; const bx = (+h.getAttribute('x') + bw / 2) / W * el.clientWidth;
+      tip.style.left = Math.min(el.clientWidth - 160, Math.max(0, bx - 75)) + 'px'; tip.style.top = '8px';
+    });
+    h.addEventListener('mouseleave', () => (tip.hidden = true));
+  });
+  $('#chartTable').innerHTML = `<table><thead><tr><th>Date</th><th class="r">AI draft</th><th class="r">Manual</th><th class="r">Total</th></tr></thead><tbody>${data.map((x) => `<tr><td>${md(x.d)}</td><td class="r num">${x.s1}</td><td class="r num">${x.s2}</td><td class="r num">${x.s1 + x.s2}</td></tr>`).join('')}</tbody></table>`;
+}
+
+// ───────────── Inbox ─────────────
+const ui = { filter: 'Open', sel: null, seg: 'All', q: '' };
+function viewInbox() {
+  const order = { Open: 0, Waiting: 1, Resolved: 2 };
+  const all = [...S.convs].sort((a, b) => order[a.status] - order[b.status] || (b.needsHuman - a.needsHuman) || b.at - a.at);
+  const list = all.filter((c) => ui.filter === 'All' || c.status === ui.filter);
+  if (!ui.sel || !S.convs.find((c) => c.id === ui.sel)) ui.sel = list[0]?.id;
+  const c = S.convs.find((x) => x.id === ui.sel); const p = c && cust(c.cid);
+  const n = (s) => S.convs.filter((x) => s === 'All' || x.status === s).length;
+  return `<div class="seg-tabs">${['Open', 'Waiting', 'Resolved', 'All'].map((s) => `<button class="chip ${ui.filter === s ? 'on' : ''}" type="button" data-filter="${s}">${s}<span class="n">${n(s)}</span></button>`).join('')}</div>
+  <section class="inbox">
+    <div class="card"><div class="list">${list.map((x) => `<button type="button" class="conv ${x.id === ui.sel ? 'on' : ''} ${x.unread ? 'unread' : ''}" data-conv="${x.id}">
+      <span class="h"><b>${esc(cust(x.cid).name)}</b><span class="muted" style="font-size:12px;white-space:nowrap">${ago(x.at)}</span></span>
+      <p><b style="font-weight:500;color:var(--ink)">${esc(x.subject)}</b> · ${esc(x.messages[0].text)}</p>
+      <span class="meta"><span class="chan">${esc(x.channel)}</span>${esc(x.category)} ${x.status !== 'Open' ? pill(x.status) : x.needsHuman ? pill('High', 'Needs a person') : pill('Low', 'Draft ready')}</span></button>`).join('') || '<div class="empty">No conversations here.</div>'}</div></div>
+    ${c ? `<div class="card">
+      <div class="card-h"><h2>${esc(c.subject)} <small>${esc(c.channel)} · order ${esc(c.order)}</small></h2>${pill(c.status)}</div>
+      <div class="thread">${c.messages.map((m) => `<div class="msg ${m.from}">${esc(m.text)}<small>${m.from === 'in' ? esc(p.name) : 'Fernlight support'} · ${kdt(m.at)}${m.by ? ' · ' + esc(m.by) : ''}</small></div>`).join('')}</div>
+      <div class="ai">
+        <div class="ai-row"><div><span>Topic</span><b>${esc(c.category)}</b></div><div><span>Urgency</span><b style="color:${c.urgency === 'High' ? 'var(--crit)' : 'inherit'}">${esc(c.urgency)}</b></div><div><span>Tone</span><b>${esc(c.sentiment)}</b></div><div><span>Customer</span><b>${esc(p.seg)}</b></div></div>
+        ${c.needsHuman && c.status === 'Open' ? `<div class="row">${pill('High', 'Needs a person')}<span>${esc(c.reason)}</span></div>` : ''}
+        ${c.status === 'Open' || c.status === 'Waiting' ? `
+        <div class="row" style="justify-content:space-between"><label for="draft" class="muted" style="font-size:12.5px">Reply draft · based on your policies · review before sending</label>
+          <div class="tone" role="group" aria-label="Tone">${['Friendly', 'Concise'].map((t) => `<button type="button" class="${c.tone === t ? 'on' : ''}" data-tone="${t}">${t}</button>`).join('')}</div></div>
+        <textarea class="draft" id="draft">${esc(c.edited ?? c.drafts[c.tone])}</textarea>
+        <div class="row"><button class="btn pri" type="button" id="send">Send reply</button><button class="btn" type="button" id="wait">Mark waiting</button><button class="btn" type="button" id="resolve">Resolve without reply</button></div>` : '<div class="muted">This conversation is resolved.</div>'}
+      </div></div>
+    <aside class="card cust"><div class="card-h"><div class="row"><span class="avatar">${esc(p.name.split(' ').map((w) => w[0]).join(''))}</span><div><b>${esc(p.name)}</b><div class="muted" style="font-size:12.5px">${esc(p.loc)}</div></div></div></div>
+      <div class="card-b">
+        <div class="tags"><span class="tagx ${p.seg === 'VIP' ? 'vip' : ''}">${esc(p.seg)}</span>${p.tags.map((t) => `<span class="tagx ${t === 'At risk' ? 'risk' : ''}">${esc(t)}</span>`).join('')}</div>
+        <div class="kv"><span>Email</span><b>${esc(p.email)}</b><span>Orders</span><b>${p.orders}</b><span>Lifetime value</span><b>${usd(p.ltv)}</b><span>Customer since</span><b>${md(p.since)} ${kd(p.since).slice(0, 4)}</b></div>
+        <div><div class="muted" style="font-size:12px;margin-bottom:6px">Conversations</div><div class="hist">${S.convs.filter((x) => x.cid === p.id).map((x) => `<div><span>${esc(x.subject)}</span><span class="muted">${md(x.at)}</span></div>`).join('')}</div></div>
+      </div></aside>` : ''}
+  </section>`;
+}
+
+// ───────────── Reviews ─────────────
+function viewReviews() {
+  const rt = S.ratingHist; const total = Object.values(rt).reduce((a, b) => a + b, 0); const avg = Object.entries(rt).reduce((s, [k, v]) => s + k * v, 0) / total;
+  const list = [...S.reviews].sort((a, b) => (a.status === b.status ? b.at - a.at : a.status === 'Needs reply' ? -1 : 1));
+  return `<section class="rv-grid">
+    <div class="card"><div class="card-h"><h2>Rating summary</h2></div><div class="card-b" style="display:grid;gap:14px">
+      <div class="row"><span class="num" style="font-size:34px;font-weight:600">${avg.toFixed(2)}</span><div>${stars(Math.round(avg))}<div class="muted" style="font-size:12.5px">${total} reviews</div></div></div>
+      <div class="dist">${[5, 4, 3, 2, 1].map((k) => `<div class="r"><span>${k} ★</span><div class="bar"><i style="width:${rt[k] / total * 100}%"></i></div><span class="num muted" style="text-align:right">${rt[k]}</span></div>`).join('')}</div>
+      <button class="btn sm" type="button" data-run="reviews">Check new reviews</button></div></div>
+    <div class="card"><div class="card-h"><h2>Recent reviews</h2><small>${plural(counts().reviews, 'needs a reply', 'need a reply')}</small></div>
+      ${list.map((r) => { const p = cust(r.cid); return `<div class="review"><div class="h"><div class="row">${stars(r.rating)}<b>${esc(p.name)}</b><span class="chan">${esc(r.source)}</span><span class="muted" style="font-size:12.5px">${esc(r.product)} · ${ago(r.at)}</span></div>${pill(r.status)}</div>
+        <p>${esc(r.text)}</p>
+        ${r.status === 'Needs reply' ? `<div class="reply"><label class="muted" style="font-size:12px" for="rv_${r.id}">Reply draft${r.rating <= 2 ? ' · low rating: support team notified' : ''}</label><textarea id="rv_${r.id}">${esc(r.edited ?? r.draft)}</textarea><div class="row"><button class="btn pri sm" type="button" data-publish="${r.id}">Publish reply</button></div></div>`
+          : `<div class="reply"><span class="muted" style="font-size:12px">Our reply</span><span>${esc(r.edited ?? r.draft)}</span></div>`}</div>`; }).join('')}
+    </div></section>`;
+}
+
+// ───────────── Customers ─────────────
+function viewCustomers() {
+  const segs = ['All', 'VIP', 'Regular', 'New', 'At risk'];
+  const list = S.customers.filter((c) => (ui.seg === 'All' || c.seg === ui.seg || c.tags.includes(ui.seg)) && (!ui.q || `${c.name} ${c.loc}`.toLowerCase().includes(ui.q.toLowerCase()))).sort((a, b) => b.ltv - a.ltv);
+  const n = (s) => S.customers.filter((c) => s === 'All' || c.seg === s || c.tags.includes(s)).length;
+  const last = (c) => { const xs = S.convs.filter((x) => x.cid === c.id); return xs.length ? Math.max(...xs.map((x) => x.at)) : null; };
+  const open = (c) => S.convs.filter((x) => x.cid === c.id && x.status === 'Open').length;
+  return `<div class="filters"><div class="seg-tabs">${segs.map((s) => `<button class="chip ${ui.seg === s ? 'on' : ''}" type="button" data-seg="${s}">${s}<span class="n">${n(s)}</span></button>`).join('')}</div>
+    <input type="search" id="q" placeholder="Search name or city" value="${esc(ui.q)}" aria-label="Search customers"></div>
+  <section class="card"><div class="scroll"><table><thead><tr><th>Customer</th><th>Segment</th><th>Location</th><th class="r">Orders</th><th class="r">Lifetime value</th><th>Last contact</th><th class="r">Open</th></tr></thead><tbody>
+    ${list.map((c) => { const l = last(c); const o = open(c); return `<tr><td><b>${esc(c.name)}</b><div class="muted" style="font-size:12px">${esc(c.email)}</div></td><td><div class="tags"><span class="tagx ${c.seg === 'VIP' ? 'vip' : ''}">${esc(c.seg)}</span>${c.tags.map((t) => `<span class="tagx ${t === 'At risk' ? 'risk' : ''}">${esc(t)}</span>`).join('')}</div></td><td>${esc(c.loc)}</td><td class="r num">${c.orders}</td><td class="r num">${usd(c.ltv)}</td><td class="num">${l ? ago(l) : '<span class="muted">-</span>'}</td><td class="r">${o ? `<a href="#inbox" data-open="${S.convs.find((x) => x.cid === c.id && x.status === 'Open').id}" class="pill warn nodot" style="text-decoration:none">${o}</a>` : '<span class="muted">0</span>'}</td></tr>`; }).join('')}
+  </tbody></table></div></section>`;
+}
+
+// ───────────── Automations ─────────────
+const live = {};
+function nextRun(id) {
+  const now = Date.now();
+  if (id === 'triage') return 'On each message'; if (id === 'escalate') return 'When needed';
+  const [h, m] = id === 'reviews' ? [9, 5] : id === 'crm' ? [2, 0] : [9, 0];
+  let t = dayStart(now) + h * HOUR + m * MIN; while (t <= now || (id === 'report' && wd(t) !== 'Mon')) t += DAY;
+  return `${kd(t) === kd(now) ? 'Today' : kd(t) === kd(now + DAY) ? 'Tomorrow' : `${wd(t)} ${md(t)}`} ${kt(t)}`;
+}
+function viewAutomations() {
+  return `<p class="muted" style="margin:0">Five workflows keep the inbox, reviews and customer profiles up to date. Use <b>Run now</b> to trigger one immediately.</p>
+  <section class="wf-grid">${Object.keys(WF).map((id) => {
+    const rs = S.runs.filter((r) => r.wf === id); const last = rs[rs.length - 1]; const ok = rs.filter((r) => r.status !== 'Failed').length; const avg = rs.length ? rs.reduce((s, r) => s + r.dur, 0) / rs.length : 0; const L = live[id];
+    return `<article class="card wf">
+      <div class="card-h"><h2>${esc(WF[id].name)}</h2>${pill('Success', 'Active')}</div>
+      <div class="wf-meta"><div><span>Trigger</span><b>${esc(WF[id].trigger)}</b></div><div><span>Last run</span><b>${last ? kdt(last.at) : '-'}</b></div><div><span>Success · avg</span><b>${rs.length ? Math.round(ok / rs.length * 100) : 0}% · ${avg.toFixed(1)}s</b></div></div>
+      ${L ? `<div class="steps" aria-live="polite">${L.steps.map((s) => `<div class="s ${s.st}"><span class="m"></span><span>${esc(s.t)}${s.d ? ` <em>· ${esc(s.d)}</em>` : ''}</span><span class="x">${s.ms ? s.ms + 'ms' : ''}</span></div>`).join('')}</div>${L.result ? `<div class="result">${L.result}</div>` : ''}`
+        : `<div class="steps"><span class="muted">${esc(WF[id].desc)}</span><div class="row" style="margin-top:6px"><span class="muted" style="font-size:12px">Last ${Math.min(14, rs.length)} runs</span><div class="strip">${rs.slice(-14).map((r) => `<i class="${r.status === 'Retried' ? 'w' : r.status === 'Failed' ? 'c' : ''}" title="${esc(kdt(r.at) + ' · ' + r.status + ' · ' + r.summary)}"></i>`).join('')}</div></div></div>`}
+      <div class="wf-foot"><span class="muted" style="font-size:12.5px">Next run <b class="num" style="color:var(--ink)">${nextRun(id)}</b></span><button class="btn pri sm" type="button" data-run="${id}" ${L && !L.done ? 'disabled' : ''}>${L && !L.done ? 'Running…' : 'Run now'}</button></div>
+    </article>`;
+  }).join('')}</section>
+  <section class="card"><div class="card-h"><h2>Run history</h2><small>last 30</small></div><div class="scroll"><table><thead><tr><th>Time</th><th>Workflow</th><th>Result</th><th>Details</th><th class="r">Duration</th></tr></thead><tbody>
+    ${[...S.runs].reverse().slice(0, 30).map((r) => `<tr><td class="num">${kdt(r.at)}</td><td>${esc(WF[r.wf].name)}</td><td>${pill(r.status)}</td><td class="w">${esc(r.summary)}</td><td class="r num">${r.dur.toFixed(1)}s</td></tr>`).join('')}
+  </tbody></table></div></section>`;
+}
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+async function runWorkflow(id) {
+  if (live[id] && !live[id].done) return;
+  const L = (live[id] = { steps: [], done: false, result: '' }); const at = Date.now(); const t0 = performance.now();
+  const paint = () => { if (route() === 'automations') render(); };
+  const step = async (t, fn) => { const s = { t, st: 'run', d: '' }; L.steps.push(s); paint(); await new Promise((r) => setTimeout(r, reduce ? 0 : 320 + Math.random() * 380)); s.d = (await fn()) || ''; s.st = 'done'; s.ms = Math.round(120 + Math.random() * 600); paint(); };
+  if (route() !== 'automations') location.hash = 'automations'; else render();
+  let summary = '';
+  if (id === 'triage') {
+    const ti = S.queue.shift();
+    await step('Fetch new messages', () => (ti != null ? 'Email, chat, Amazon · 1 new' : 'No new messages'));
+    if (ti != null) {
+      const t = TEMPLATES[ti]; const p = S.customers[(S.seq + 7) % S.customers.length]; S.seq++; S.ord += 13; const order = `#${S.ord}`; const first = p.name.split(' ')[0];
+      const fill = (s) => s.replace(/\{first\}/g, first).replace(/\{order\}/g, order);
+      const conv = { id: 'T' + S.seq, cid: p.id, channel: ['Email', 'Chat', 'Amazon'][S.seq % 3], subject: t[5], category: t[0], urgency: t[1], sentiment: t[2], needsHuman: t[3], reason: t[4], order, at: Date.now(), status: 'Open', unread: true, messages: [{ from: 'in', text: t[6], at: Date.now() }], drafts: { Friendly: fill(t[7]), Concise: fill(t[8]) }, tone: 'Friendly' };
+      await step('Match customer profile', () => `${p.name} · ${p.seg} · ${plural(p.orders, 'order')}`);
+      await step('Classify topic, urgency and tone', () => `${t[0]} · ${t[1]} · ${t[2]}`);
+      await step('Write reply draft from policies', () => '2 tones: friendly, concise');
+      await step(t[3] ? 'Route to a person (Slack)' : 'Place in inbox', () => (t[3] ? t[4] : 'Draft ready for review'));
+      S.convs.push(conv); if (t[3]) S.runs.push({ wf: 'escalate', at: Date.now(), status: 'Success', dur: 1.3, summary: `${t[4].split(':')[0]} → Slack #support-urgent` });
+      summary = `${t[0]} · ${t[1]}${t[3] ? ' → needs a person' : ' → draft ready'}`;
+      ui.sel = conv.id; ui.filter = 'Open';
+      L.result = `New message from <b>${esc(p.name)}</b> is ready. <a href="#inbox">Open inbox →</a>`;
+    } else { summary = 'No new messages'; L.result = 'No new messages right now.'; }
+  } else if (id === 'escalate') {
+    const xs = S.convs.filter((c) => c.status === 'Open' && c.needsHuman);
+    await step('Scan open conversations', () => plural(xs.length, 'needs a person', 'need a person'));
+    await step('Post to Slack #support-urgent', () => (xs.length ? xs.map((c) => c.category).join(', ') : 'Nothing to send'));
+    await step('Assign owners', () => (xs.length ? 'Refunds → Dana · Wholesale → Luis' : '-'));
+    summary = xs.length ? `${plural(xs.length, 'conversation')} routed` : 'Nothing to route'; L.result = summary;
+  } else if (id === 'reviews') {
+    const q = S.rqueue.shift();
+    await step('Fetch new reviews', () => (q ? 'Website + Amazon · 1 new' : 'No new reviews'));
+    if (q) {
+      const p = S.customers[(S.seq + 3) % S.customers.length]; S.seq++;
+      await step('Draft on-brand reply', () => `${q[0]}★ · ${PRODUCTS[q[1]]}`);
+      await step(q[0] <= 2 ? 'Notify support team' : 'Add to review queue', () => (q[0] <= 2 ? 'Low rating' : 'Ready to publish'));
+      S.reviews.unshift({ id: 'R' + S.seq, cid: p.id, rating: q[0], product: PRODUCTS[q[1]], text: q[2], at: Date.now(), status: 'Needs reply', draft: q[3].replace(/\{first\}/g, p.name.split(' ')[0]), source: 'Website' });
+      S.ratingHist[q[0]]++;
+      summary = '1 review → reply draft'; L.result = 'New review with a reply draft. <a href="#reviews">Open reviews →</a>';
+    } else { summary = 'No new reviews'; L.result = 'No new reviews right now.'; }
+  } else if (id === 'crm') {
+    await step('Fetch customers and orders from Shopify', () => `${S.customers.length} customers`);
+    await step('Recalculate lifetime value and segments', () => `${S.customers.filter((c) => c.seg === 'VIP').length} VIP · ${S.customers.filter((c) => c.tags.includes('At risk')).length} at risk`);
+    await step('Update CRM profiles', () => 'Done');
+    summary = `${S.customers.length} customer profiles updated`; L.result = summary;
+  } else if (id === 'report') {
+    const last7 = S.history.slice(-7); const tot = last7.reduce((s, d) => s + d.ai + d.manual, 0); const ai = last7.reduce((s, d) => s + d.ai, 0);
+    await step('Collect last 7 days', () => `${tot} replies`);
+    await step('Summarize topics and response time', () => `${Math.round(ai / tot * 100)}% from AI drafts`);
+    await step('Email report to team', () => 'support@ team list');
+    summary = 'Weekly support report sent'; L.result = `<b>${tot} replies</b> last week · ${Math.round(ai / tot * 100)}% from AI drafts · top topic: Shipping`;
+  }
+  S.runs.push({ wf: id, at, status: 'Success', dur: (performance.now() - t0) / 1000, summary });
+  L.done = true; save(); render(); tick(); toast(`${WF[id].name}: ${summary}`);
+}
+
+// ───────────── Policies ─────────────
+function viewKnowledge() {
+  return `<p class="muted" style="margin:0">Reply drafts follow these policies. Keep them short and specific; changes apply to new drafts.</p>
+  <section class="kb">${Object.entries(S.kb).map(([k, v], i) => `<div class="card"><div class="card-h"><h2>${esc(k)}</h2></div><div class="card-b form"><textarea id="kb_${i}" data-kb="${esc(k)}">${esc(v)}</textarea><div class="row"><button class="btn sm pri" type="button" data-savekb="${i}">Save</button></div></div></div>`).join('')}</section>`;
+}
+
+// ───────────── Connections ─────────────
+function viewConfig() {
+  const conns = [['Help desk email', 'support@ inbox · IMAP'], ['Website chat', 'Chat widget webhook'], ['Amazon Seller Central', 'Buyer messages · SP-API'], ['Shopify', 'Customers, orders, reviews'], ['Slack', '#support · #support-urgent'], ['Claude API', 'Classification and reply drafts']];
+  return `<section class="cfg">
+    <div class="card"><div class="card-h"><h2>Connected channels</h2><small>via n8n credentials</small></div>
+      <div class="card-b">${conns.map(([n, d]) => `<div class="conn"><div><b>${n}</b><span>${d}</span></div>${pill('Success', 'Connected')}</div>`).join('')}</div></div>
+    <div class="card"><div class="card-h"><h2>Routing rules</h2></div><div class="card-b">
+      <div class="conn"><div><b>Skin reaction, refund</b><span>Dana (Support lead)</span></div>${pill('High', 'Urgent')}</div>
+      <div class="conn"><div><b>Billing error</b><span>Dana + Finance</span></div>${pill('High', 'Urgent')}</div>
+      <div class="conn"><div><b>Wholesale inquiry</b><span>Luis (Sales)</span></div>${pill('Medium', 'Lead')}</div>
+      <div class="conn"><div><b>Everything else</b><span>Inbox · draft ready</span></div>${pill('Low', 'Normal')}</div></div></div>
+    <div class="card"><div class="card-h"><h2>Data</h2></div>
+      <div class="card-b form"><span class="muted">Showing sample data. Connect your channels to switch to live conversations.</span>
+        <div class="row"><button class="btn sm" type="button" id="resetAll">Reset sample data</button></div></div></div>
+  </section>`;
+}
+
+// ───────────── Routing & render ─────────────
+const VIEWS = { dashboard: viewDashboard, inbox: viewInbox, reviews: viewReviews, customers: viewCustomers, automations: viewAutomations, knowledge: viewKnowledge, config: viewConfig };
+const route = () => { const h = location.hash.slice(1); return VIEWS[h] ? h : 'dashboard'; };
+function render() {
+  const r = route(); renderNav(r); $('#title').textContent = ROUTES.find(([k]) => k === r)[1];
+  const focusId = document.activeElement?.id; const caret = document.activeElement?.selectionStart;
+  $('#view').innerHTML = VIEWS[r]();
+  if (r === 'dashboard') drawChart();
+  if (focusId === 'q') { const q = $('#q'); q?.focus(); try { q.setSelectionRange(caret, caret); } catch {} }
+}
+window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => route() === 'dashboard' && drawChart(), 150); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => route() === 'dashboard' && drawChart());
+const tick = () => { $('#clock').textContent = `${wd(Date.now())}, ${md(Date.now())} · ${kt(Date.now())}`; const last = S.runs[S.runs.length - 1]; $('#syncInfo').textContent = last ? `Last sync ${kdt(last.at)}` : ''; };
+tick(); setInterval(tick, 30e3);
+
+// ───────────── Events ─────────────
+const curConv = () => S.convs.find((x) => x.id === ui.sel);
+document.addEventListener('click', async (e) => {
+  const t = e.target;
+  const open = t.closest('[data-open]'); if (open) { ui.sel = open.dataset.open; ui.filter = 'Open'; if (route() === 'inbox') { e.preventDefault(); render(); } return; }
+  const run = t.closest('[data-run]'); if (run) { runWorkflow(run.dataset.run); return; }
+  const f = t.closest('[data-filter]'); if (f) { ui.filter = f.dataset.filter; ui.sel = null; render(); return; }
+  const cv = t.closest('[data-conv]'); if (cv) { ui.sel = cv.dataset.conv; const c = curConv(); if (c) c.unread = false; save(); render(); return; }
+  const tn = t.closest('[data-tone]'); if (tn) { const c = curConv(); c.tone = tn.dataset.tone; delete c.edited; save(); render(); return; }
+  const sg = t.closest('[data-seg]'); if (sg) { ui.seg = sg.dataset.seg; render(); return; }
+  const pb = t.closest('[data-publish]'); if (pb) { const r = S.reviews.find((x) => x.id === pb.dataset.publish); r.edited = $('#rv_' + r.id).value; r.status = 'Replied'; save(); render(); toast('Reply published.'); return; }
+  const sk = t.closest('[data-savekb]'); if (sk) { const ta = $('#kb_' + sk.dataset.savekb); S.kb[ta.dataset.kb] = ta.value; save(); toast('Policy saved. New drafts will follow it.'); return; }
+  const id = t.id;
+  if (id === 'runTriage') runWorkflow('triage');
+  if (id === 'send') { const c = curConv(); const text = $('#draft').value.trim(); if (!text) return toast('The reply is empty.'); c.messages.push({ from: 'out', text, at: Date.now(), by: c.edited != null ? 'Edited before sending' : 'Sent after review' }); c.status = 'Resolved'; c.frt = (Date.now() - c.at) / MIN; save(); render(); toast(`Reply sent to ${cust(c.cid).name}.`); }
+  if (id === 'wait') { const c = curConv(); c.status = 'Waiting'; save(); render(); toast('Marked as waiting on the customer.'); }
+  if (id === 'resolve') { const c = curConv(); c.status = 'Resolved'; save(); render(); toast('Conversation resolved.'); }
+  if (id === 'resetAll') { S = buildState(); Object.keys(live).forEach((k) => delete live[k]); ui.sel = null; save(); location.hash = 'dashboard'; render(); toast('Sample data reset.'); }
+});
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'draft') { const c = curConv(); if (c) { c.edited = e.target.value; save(); } }
+  if (e.target.id === 'q') { ui.q = e.target.value.trim(); render(); }
+});
+render();
+})();
+</script>

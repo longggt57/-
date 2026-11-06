@@ -190,6 +190,23 @@ ANTHROPIC_API_KEY=sk-ant-... python3 test/live_claude_check.py
 
 ![콘솔 대시보드](docs/screenshots/08_콘솔_대시보드.png)
 
+## 고객 문의·리뷰 AI CRM (두 번째 사이트, 영어)
+
+[`docs/crm-en/index.html`](docs/crm-en/index.html): 스킨케어 쇼핑몰을 예로 든 고객 응대 CRM입니다. 화면은 7개입니다.
+
+| 화면 | 내용 |
+|---|---|
+| 대시보드 | 오늘 문의, 미처리 대화, 첫 응답 시간, AI 초안 사용률, 리뷰 평점, 14일 답변 차트, 사람 확인이 필요한 건, 많이 들어오는 주제 |
+| 통합 문의함 | 이메일·채팅·Amazon 문의. AI 분류(주제·긴급도·감정), 답변 초안(친절/간결 두 가지 톤), 고객 프로필 옆 패널 |
+| 리뷰 | 평점 분포, 새 리뷰와 답글 초안, 바로 게시 |
+| 고객 | VIP·일반·신규·이탈 위험 구분, 주문 수, 누적 구매액, 최근 문의 |
+| 자동화 | 문의 분류·초안, 긴급 건 전달, 리뷰 답글, 고객 정보 동기화, 주간 리포트. 지금 실행 가능 |
+| 정책 | AI 초안이 따르는 배송·반품·구독·말투 기준 |
+| 연결 | 채널 연결 상태, 담당자 배정 규칙 |
+
+- 샘플 데이터로 동작하고 브라우저에 저장됩니다. "Reset sample data"로 초기화할 수 있습니다.
+- 수정은 `body.html`, `extra.css`에서 하고 `python3 docs/crm-en/assemble.py` → `python3 docs/crm-en/build_page.py` 순서로 다시 만드세요.
+
 ## Fiverr 버전 (영어)
 
 - **영어판 콘솔:** [`docs/console-en/index.html`](docs/console-en/index.html)
