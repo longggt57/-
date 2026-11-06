@@ -1,30 +1,20 @@
-<title>모아데스크 CRM</title>
+<title>MoaDesk CRM</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: fixed left rail (collapses to a top tab strip on phones) + scanning workspace; summary first, detail on demand */
+/* Layout: white workspace, fixed left rail (top tab strip on phones); summary first, detail on demand. Single light theme by design. */
 :root{
-  --bg:#f2f5f5; --surface:#ffffff; --surface-2:#eaf0ef; --line:#d8e1e0; --fg:#13201e; --muted:#5a6a68;
-  --accent:#0d7a69; --accent-ink:#ffffff; --accent-soft:#dcefea; --bar-2:#b9cbc8;
+  color-scheme:light;
+  --bg:#ffffff; --surface:#ffffff; --surface-2:#f2f6f5; --line:#e2e9e8; --fg:#13201e; --muted:#5a6a68;
+  --accent:#0d7a69; --accent-ink:#ffffff; --accent-soft:#e3f3ef; --bar-2:#c3d3d0;
   --ok:#1d8548; --warn:#a96d12; --crit:#c03d29; --info:#2b68cc;
-  --c-naver:#17a246; --c-kakao:#a78300; --c-insta:#be2f7f; --c-phone:#56656d; --c-web:#2b68cc;
-  --font:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --c-book:#2b68cc; --c-wa:#17a246; --c-insta:#be2f7f; --c-phone:#56656d; --c-web:#7a52c7;
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
   --r:10px; --rail:228px;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0e1615; --surface:#15201e; --surface-2:#1b2927; --line:#2a3b38; --fg:#e3edeb; --muted:#94a6a3;
-  --accent:#3dc0a6; --accent-ink:#05201a; --accent-soft:#163631; --bar-2:#3a4f4b;
-  --ok:#4cc27a; --warn:#e2aa45; --crit:#f07c63; --info:#78a7f5;
-  --c-naver:#46c96c; --c-kakao:#e3be35; --c-insta:#e56aa9; --c-phone:#9aabb3; --c-web:#78a7f5; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0e1615; --surface:#15201e; --surface-2:#1b2927; --line:#2a3b38; --fg:#e3edeb; --muted:#94a6a3;
-  --accent:#3dc0a6; --accent-ink:#05201a; --accent-soft:#163631; --bar-2:#3a4f4b;
-  --ok:#4cc27a; --warn:#e2aa45; --crit:#f07c63; --info:#78a7f5;
-  --c-naver:#46c96c; --c-kakao:#e3be35; --c-insta:#e56aa9; --c-phone:#9aabb3; --c-web:#78a7f5; color-scheme:dark}
-
 *{box-sizing:border-box}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.55}
@@ -53,7 +43,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .crumb{color:var(--muted);font-size:12px}
 .topbar h1{margin:0;font-size:22px;letter-spacing:-.02em;text-wrap:balance}
 .topbar .spacer{flex:1}
-.demo-tag{font-size:12px;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 10%,transparent);padding:3px 9px;border-radius:99px;white-space:nowrap}
+.demo-tag{font-size:12px;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 8%,transparent);padding:3px 9px;border-radius:99px;white-space:nowrap}
 .today{font-size:13px;color:var(--muted)}
 
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
@@ -66,11 +56,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:4px}
 .kpi .k{font-size:12px;color:var(--muted);letter-spacing:.02em}
 .kpi .v{font-size:24px;font-weight:600;font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.kpi .v small{font-size:13px;color:var(--muted);font-family:var(--font);font-weight:500;margin-left:2px}
+.kpi .v small{font-size:13px;color:var(--muted);font-family:var(--font);font-weight:500;margin-left:3px}
 .kpi .d{font-size:12px;color:var(--muted)}
 .kpi.alert{border-color:color-mix(in srgb,var(--crit) 45%,var(--line))}
 .kpi.alert .v{color:var(--crit)}
-.up{color:var(--ok)} .down{color:var(--crit)}
+.up{color:var(--ok)}
 
 .grid-2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:12px}
 .chart svg{width:100%;height:auto;display:block}
@@ -82,17 +72,17 @@ button,input,select,textarea{font:inherit;color:inherit}
 .donut-wrap svg{width:150px;height:150px;flex:none}
 .donut-wrap .center-n{font-family:var(--mono);font-size:22px;font-weight:600;fill:var(--fg)}
 .donut-wrap .center-k{font-size:11px;fill:var(--muted)}
-.ch-list{display:grid;gap:7px;flex:1;min-width:150px;margin:0;padding:0;list-style:none}
+.ch-list{display:grid;gap:7px;flex:1;min-width:170px;margin:0;padding:0;list-style:none}
 .ch-list li{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:13px}
 .ch-list .sw{width:10px;height:10px;border-radius:3px}
 
-.chip{--c:var(--muted);display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:1px 8px;border-radius:99px;color:var(--c);background:color-mix(in srgb,var(--c) 13%,transparent);border:1px solid color-mix(in srgb,var(--c) 28%,transparent);white-space:nowrap}
-.chip.naver{--c:var(--c-naver)} .chip.kakao{--c:var(--c-kakao)} .chip.insta{--c:var(--c-insta)} .chip.phone{--c:var(--c-phone)} .chip.web{--c:var(--c-web)}
+.chip{--c:var(--muted);display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:1px 8px;border-radius:99px;color:var(--c);background:color-mix(in srgb,var(--c) 10%,transparent);border:1px solid color-mix(in srgb,var(--c) 26%,transparent);white-space:nowrap}
+.chip.book{--c:var(--c-book)} .chip.wa{--c:var(--c-wa)} .chip.insta{--c:var(--c-insta)} .chip.phone{--c:var(--c-phone)} .chip.web{--c:var(--c-web)}
 .pill{--c:var(--muted);display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--c);white-space:nowrap}
 .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c)}
 .p-crit{--c:var(--crit)} .p-ok{--c:var(--ok)} .p-ai{--c:var(--accent)} .p-info{--c:var(--info)} .p-warn{--c:var(--warn)} .p-mute{--c:var(--muted)}
 .cat{font-size:12px;color:var(--fg);background:var(--surface-2);border-radius:6px;padding:1px 7px;white-space:nowrap}
-.urg-긴급{color:var(--crit);font-weight:600} .urg-높음{color:var(--warn);font-weight:600}
+.urg-Urgent{color:var(--crit);font-weight:600} .urg-High{color:var(--warn);font-weight:600}
 
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
@@ -107,13 +97,11 @@ td.r,th.r{text-align:right}
 .seg button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:4px 12px;font-size:13px;cursor:pointer;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .search{flex:1;min-width:180px;max-width:320px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 11px}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 13px;cursor:pointer;font-weight:500;font-size:13px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:7px 13px;cursor:pointer;font-weight:500;font-size:13px}
 .btn:hover{background:var(--surface-2)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.primary:hover{filter:brightness(1.06)}
-.btn:disabled{opacity:.5;cursor:default}
 
-/* Inbox */
 .inbox{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:12px;align-items:start}
 .q-list{display:flex;flex-direction:column;max-height:640px;overflow:auto}
 .q-item{display:grid;gap:5px;padding:12px 14px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;width:100%}
@@ -125,7 +113,7 @@ td.r,th.r{text-align:right}
 .q-item .txt{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .detail{display:grid;gap:14px}
 .bubble{background:var(--surface-2);border-radius:12px 12px 12px 4px;padding:12px 14px;max-width:560px}
-.ai-box{border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:var(--r);padding:12px 14px;display:grid;gap:10px;background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+.ai-box{border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:var(--r);padding:12px 14px;display:grid;gap:10px;background:color-mix(in srgb,var(--accent) 4%,var(--surface))}
 .ai-box .hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--accent);font-weight:600}
 .ai-box textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--surface);line-height:1.6}
 .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;font-size:13px}
@@ -133,9 +121,8 @@ td.r,th.r{text-align:right}
 .meta span{font-size:12px;color:var(--muted)}
 .note{font-size:12px;color:var(--muted)}
 
-/* Bookings */
 .days{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
-.days button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 12px;cursor:pointer;display:grid;justify-items:center;line-height:1.3;min-width:62px}
+.days button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 12px;cursor:pointer;display:grid;justify-items:center;line-height:1.3;min-width:66px}
 .days button b{font-family:var(--mono);font-size:15px}
 .days button small{font-size:11px;color:var(--muted)}
 .days button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
@@ -145,22 +132,21 @@ td.r,th.r{text-align:right}
 .bk-stat{background:var(--surface-2);border-radius:8px;padding:10px 12px}
 .bk-stat span{font-size:12px;color:var(--muted)}
 .bk-stat b{display:block;font-family:var(--mono);font-size:20px}
-.slot{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.slot{display:grid;grid-template-columns:78px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .slot:last-child{border-bottom:0}
-.slot .t{font-family:var(--mono);font-weight:500;font-size:15px}
+.slot .t{font-family:var(--mono);font-weight:500;font-size:14px}
 .slot .who{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .slot .svc{font-size:13px;color:var(--muted)}
 .slot .act{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .remind{font-size:12px;color:var(--muted)}
 .empty{padding:36px 12px;text-align:center;color:var(--muted)}
 
-/* Automations */
 .rules{display:grid;gap:10px}
 .rule{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
 .rule h3{margin:0 0 6px;font-size:14px}
 .flow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
 .flow .when,.flow .then{background:var(--surface-2);border-radius:6px;padding:2px 8px}
-.flow .when b,.flow .then b{font-weight:600;color:var(--muted);font-size:11px;margin-right:6px;letter-spacing:.04em}
+.flow .when b,.flow .then b{font-weight:600;color:var(--muted);font-size:11px;margin-right:6px;letter-spacing:.06em}
 .flow .arrow{color:var(--muted)}
 .rule .runs{font-size:12px;color:var(--muted);margin-top:6px}
 .switch{position:relative;width:42px;height:24px;flex:none}
@@ -172,8 +158,8 @@ td.r,th.r{text-align:right}
 .switch input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
 
 .tag{font-size:11px;padding:1px 7px;border-radius:5px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
-.tag.vip{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);font-weight:600}
-.tag.noshow{background:color-mix(in srgb,var(--crit) 14%,transparent);color:var(--crit)}
+.tag.vip{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-weight:600}
+.tag.noshow{background:color-mix(in srgb,var(--crit) 12%,transparent);color:var(--crit)}
 .tags{display:flex;gap:4px;flex-wrap:wrap}
 
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:calc(100% - 32px)}
@@ -188,35 +174,35 @@ td.r,th.r{text-align:right}
   .nav{flex-direction:row;overflow-x:auto;min-width:0}
   .nav a{padding:7px 10px}
   .main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-  .slot{grid-template-columns:52px minmax(0,1fr)}
+  .slot{grid-template-columns:66px minmax(0,1fr)}
   .slot .act{grid-column:2;justify-content:flex-start}
 }
-@media (max-width:520px){.brand b{display:none}.nav a .lbl-long{display:none}}
+@media (max-width:520px){.brand b{display:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
 <div class="app">
   <aside class="rail">
-    <div class="brand"><div class="brand-mark">모</div><div><b>모아데스크</b><small>문의·예약 통합 CRM</small></div></div>
-    <nav class="nav" id="nav" aria-label="메뉴">
-      <a href="#dashboard" data-v="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>대시보드</a>
-      <a href="#inbox" data-v="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H14l-4 4v-4H4z"/></svg><span>통합 문의함</span><span class="count num" id="navCount"></span></a>
-      <a href="#bookings" data-v="bookings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>예약 관리</a>
-      <a href="#customers" data-v="customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.8.7 3 2.4 3.5 5.2"/></svg>고객 관리</a>
-      <a href="#automations" data-v="automations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span>자동화<span class="lbl-long"> 규칙</span></span></a>
+    <div class="brand"><div class="brand-mark">M</div><div><b>MoaDesk</b><small>Inquiries + Bookings CRM</small></div></div>
+    <nav class="nav" id="nav" aria-label="Menu">
+      <a href="#dashboard" data-v="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</a>
+      <a href="#inbox" data-v="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H14l-4 4v-4H4z"/></svg><span>Inbox</span><span class="count num" id="navCount"></span></a>
+      <a href="#bookings" data-v="bookings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bookings</a>
+      <a href="#customers" data-v="customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.8.7 3 2.4 3.5 5.2"/></svg>Customers</a>
+      <a href="#automations" data-v="automations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Automations</a>
     </nav>
     <div class="rail-foot">
-      <div class="sync"><span class="dot"></span>5개 채널 연결됨</div>
-      <div>마지막 동기화 14:25</div>
+      <div class="sync"><span class="dot"></span>5 channels connected</div>
+      <div>Last synced 2:25 PM</div>
     </div>
   </aside>
 
   <main class="main">
     <div class="topbar">
-      <div><div class="crumb">모아헤어 연남점</div><h1 id="viewTitle">대시보드</h1></div>
+      <div><div class="crumb">Moa Hair Studio · Brooklyn</div><h1 id="viewTitle">Dashboard</h1></div>
       <div class="spacer"></div>
-      <span class="today">2026년 11월 6일 (금)</span>
-      <span class="demo-tag">데모 · 예시 데이터</span>
+      <span class="today">Fri, Nov 6, 2026</span>
+      <span class="demo-tag">Demo · sample data</span>
     </div>
     <div id="view"></div>
   </main>
@@ -225,215 +211,216 @@ td.r,th.r{text-align:right}
 
 <script>
 const CH = {
-  naver:{label:'네이버 예약',v:'--c-naver',to:'네이버 예약 메시지로'}, kakao:{label:'카카오톡',v:'--c-kakao',to:'카카오톡으로'},
-  insta:{label:'인스타 DM',v:'--c-insta',to:'인스타 DM으로'}, phone:{label:'전화',v:'--c-phone',to:'문자로'}, web:{label:'홈페이지',v:'--c-web',to:'이메일로'}
+  book:{label:'Online booking',v:'--c-book',to:'Send via booking app'},
+  wa:{label:'WhatsApp',v:'--c-wa',to:'Send on WhatsApp'},
+  insta:{label:'Instagram DM',v:'--c-insta',to:'Send on Instagram'},
+  phone:{label:'Phone',v:'--c-phone',to:'Send as text message'},
+  web:{label:'Website form',v:'--c-web',to:'Send by email'}
 };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const won = n => n.toLocaleString('ko-KR') + '원';
+const usd = n => '$' + n.toLocaleString('en-US');
 const chip = k => `<span class="chip ${k}">${CH[k].label}</span>`;
 
 const inquiries = [
- {id:'Q-1042',day:'11-06',t:'14:22',name:'김*연',ch:'kakao',cat:'예약 요청',urg:'보통',st:'미응답',text:'내일 오후 3시쯤 커트+드라이 가능할까요? 원장님으로 부탁드려요.',ai:'안녕하세요, 모아헤어입니다. 11월 7일(토) 오후 3시 원장님 커트+드라이 예약 가능합니다. 예약금 1만 원 입금 후 확정되며, 전날 저녁에 알림톡으로 다시 안내드릴게요.',conf:94},
- {id:'Q-1041',day:'11-06',t:'13:58',name:'박*준',ch:'insta',cat:'가격 문의',urg:'보통',st:'AI 응답완료',text:'뿌리 염색 가격이 얼마인가요?',ai:'뿌리 염색은 기장과 관계없이 55,000원부터입니다. 모발 상태에 따라 클리닉 추가를 권해드릴 수 있어요. 네이버 예약에서 바로 예약 가능합니다.',conf:97},
- {id:'Q-1040',day:'11-06',t:'13:31',name:'이*은',ch:'naver',cat:'일정 변경',urg:'높음',st:'미응답',text:'오늘 5시 예약인데 30분 늦을 것 같아요. 괜찮을까요?',ai:'알려주셔서 감사합니다. 오늘 17:30으로 변경해 두겠습니다. 하윤 디자이너님 다음 일정과 겹치지 않도록 시술 시간을 조정했습니다.',conf:88},
- {id:'Q-1039',day:'11-06',t:'12:47',name:'최*희',ch:'phone',cat:'불만/클레임',urg:'긴급',st:'미응답',text:'(통화 메모) 지난주 디지털펌이 벌써 풀렸다고 함. 재시술 원함. 다소 언짢은 상태.',ai:'불편을 드려 죄송합니다. 시술 후 2주 이내 펌 풀림은 무료로 재시술해 드립니다. 원장님이 직접 모발 상태를 확인하고 오늘 중으로 연락드리겠습니다.',conf:81,alert:'원장님 휴대폰으로 긴급 알림 발송됨 (12:47)'},
- {id:'Q-1038',day:'11-06',t:'11:20',name:'정*호',ch:'web',cat:'시술 상담',urg:'보통',st:'답변완료',text:'탈색을 2번 했는데 블루블랙 염색 가능할까요?',ai:'탈색 2회 모발도 블루블랙 염색이 가능합니다. 다만 색 빠짐을 줄이려면 클리닉을 함께 권해드려요. 방문 상담 후 정확한 금액을 안내드리겠습니다.',conf:90,staff:'민재'},
- {id:'Q-1037',day:'11-06',t:'10:55',name:'한*솔',ch:'kakao',cat:'위치/주차',urg:'낮음',st:'AI 응답완료',text:'주차 가능한가요?',ai:'건물 지하 주차장 1시간 무료입니다. 결제하실 때 차량번호를 알려주세요.',conf:99},
- {id:'Q-1036',day:'11-06',t:'10:12',name:'윤*아',ch:'naver',cat:'예약 요청',urg:'보통',st:'AI 응답완료',text:'토요일 오전에 매직 예약 가능할까요?',ai:'11월 7일(토) 오전 10시 원장님 매직 예약 가능합니다. 시술 시간은 약 2시간 30분입니다. 예약을 확정해 드렸어요.',conf:95},
- {id:'Q-1035',day:'11-06',t:'09:40',name:'강*민',ch:'insta',cat:'가격 문의',urg:'낮음',st:'AI 응답완료',text:'남자 다운펌 가격이요',ai:'남성 다운펌은 30,000원이며 커트와 함께 하시면 50,000원입니다.',conf:98},
- {id:'Q-1034',day:'11-06',t:'09:05',name:'조*린',ch:'kakao',cat:'예약 요청',urg:'보통',st:'답변완료',text:'오늘 오전 10시 커트 되나요?',ai:'오늘 오전 10시 민재 디자이너님 커트 예약 가능합니다.',conf:93,staff:'민재'},
- {id:'Q-1033',day:'11-05',t:'21:48',name:'서*진',ch:'web',cat:'시술 상담',urg:'보통',st:'AI 응답완료',text:'곱슬이 심한데 매직이랑 볼륨매직 중 뭐가 나을까요?',ai:'뿌리 볼륨을 살리고 싶으시면 볼륨매직, 직모 느낌을 원하시면 매직을 권해드립니다. 사진을 보내주시면 디자이너가 확인 후 답변드릴게요.',conf:84},
- {id:'Q-1032',day:'11-05',t:'19:30',name:'임*경',ch:'phone',cat:'일정 변경',urg:'높음',st:'답변완료',text:'(통화 메모) 토요일 예약을 다음 주 수요일로 변경 요청.',ai:'11월 11일(수) 같은 시간으로 변경해 두었습니다.',conf:91,staff:'하윤'},
- {id:'Q-1031',day:'11-05',t:'18:02',name:'오*현',ch:'kakao',cat:'가격 문의',urg:'낮음',st:'AI 응답완료',text:'클리닉 단독으로도 받을 수 있나요? 가격은요?',ai:'클리닉 단독 시술 가능하며 60,000원입니다. 염색·펌과 함께 하시면 20% 할인됩니다.',conf:96}
+ {id:'Q-1042',day:'today',t:'2:22 PM',name:'Emma K.',ch:'wa',cat:'Booking request',urg:'Normal',st:'Unanswered',text:'Hi! Could I get a cut and blow-dry tomorrow around 3pm? Ideally with Sora.',ai:'Hi Emma, thanks for reaching out to Moa Hair Studio! Sora has an opening tomorrow (Sat, Nov 7) at 3:00 PM for a cut and blow-dry ($65). Reply YES and we\'ll lock it in. You\'ll get a reminder the evening before.',conf:94},
+ {id:'Q-1041',day:'today',t:'1:58 PM',name:'Jake P.',ch:'insta',cat:'Pricing',urg:'Normal',st:'AI replied',text:'How much is a root touch-up?',ai:'A root touch-up starts at $85 for any hair length. If your hair needs extra care, we may suggest adding a treatment. You can book directly from the link in our bio.',conf:97},
+ {id:'Q-1040',day:'today',t:'1:31 PM',name:'Olivia L.',ch:'book',cat:'Reschedule',urg:'High',st:'Unanswered',text:'I have a 5pm appointment today but I\'m running 30 min late. Is that ok?',ai:'Thanks for the heads-up, Olivia. We\'ve moved your appointment to 5:30 PM today and adjusted Hana\'s schedule so nothing overlaps. See you soon!',conf:88},
+ {id:'Q-1039',day:'today',t:'12:47 PM',name:'Rachel C.',ch:'phone',cat:'Complaint',urg:'Urgent',st:'Unanswered',text:'(Call note) Says her perm from last week is already falling out. Wants it redone. Sounded upset.',ai:'Hi Rachel, we\'re sorry about this. If a perm drops within 2 weeks, we redo it free of charge. Sora will check your hair personally and call you back today to set a time.',conf:81,alert:'Urgent alert sent to the owner\'s phone (12:47 PM)'},
+ {id:'Q-1038',day:'today',t:'11:20 AM',name:'Daniel J.',ch:'web',cat:'Consultation',urg:'Normal',st:'Replied',text:'I\'ve bleached twice. Can I still go blue-black?',ai:'Yes, blue-black works on twice-bleached hair. To keep the color from fading fast, we recommend adding a treatment. Come in for a quick consultation and we\'ll give you an exact quote.',conf:90,staff:'Min'},
+ {id:'Q-1037',day:'today',t:'10:55 AM',name:'Sophie H.',ch:'wa',cat:'Location & parking',urg:'Low',st:'AI replied',text:'Is there parking nearby?',ai:'Yes! There\'s a public garage next door, and we validate 1 hour of parking. Just bring your ticket to the front desk.',conf:99},
+ {id:'Q-1036',day:'today',t:'10:12 AM',name:'Ava Y.',ch:'book',cat:'Booking request',urg:'Normal',st:'AI replied',text:'Any keratin smoothing slots Saturday morning?',ai:'You\'re booked with Sora on Saturday, Nov 7 at 10:00 AM for keratin smoothing ($220, about 2.5 hours). See you then!',conf:95},
+ {id:'Q-1035',day:'today',t:'9:40 AM',name:'Ryan K.',ch:'insta',cat:'Pricing',urg:'Low',st:'AI replied',text:'price for men\'s cut?',ai:'A men\'s cut is $35, or $50 with a beard trim.',conf:98},
+ {id:'Q-1034',day:'today',t:'9:05 AM',name:'Chloe J.',ch:'wa',cat:'Booking request',urg:'Normal',st:'Replied',text:'Can I come in for a haircut at 10 today?',ai:'Min has a 10:00 AM opening today for a haircut. You\'re all set!',conf:93,staff:'Min'},
+ {id:'Q-1033',day:'yesterday',t:'9:48 PM',name:'Grace S.',ch:'web',cat:'Consultation',urg:'Normal',st:'AI replied',text:'My hair is very frizzy. Keratin or a silk press, which is better?',ai:'For long-lasting frizz control, keratin smoothing is the better pick. A silk press gives a sleek look for about a week. Send us a photo and a stylist will recommend the best option.',conf:84},
+ {id:'Q-1032',day:'yesterday',t:'7:30 PM',name:'Mia L.',ch:'phone',cat:'Reschedule',urg:'High',st:'Replied',text:'(Call note) Wants to move Saturday\'s appointment to next Wednesday.',ai:'Done! Your appointment is now on Wednesday, Nov 11 at 12:00 PM.',conf:91,staff:'Hana'},
+ {id:'Q-1031',day:'yesterday',t:'6:02 PM',name:'Noah O.',ch:'wa',cat:'Pricing',urg:'Low',st:'AI replied',text:'Can I book a treatment on its own? How much?',ai:'Yes, a standalone treatment is $70. Add it to any color or perm service and it\'s 20% off.',conf:96}
 ];
 
 const bookings = {
- '11-06':[
-  {t:'10:00',name:'조*린',svc:'커트',who:'민재',ch:'kakao',st:'완료',rm:'발송완료',price:25000},
-  {t:'11:00',name:'윤*서',svc:'전체 염색',who:'소라 원장',ch:'naver',st:'완료',rm:'발송완료',price:90000},
-  {t:'12:30',name:'문*희',svc:'클리닉',who:'하윤',ch:'insta',st:'노쇼',rm:'발송완료',price:60000},
-  {t:'14:00',name:'배*우',svc:'다운펌',who:'민재',ch:'naver',st:'완료',rm:'발송완료',price:30000},
-  {t:'15:30',name:'신*아',svc:'디지털펌',who:'소라 원장',ch:'naver',st:'확정',rm:'발송완료',price:130000},
-  {t:'17:00',name:'이*은',svc:'커트+드라이',who:'하윤',ch:'naver',st:'확정',rm:'발송완료',price:35000,memo:'17:30 변경 요청 들어옴'},
-  {t:'18:00',name:'권*호',svc:'커트',who:'민재',ch:'phone',st:'확정',rm:'발송완료',price:25000},
-  {t:'19:00',name:'장*미',svc:'뿌리 염색',who:'소라 원장',ch:'kakao',st:'대기',rm:'-',price:55000,memo:'예약금 미입금'}],
- '11-07':[
-  {t:'10:00',name:'윤*아',svc:'매직',who:'소라 원장',ch:'naver',st:'확정',rm:'예정',price:150000},
-  {t:'10:30',name:'남*혁',svc:'커트',who:'민재',ch:'web',st:'확정',rm:'예정',price:25000},
-  {t:'11:30',name:'홍*지',svc:'뿌리 염색',who:'하윤',ch:'kakao',st:'확정',rm:'예정',price:55000},
-  {t:'13:00',name:'유*나',svc:'디지털펌',who:'소라 원장',ch:'insta',st:'대기',rm:'예정',price:130000,memo:'예약금 미입금'},
-  {t:'14:00',name:'송*원',svc:'다운펌',who:'민재',ch:'naver',st:'확정',rm:'예정',price:30000},
-  {t:'15:00',name:'김*연',svc:'커트+드라이',who:'소라 원장',ch:'kakao',st:'대기',rm:'예정',price:35000,memo:'카톡 문의 → 가예약'},
-  {t:'16:00',name:'백*은',svc:'클리닉',who:'하윤',ch:'naver',st:'확정',rm:'예정',price:60000},
-  {t:'17:30',name:'노*준',svc:'커트',who:'민재',ch:'phone',st:'확정',rm:'예정',price:25000}],
- '11-08':[
-  {t:'11:00',name:'류*영',svc:'전체 염색',who:'하윤',ch:'naver',st:'확정',rm:'예정',price:90000},
-  {t:'13:00',name:'전*수',svc:'커트',who:'민재',ch:'naver',st:'확정',rm:'예정',price:25000},
-  {t:'14:30',name:'고*은',svc:'매직',who:'소라 원장',ch:'kakao',st:'확정',rm:'예정',price:150000},
-  {t:'16:00',name:'황*린',svc:'클리닉',who:'하윤',ch:'insta',st:'취소',rm:'-',price:60000,memo:'고객 요청 취소'}],
- '11-09':[],
- '11-10':[
-  {t:'11:00',name:'안*희',svc:'디지털펌',who:'소라 원장',ch:'naver',st:'확정',rm:'예정',price:130000},
-  {t:'15:00',name:'구*진',svc:'커트',who:'민재',ch:'web',st:'확정',rm:'예정',price:25000}],
- '11-11':[
-  {t:'12:00',name:'임*경',svc:'뿌리 염색',who:'하윤',ch:'phone',st:'확정',rm:'예정',price:55000,memo:'11/7에서 변경'},
-  {t:'16:30',name:'차*연',svc:'커트+드라이',who:'민재',ch:'kakao',st:'확정',rm:'예정',price:35000}],
- '11-12':[
-  {t:'10:30',name:'피*호',svc:'다운펌',who:'민재',ch:'naver',st:'확정',rm:'예정',price:30000}]
+ '06':[
+  {t:'10:00 AM',name:'Chloe J.',svc:'Haircut',who:'Min',ch:'wa',st:'Completed',rm:'Sent',price:45},
+  {t:'11:00 AM',name:'Lily Y.',svc:'Full color',who:'Sora (owner)',ch:'book',st:'Completed',rm:'Sent',price:150},
+  {t:'12:30 PM',name:'Hannah M.',svc:'Treatment',who:'Hana',ch:'insta',st:'No-show',rm:'Sent',price:70},
+  {t:'2:00 PM',name:'Ben W.',svc:'Men\'s cut',who:'Min',ch:'book',st:'Completed',rm:'Sent',price:35},
+  {t:'3:30 PM',name:'Zoe S.',svc:'Perm',who:'Sora (owner)',ch:'book',st:'Confirmed',rm:'Sent',price:180},
+  {t:'5:00 PM',name:'Olivia L.',svc:'Cut & blow-dry',who:'Hana',ch:'book',st:'Confirmed',rm:'Sent',price:65,memo:'Asked to move to 5:30 PM'},
+  {t:'6:00 PM',name:'Ethan K.',svc:'Men\'s cut',who:'Min',ch:'phone',st:'Confirmed',rm:'Sent',price:35},
+  {t:'7:00 PM',name:'Isla J.',svc:'Root touch-up',who:'Sora (owner)',ch:'wa',st:'Pending',rm:'—',price:85,memo:'Deposit not paid'}],
+ '07':[
+  {t:'10:00 AM',name:'Ava Y.',svc:'Keratin smoothing',who:'Sora (owner)',ch:'book',st:'Confirmed',rm:'Scheduled',price:220},
+  {t:'10:30 AM',name:'Leo N.',svc:'Haircut',who:'Min',ch:'web',st:'Confirmed',rm:'Scheduled',price:45},
+  {t:'11:30 AM',name:'Ruby H.',svc:'Root touch-up',who:'Hana',ch:'wa',st:'Confirmed',rm:'Scheduled',price:85},
+  {t:'1:00 PM',name:'Nora Y.',svc:'Perm',who:'Sora (owner)',ch:'insta',st:'Pending',rm:'Scheduled',price:180,memo:'Deposit not paid'},
+  {t:'2:00 PM',name:'Owen S.',svc:'Men\'s cut',who:'Min',ch:'book',st:'Confirmed',rm:'Scheduled',price:35},
+  {t:'3:00 PM',name:'Emma K.',svc:'Cut & blow-dry',who:'Sora (owner)',ch:'wa',st:'Pending',rm:'Scheduled',price:65,memo:'Held from WhatsApp inquiry'},
+  {t:'4:00 PM',name:'Ella B.',svc:'Treatment',who:'Hana',ch:'book',st:'Confirmed',rm:'Scheduled',price:70},
+  {t:'5:30 PM',name:'Lucas R.',svc:'Haircut',who:'Min',ch:'phone',st:'Confirmed',rm:'Scheduled',price:45}],
+ '08':[
+  {t:'11:00 AM',name:'Mila R.',svc:'Full color',who:'Hana',ch:'book',st:'Confirmed',rm:'Scheduled',price:150},
+  {t:'1:00 PM',name:'Jack J.',svc:'Haircut',who:'Min',ch:'book',st:'Confirmed',rm:'Scheduled',price:45},
+  {t:'2:30 PM',name:'Amelia G.',svc:'Keratin smoothing',who:'Sora (owner)',ch:'wa',st:'Confirmed',rm:'Scheduled',price:220},
+  {t:'4:00 PM',name:'Harper H.',svc:'Treatment',who:'Hana',ch:'insta',st:'Canceled',rm:'—',price:70,memo:'Canceled by customer'}],
+ '09':[],
+ '10':[
+  {t:'11:00 AM',name:'Aria A.',svc:'Perm',who:'Sora (owner)',ch:'book',st:'Confirmed',rm:'Scheduled',price:180},
+  {t:'3:00 PM',name:'Henry K.',svc:'Haircut',who:'Min',ch:'web',st:'Confirmed',rm:'Scheduled',price:45}],
+ '11':[
+  {t:'12:00 PM',name:'Mia L.',svc:'Root touch-up',who:'Hana',ch:'phone',st:'Confirmed',rm:'Scheduled',price:85,memo:'Moved from Nov 7'},
+  {t:'4:30 PM',name:'Layla C.',svc:'Cut & blow-dry',who:'Min',ch:'wa',st:'Confirmed',rm:'Scheduled',price:65}],
+ '12':[
+  {t:'10:30 AM',name:'Mason P.',svc:'Men\'s cut',who:'Min',ch:'book',st:'Confirmed',rm:'Scheduled',price:35}]
 };
-const DAYS = [['11-06','금','오늘'],['11-07','토','내일'],['11-08','일',''],['11-09','월','휴무'],['11-10','화',''],['11-11','수',''],['11-12','목','']];
+const DAYS = [['06','Fri','Today'],['07','Sat','Tomorrow'],['08','Sun',''],['09','Mon','Closed'],['10','Tue',''],['11','Wed',''],['12','Thu','']];
+const DAYNAME = {Fri:'Friday',Sat:'Saturday',Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday'};
 
 const customers = [
- {name:'윤*서',phone:'010-****-2481',ch:'naver',visits:14,last:'2026-11-06',spend:1260000,tags:['VIP'],who:'소라 원장'},
- {name:'신*아',phone:'010-****-7730',ch:'naver',visits:9,last:'2026-11-06',spend:842000,tags:['VIP'],who:'소라 원장'},
- {name:'조*린',phone:'010-****-1192',ch:'kakao',visits:6,last:'2026-11-06',spend:180000,tags:['재방문'],who:'민재'},
- {name:'김*연',phone:'010-****-5038',ch:'kakao',visits:1,last:'2026-11-07',spend:0,tags:['신규'],who:'소라 원장'},
- {name:'문*희',phone:'010-****-6614',ch:'insta',visits:3,last:'2026-11-06',spend:150000,tags:['노쇼 2회','예약금 필수'],who:'하윤'},
- {name:'최*희',phone:'010-****-3305',ch:'phone',visits:4,last:'2026-10-30',spend:420000,tags:['클레임 진행중'],who:'소라 원장'},
- {name:'배*우',phone:'010-****-8821',ch:'naver',visits:5,last:'2026-11-06',spend:165000,tags:['재방문'],who:'민재'},
- {name:'홍*지',phone:'010-****-4410',ch:'kakao',visits:7,last:'2026-09-27',spend:395000,tags:['재방문','45일 미방문'],who:'하윤'},
- {name:'정*호',phone:'010-****-9054',ch:'web',visits:0,last:'-',spend:0,tags:['상담중'],who:'민재'},
- {name:'고*은',phone:'010-****-2276',ch:'kakao',visits:11,last:'2026-10-11',spend:1105000,tags:['VIP'],who:'소라 원장'},
- {name:'박*준',phone:'010-****-6187',ch:'insta',visits:0,last:'-',spend:0,tags:['신규'],who:'-'},
- {name:'류*영',phone:'010-****-0943',ch:'naver',visits:8,last:'2026-09-20',spend:610000,tags:['45일 미방문'],who:'하윤'}
+ {name:'Lily Y.',phone:'(718) ***-2481',ch:'book',visits:14,last:'Nov 6, 2026',spend:2140,tags:['VIP'],who:'Sora (owner)'},
+ {name:'Zoe S.',phone:'(347) ***-7730',ch:'book',visits:9,last:'Nov 6, 2026',spend:1380,tags:['VIP'],who:'Sora (owner)'},
+ {name:'Chloe J.',phone:'(718) ***-1192',ch:'wa',visits:6,last:'Nov 6, 2026',spend:270,tags:['Returning'],who:'Min'},
+ {name:'Emma K.',phone:'(929) ***-5038',ch:'wa',visits:1,last:'Nov 7, 2026',spend:0,tags:['New'],who:'Sora (owner)'},
+ {name:'Hannah M.',phone:'(347) ***-6614',ch:'insta',visits:3,last:'Nov 6, 2026',spend:210,tags:['2 no-shows','Deposit required'],who:'Hana'},
+ {name:'Rachel C.',phone:'(718) ***-3305',ch:'phone',visits:4,last:'Oct 30, 2026',spend:640,tags:['Open complaint'],who:'Sora (owner)'},
+ {name:'Ben W.',phone:'(917) ***-8821',ch:'book',visits:5,last:'Nov 6, 2026',spend:175,tags:['Returning'],who:'Min'},
+ {name:'Ruby H.',phone:'(718) ***-4410',ch:'wa',visits:7,last:'Sep 27, 2026',spend:595,tags:['Returning','45+ days away'],who:'Hana'},
+ {name:'Daniel J.',phone:'(646) ***-9054',ch:'web',visits:0,last:'—',spend:0,tags:['In consultation'],who:'Min'},
+ {name:'Amelia G.',phone:'(347) ***-2276',ch:'wa',visits:11,last:'Oct 11, 2026',spend:1820,tags:['VIP'],who:'Sora (owner)'},
+ {name:'Jake P.',phone:'(929) ***-6187',ch:'insta',visits:0,last:'—',spend:0,tags:['New'],who:'—'},
+ {name:'Mila R.',phone:'(718) ***-0943',ch:'book',visits:8,last:'Sep 20, 2026',spend:960,tags:['45+ days away'],who:'Hana'}
 ];
 
 const rules = [
- {name:'문의 자동 분류',when:'5개 채널에 새 문의 도착',then:'AI가 예약·가격·상담·일정 변경·클레임으로 분류하고 긴급도 표시',on:true,runs:412},
- {name:'단순 문의 자동 답변',when:'분류 = 가격 문의 · 위치/주차',then:'AI 답변을 같은 채널로 즉시 발송',on:true,runs:168},
- {name:'예약 리마인드',when:'예약 전날 18:00',then:'카카오 알림톡으로 시간·디자이너·주차 안내 발송',on:true,runs:203},
- {name:'클레임 긴급 알림',when:'분류 = 불만/클레임',then:'원장님 휴대폰으로 즉시 알림 + 답변 초안 준비',on:true,runs:7},
- {name:'노쇼 고객 관리',when:'노쇼 2회 누적',then:'"예약금 필수" 태그 추가, 다음 예약 시 예약금 안내',on:true,runs:3},
- {name:'재방문 유도',when:'마지막 방문 후 45일 경과',then:'10% 쿠폰 알림톡 발송',on:false,runs:0},
- {name:'예약금 미입금 자동 취소',when:'대기 상태로 3시간 경과',then:'예약 취소 + 취소 안내 메시지 발송',on:false,runs:0}
+ {name:'Auto-sort every inquiry',when:'New message on any of 5 channels',then:'AI tags it as booking, pricing, consultation, reschedule or complaint and sets urgency',on:true,runs:412},
+ {name:'Answer simple questions',when:'Tag is Pricing or Location & parking',then:'Send the AI reply right away on the same channel',on:true,runs:168},
+ {name:'Appointment reminders',when:'6:00 PM the day before',then:'Text the time, stylist and parking info',on:true,runs:203},
+ {name:'Complaint alert',when:'Tag is Complaint',then:'Alert the owner\'s phone and prepare a reply draft',on:true,runs:7},
+ {name:'No-show protection',when:'Customer reaches 2 no-shows',then:'Add "Deposit required" tag and ask for a deposit on the next booking',on:true,runs:3},
+ {name:'Win-back offer',when:'45 days since last visit',then:'Text a 10% off coupon',on:false,runs:0},
+ {name:'Release unpaid holds',when:'Pending for 3 hours without deposit',then:'Cancel the hold and send a polite note',on:false,runs:0}
 ];
 
 const daily = {labels:['10/24','10/25','10/26','10/27','10/28','10/29','10/30','10/31','11/01','11/02','11/03','11/04','11/05','11/06'],
   ai:[6,8,4,3,5,7,6,7,9,4,3,6,7,4], staff:[5,6,3,4,2,5,6,4,6,3,3,4,4,5]};
-const chMonth = {naver:38,kakao:41,insta:19,phone:14,web:9};
+const chMonth = {wa:41,book:38,insta:19,phone:14,web:9};
 
-let state = {inbox:{filter:'전체',ch:'all',q:'',sel:'Q-1039'}, day:'11-06', cust:{q:'',tag:'전체'}};
+let state = {inbox:{filter:'All',ch:'all',q:'',sel:'Q-1039'}, day:'06', cust:{q:'',tag:'All'}};
 
-/* ---------- helpers ---------- */
-const stPill = s => s==='미응답'?`<span class="pill p-crit">미응답</span>`:s==='AI 응답완료'?`<span class="pill p-ai">AI 응답완료</span>`:`<span class="pill p-ok">답변완료</span>`;
-const bkPill = s => ({'확정':'p-info','대기':'p-warn','완료':'p-ok','노쇼':'p-crit','취소':'p-mute'}[s]);
+const stPill = s => s==='Unanswered'?`<span class="pill p-crit">Unanswered</span>`:s==='AI replied'?`<span class="pill p-ai">AI replied</span>`:`<span class="pill p-ok">Replied</span>`;
+const bkPill = s => ({'Confirmed':'p-info','Pending':'p-warn','Completed':'p-ok','No-show':'p-crit','Canceled':'p-mute'}[s]);
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2600)}
-function cssVar(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
-function unanswered(){return inquiries.filter(q=>q.st==='미응답').length}
+function unanswered(){return inquiries.filter(q=>q.st==='Unanswered').length}
 function updateNav(){const n=unanswered();const c=document.getElementById('navCount');c.textContent=n||'';c.hidden=!n}
 
-/* ---------- charts ---------- */
 function barChart(){
   const W=640,H=230,L=30,R=8,T=12,B=26,n=daily.labels.length,max=16;
   const iw=W-L-R, ih=H-T-B, step=iw/n, bw=step*.6;
   const y=v=>T+ih-(v/max)*ih;
-  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="최근 14일 문의 수: 오늘 ${daily.ai[n-1]+daily.staff[n-1]}건">`;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Inquiries over the last 14 days: ${daily.ai[n-1]+daily.staff[n-1]} today">`;
   [0,4,8,12,16].forEach(v=>{s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${v}</text>`});
   daily.labels.forEach((lb,i)=>{
     const x=L+i*step+(step-bw)/2, a=daily.ai[i], st=daily.staff[i], last=i===n-1;
-    s+=`<rect x="${x}" y="${y(a+st)}" width="${bw}" height="${y(a)-y(a+st)}" fill="var(--bar-2)" rx="2"><title>${lb} 직원 응답 ${st}건</title></rect>`;
-    s+=`<rect x="${x}" y="${y(a)}" width="${bw}" height="${y(0)-y(a)}" fill="var(--accent)"><title>${lb} AI 자동 응답 ${a}건</title></rect>`;
+    s+=`<rect x="${x}" y="${y(a+st)}" width="${bw}" height="${y(a)-y(a+st)}" fill="var(--bar-2)" rx="2"><title>${lb}: ${st} answered by staff</title></rect>`;
+    s+=`<rect x="${x}" y="${y(a)}" width="${bw}" height="${y(0)-y(a)}" fill="var(--accent)"><title>${lb}: ${a} answered by AI</title></rect>`;
     if(last) s+=`<text x="${x+bw/2}" y="${y(a+st)-6}" text-anchor="middle" style="fill:var(--fg);font-weight:600">${a+st}</text>`;
-    if(i%2===1||last) s+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle" ${last?'style="fill:var(--fg)"':''}>${last?'오늘':lb}</text>`;
+    if(i%2===1||last) s+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle" ${last?'style="fill:var(--fg)"':''}>${last?'Today':lb}</text>`;
   });
   return s+'</svg>';
 }
 function donut(){
   const total=Object.values(chMonth).reduce((a,b)=>a+b,0), r=52, C=2*Math.PI*r;
-  let off=0, s=`<svg viewBox="0 0 150 150" role="img" aria-label="11월 채널별 문의 분포"><circle cx="75" cy="75" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="18"/>`;
+  let off=0, s=`<svg viewBox="0 0 150 150" role="img" aria-label="November inquiries by channel"><circle cx="75" cy="75" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="18"/>`;
   Object.entries(chMonth).forEach(([k,v])=>{const len=v/total*C;
-    s+=`<circle cx="75" cy="75" r="${r}" fill="none" stroke="var(${CH[k].v})" stroke-width="18" stroke-dasharray="${len-2} ${C-len+2}" stroke-dashoffset="${-off}" transform="rotate(-90 75 75)"><title>${CH[k].label} ${v}건</title></circle>`; off+=len});
-  s+=`<text x="75" y="76" text-anchor="middle" class="center-n">${total}</text><text x="75" y="94" text-anchor="middle" class="center-k">11월 문의</text></svg>`;
-  const list=Object.entries(chMonth).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<li><span class="sw" style="background:var(${CH[k].v})"></span><span>${CH[k].label}</span><span class="num">${v}건 · ${Math.round(v/total*100)}%</span></li>`).join('');
+    s+=`<circle cx="75" cy="75" r="${r}" fill="none" stroke="var(${CH[k].v})" stroke-width="18" stroke-dasharray="${len-2} ${C-len+2}" stroke-dashoffset="${-off}" transform="rotate(-90 75 75)"><title>${CH[k].label}: ${v}</title></circle>`; off+=len});
+  s+=`<text x="75" y="76" text-anchor="middle" class="center-n">${total}</text><text x="75" y="94" text-anchor="middle" class="center-k">in November</text></svg>`;
+  const list=Object.entries(chMonth).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<li><span class="sw" style="background:var(${CH[k].v})"></span><span>${CH[k].label}</span><span class="num">${v} · ${Math.round(v/total*100)}%</span></li>`).join('');
   return `<div class="donut-wrap">${s}<ul class="ch-list">${list}</ul></div>`;
 }
 
-/* ---------- views ---------- */
 function vDashboard(){
-  const today=inquiries.filter(q=>q.day==='11-06'), aiN=today.filter(q=>q.st==='AI 응답완료').length;
-  const bk=bookings['11-06'], done=bk.filter(b=>b.st==='완료').length, ns=bk.filter(b=>b.st==='노쇼').length;
+  const today=inquiries.filter(q=>q.day==='today'), aiN=today.filter(q=>q.st==='AI replied').length;
+  const bk=bookings['06'], done=bk.filter(b=>b.st==='Completed').length, ns=bk.filter(b=>b.st==='No-show').length, pend=bk.filter(b=>b.st==='Pending').length;
   const un=unanswered();
   const recent=inquiries.slice(0,6).map(q=>`<tr data-q="${q.id}" style="cursor:pointer"><td class="num">${q.t}</td><td>${chip(q.ch)}</td><td><b>${esc(q.name)}</b></td><td><span class="cat">${q.cat}</span></td><td class="trunc">${esc(q.text)}</td><td>${stPill(q.st)}</td></tr>`).join('');
   return `
   <div class="kpis">
-    <div class="kpi"><span class="k">오늘 문의</span><span class="v">${today.length}<small>건</small></span><span class="d"><span class="up">▲ 2</span> 어제 대비</span></div>
-    <div class="kpi"><span class="k">AI 자동 응답</span><span class="v">${Math.round(aiN/today.length*100)}<small>%</small></span><span class="d">오늘 ${aiN}건을 직원 손 없이 처리</span></div>
-    <div class="kpi ${un?'alert':''}"><span class="k">미응답</span><span class="v">${un}<small>건</small></span><span class="d">긴급 1건 포함 · 평균 대기 41분</span></div>
-    <div class="kpi"><span class="k">오늘 예약</span><span class="v">${bk.length}<small>건</small></span><span class="d">완료 ${done} · 노쇼 ${ns} · 대기 1</span></div>
-    <div class="kpi"><span class="k">11월 노쇼율</span><span class="v">3.1<small>%</small></span><span class="d">리마인드 도입 전 9.4%</span></div>
-    <div class="kpi"><span class="k">11월 예약 매출</span><span class="v">486<small>만 원</small></span><span class="d">예약 98건 기준</span></div>
+    <div class="kpi"><span class="k">Inquiries today</span><span class="v">${today.length}</span><span class="d"><span class="up">▲ 2</span> vs. yesterday</span></div>
+    <div class="kpi"><span class="k">Answered by AI</span><span class="v">${Math.round(aiN/today.length*100)}<small>%</small></span><span class="d">${aiN} handled today with no staff time</span></div>
+    <div class="kpi ${un?'alert':''}"><span class="k">Unanswered</span><span class="v">${un}</span><span class="d">1 urgent · avg. wait 41 min</span></div>
+    <div class="kpi"><span class="k">Bookings today</span><span class="v">${bk.length}</span><span class="d">${done} done · ${ns} no-show · ${pend} pending</span></div>
+    <div class="kpi"><span class="k">No-show rate (Nov)</span><span class="v">3.1<small>%</small></span><span class="d">Was 9.4% before reminders</span></div>
+    <div class="kpi"><span class="k">Booked revenue (Nov)</span><span class="v">$7,840</span><span class="d">From 98 bookings</span></div>
   </div>
   <div class="grid-2">
-    <section class="panel"><div class="panel-h"><h2>최근 14일 문의</h2><span class="sub">하루 평균 10.6건</span><div style="flex:1"></div><div class="legend"><span><i style="background:var(--accent)"></i>AI 자동 응답</span><span><i style="background:var(--bar-2)"></i>직원 응답</span></div></div>
+    <section class="panel"><div class="panel-h"><h2>Inquiries, last 14 days</h2><span class="sub">10.6 per day on average</span><div style="flex:1"></div><div class="legend"><span><i style="background:var(--accent)"></i>Answered by AI</span><span><i style="background:var(--bar-2)"></i>Answered by staff</span></div></div>
       <div class="panel-b chart">${barChart()}</div></section>
-    <section class="panel"><div class="panel-h"><h2>채널별 문의</h2><span class="sub">11월 1일~6일</span></div><div class="panel-b">${donut()}</div></section>
+    <section class="panel"><div class="panel-h"><h2>By channel</h2><span class="sub">Nov 1–6</span></div><div class="panel-b">${donut()}</div></section>
   </div>
-  <section class="panel"><div class="panel-h"><h2>최근 문의</h2><span class="sub">행을 누르면 문의함에서 열립니다</span><div style="flex:1"></div><a class="btn" href="#inbox" style="text-decoration:none">문의함 전체 보기</a></div>
-    <div class="panel-b table-wrap"><table><thead><tr><th>시간</th><th>채널</th><th>고객</th><th>AI 분류</th><th>내용</th><th>상태</th></tr></thead><tbody>${recent}</tbody></table></div></section>`;
+  <section class="panel"><div class="panel-h"><h2>Latest inquiries</h2><span class="sub">Click a row to open it in the inbox</span><div style="flex:1"></div><a class="btn" href="#inbox" style="text-decoration:none">Open inbox</a></div>
+    <div class="panel-b table-wrap"><table><thead><tr><th>Time</th><th>Channel</th><th>Customer</th><th>AI tag</th><th>Message</th><th>Status</th></tr></thead><tbody>${recent}</tbody></table></div></section>`;
 }
 
 function vInbox(){
-  const f=state.inbox;
-  const list=inquiries.filter(q=>(f.filter==='전체'||q.st===f.filter)&&(f.ch==='all'||q.ch===f.ch)&&(!f.q||(q.name+q.text+q.cat).includes(f.q)));
+  const f=state.inbox, ql=f.q.toLowerCase();
+  const list=inquiries.filter(q=>(f.filter==='All'||q.st===f.filter)&&(f.ch==='all'||q.ch===f.ch)&&(!ql||(q.name+' '+q.text+' '+q.cat).toLowerCase().includes(ql)));
   if(!list.find(q=>q.id===f.sel)&&list.length) f.sel=list[0].id;
   const sel=inquiries.find(q=>q.id===f.sel);
-  const seg=['전체','미응답','AI 응답완료','답변완료'].map(s=>`<button data-f="${s}" aria-pressed="${f.filter===s}">${s}${s==='미응답'?` <span class="num">${unanswered()}</span>`:''}</button>`).join('');
-  const chOpts=`<option value="all">모든 채널</option>`+Object.entries(CH).map(([k,c])=>`<option value="${k}" ${f.ch===k?'selected':''}>${c.label}</option>`).join('');
-  const items=list.map(q=>`<button class="q-item" data-q="${q.id}" aria-selected="${q.id===f.sel}"><div class="row"><span class="name">${esc(q.name)}</span>${chip(q.ch)}<span class="time num">${q.day==='11-06'?q.t:'어제 '+q.t}</span></div><div class="txt">${esc(q.text)}</div><div class="row"><span class="cat">${q.cat}</span>${q.urg==='긴급'||q.urg==='높음'?`<span class="urg-${q.urg}" style="font-size:12px">${q.urg}</span>`:''}<span style="margin-left:auto">${stPill(q.st)}</span></div></button>`).join('')||`<div class="empty">조건에 맞는 문의가 없습니다.</div>`;
-  let detail=`<div class="empty">왼쪽에서 문의를 선택하세요.</div>`;
+  const seg=['All','Unanswered','AI replied','Replied'].map(s=>`<button data-f="${s}" aria-pressed="${f.filter===s}">${s}${s==='Unanswered'?` <span class="num">${unanswered()}</span>`:''}</button>`).join('');
+  const chOpts=`<option value="all">All channels</option>`+Object.entries(CH).map(([k,c])=>`<option value="${k}" ${f.ch===k?'selected':''}>${c.label}</option>`).join('');
+  const when=q=>q.day==='today'?q.t:'Yesterday '+q.t;
+  const items=list.map(q=>`<button class="q-item" data-q="${q.id}" aria-selected="${q.id===f.sel}"><div class="row"><span class="name">${esc(q.name)}</span>${chip(q.ch)}<span class="time num">${when(q)}</span></div><div class="txt">${esc(q.text)}</div><div class="row"><span class="cat">${q.cat}</span>${q.urg==='Urgent'||q.urg==='High'?`<span class="urg-${q.urg}" style="font-size:12px">${q.urg}</span>`:''}<span style="margin-left:auto">${stPill(q.st)}</span></div></button>`).join('')||`<div class="empty">No inquiries match these filters.</div>`;
+  let detail=`<div class="empty">Select an inquiry on the left.</div>`;
   if(sel){
-    const sent=sel.st!=='미응답';
+    const sent=sel.st!=='Unanswered';
     detail=`<div class="detail">
-      <div class="row" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2 style="margin:0;font-size:18px">${esc(sel.name)}</h2>${chip(sel.ch)}<span class="cat">${sel.cat}</span>${stPill(sel.st)}<span class="note num" style="margin-left:auto">${sel.id}</span></div>
-      <div class="meta"><div><span>받은 시간</span>${sel.day==='11-06'?'오늘':'어제'} ${sel.t}</div><div><span>긴급도</span><b class="urg-${sel.urg}">${sel.urg}</b></div><div><span>AI 분류 확신도</span><b class="num">${sel.conf}%</b></div><div><span>담당</span>${sel.staff||(sel.st==='AI 응답완료'?'AI 자동':'미배정')}</div></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2 style="margin:0;font-size:18px">${esc(sel.name)}</h2>${chip(sel.ch)}<span class="cat">${sel.cat}</span>${stPill(sel.st)}<span class="note num" style="margin-left:auto">${sel.id}</span></div>
+      <div class="meta"><div><span>Received</span>${sel.day==='today'?'Today':'Yesterday'}, ${sel.t}</div><div><span>Urgency</span><b class="urg-${sel.urg}">${sel.urg}</b></div><div><span>AI tag confidence</span><b class="num">${sel.conf}%</b></div><div><span>Assigned to</span>${sel.staff||(sel.st==='AI replied'?'AI (auto)':'Unassigned')}</div></div>
       ${sel.alert?`<div class="note" style="color:var(--crit)">● ${sel.alert}</div>`:''}
-      <div><div class="note" style="margin-bottom:6px">고객 메시지</div><div class="bubble">${esc(sel.text)}</div></div>
-      <div class="ai-box"><div class="hd"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>${sent?'보낸 답변':'AI 답변 초안'}<span style="font-weight:400;color:var(--muted)">가격표·예약 현황·매장 안내를 참고해 작성</span></div>
-        <label for="replyBox" class="note">답변 내용 (수정 가능)</label>
+      <div><div class="note" style="margin-bottom:6px">Customer message</div><div class="bubble">${esc(sel.text)}</div></div>
+      <div class="ai-box"><div class="hd"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>${sent?'Reply sent':'AI reply draft'}<span style="font-weight:400;color:var(--muted)">Written from your price list, calendar and studio info</span></div>
+        <label for="replyBox" class="note">Reply (you can edit it)</label>
         <textarea id="replyBox" ${sent?'readonly':''}>${esc(sel.ai)}</textarea>
-        <div class="toolbar">${sent?`<span class="note">${CH[sel.ch].to} 발송됨</span>`:`<button class="btn primary" id="sendBtn">${CH[sel.ch].to} 답변 보내기</button><select id="assign" class="btn" aria-label="담당자 배정"><option>담당자 배정</option><option>소라 원장</option><option>민재</option><option>하윤</option></select>`}</div>
+        <div class="toolbar">${sent?`<span class="note">Sent via ${CH[sel.ch].label}</span>`:`<button class="btn primary" id="sendBtn">${CH[sel.ch].to}</button><select id="assign" class="btn" aria-label="Assign to"><option>Assign to…</option><option>Sora (owner)</option><option>Min</option><option>Hana</option></select>`}</div>
       </div></div>`;
   }
-  return `<div class="toolbar"><div class="seg" id="seg">${seg}</div><select id="chSel" class="btn" aria-label="채널">${chOpts}</select><input id="qSearch" class="search" placeholder="고객명, 내용 검색" value="${esc(f.q)}"></div>
-  <div class="inbox"><section class="panel q-list" aria-label="문의 목록">${items}</section><section class="panel panel-b">${detail}</section></div>`;
+  return `<div class="toolbar"><div class="seg" id="seg">${seg}</div><select id="chSel" class="btn" aria-label="Channel">${chOpts}</select><input id="qSearch" class="search" placeholder="Search name or message" value="${esc(f.q)}"></div>
+  <div class="inbox"><section class="panel q-list" aria-label="Inquiries">${items}</section><section class="panel panel-b">${detail}</section></div>`;
 }
 
 function vBookings(){
   const d=state.day, list=bookings[d]||[], meta=DAYS.find(x=>x[0]===d);
-  const days=DAYS.map(([k,w,lab])=>`<button data-d="${k}" aria-pressed="${k===d}"><small>${lab||w+'요일'}</small><b>${k.slice(3)}</b><span class="n">${k==='11-09'?'휴무':(bookings[k]||[]).length+'건'}</span></button>`).join('');
+  const days=DAYS.map(([k,w,lab])=>`<button data-d="${k}" aria-pressed="${k===d}"><small>${lab||w}</small><b>${+k}</b><span class="n">${k==='09'?'Closed':(bookings[k]||[]).length+' booked'}</span></button>`).join('');
   const cnt=s=>list.filter(b=>b.st===s).length;
-  const sales=list.filter(b=>b.st!=='취소'&&b.st!=='노쇼').reduce((a,b)=>a+b.price,0);
+  const sales=list.filter(b=>b.st!=='Canceled'&&b.st!=='No-show').reduce((a,b)=>a+b.price,0);
   const rows=list.map((b,i)=>{
-    const canRemind=b.rm==='예정'&&b.st!=='취소';
+    const canRemind=b.rm==='Scheduled'&&b.st!=='Canceled';
     return `<div class="slot"><span class="t">${b.t}</span>
       <div><div class="who"><b>${esc(b.name)}</b>${chip(b.ch)}<span class="pill ${bkPill(b.st)}">${b.st}</span></div>
-      <div class="svc">${b.svc} · ${b.who} · <span class="num">${won(b.price)}</span>${b.memo?` · <span style="color:var(--warn)">${esc(b.memo)}</span>`:''}</div></div>
-      <div class="act"><span class="remind">리마인드: ${b.rm==='예정'?'오늘 18:00 예정':b.rm}</span>${canRemind?`<button class="btn" data-rm="${i}">지금 보내기</button>`:''}
-      ${b.st==='확정'&&d==='11-06'?`<button class="btn" data-done="${i}">방문 완료</button>`:''}</div></div>`}).join('');
-  const body=d==='11-09'?`<div class="empty">매주 월요일은 정기 휴무입니다. 이 날짜로 들어온 예약 문의는 AI가 화요일 일정을 제안합니다.</div>`:(rows||`<div class="empty">예약이 없습니다.</div>`);
+      <div class="svc">${b.svc} · ${b.who} · <span class="num">${usd(b.price)}</span>${b.memo?` · <span style="color:var(--warn)">${esc(b.memo)}</span>`:''}</div></div>
+      <div class="act"><span class="remind">Reminder: ${b.rm==='Scheduled'?'today at 6:00 PM':b.rm}</span>${canRemind?`<button class="btn" data-rm="${i}">Send now</button>`:''}
+      ${b.st==='Confirmed'&&d==='06'?`<button class="btn" data-done="${i}">Mark completed</button>`:''}</div></div>`}).join('');
+  const body=d==='09'?`<div class="empty">The studio is closed on Mondays. Booking requests for this day get an AI reply suggesting Tuesday instead.</div>`:(rows||`<div class="empty">No bookings.</div>`);
   return `<div class="days" id="days">${days}</div>
-  <div class="bk-stats"><div class="bk-stat"><span>전체 예약</span><b>${list.length}</b></div><div class="bk-stat"><span>확정</span><b>${cnt('확정')}</b></div><div class="bk-stat"><span>대기 (예약금)</span><b>${cnt('대기')}</b></div><div class="bk-stat"><span>완료</span><b>${cnt('완료')}</b></div><div class="bk-stat"><span>노쇼</span><b style="color:${cnt('노쇼')?'var(--crit)':'inherit'}">${cnt('노쇼')}</b></div><div class="bk-stat"><span>예상 매출</span><b>${(sales/10000).toLocaleString('ko-KR')}<small style="font-size:12px">만 원</small></b></div></div>
-  <section class="panel"><div class="panel-h"><h2>11월 ${+d.slice(3)}일 (${meta[1]}) 예약</h2><span class="sub">네이버 예약 · 카카오톡 · 인스타 · 전화 · 홈페이지 예약을 한곳에</span></div><div class="panel-b">${body}</div></section>`;
+  <div class="bk-stats"><div class="bk-stat"><span>Total</span><b>${list.length}</b></div><div class="bk-stat"><span>Confirmed</span><b>${cnt('Confirmed')}</b></div><div class="bk-stat"><span>Pending deposit</span><b>${cnt('Pending')}</b></div><div class="bk-stat"><span>Completed</span><b>${cnt('Completed')}</b></div><div class="bk-stat"><span>No-show</span><b style="color:${cnt('No-show')?'var(--crit)':'inherit'}">${cnt('No-show')}</b></div><div class="bk-stat"><span>Expected revenue</span><b>${usd(sales)}</b></div></div>
+  <section class="panel"><div class="panel-h"><h2>${DAYNAME[meta[1]]}, Nov ${+d}</h2><span class="sub">Online booking, WhatsApp, Instagram, phone and website bookings in one list</span></div><div class="panel-b">${body}</div></section>`;
 }
 
 function vCustomers(){
-  const c=state.cust, tags=['전체','VIP','재방문','신규','45일 미방문','노쇼 2회'];
-  const list=customers.filter(x=>(c.tag==='전체'||x.tags.includes(c.tag))&&(!c.q||(x.name+x.phone).includes(c.q)));
-  const tagHtml=t=>`<span class="tag ${t==='VIP'?'vip':''} ${/노쇼|예약금|클레임/.test(t)?'noshow':''}">${t}</span>`;
-  const rows=list.map(x=>`<tr><td><b>${esc(x.name)}</b></td><td class="num">${x.phone}</td><td>${chip(x.ch)}</td><td class="r num">${x.visits}회</td><td class="num">${x.last}</td><td class="r num">${won(x.spend)}</td><td>${x.who}</td><td><div class="tags">${x.tags.map(tagHtml).join('')}</div></td></tr>`).join('')||`<tr><td colspan="8" class="empty">조건에 맞는 고객이 없습니다.</td></tr>`;
-  return `<div class="toolbar"><div class="seg" id="tagSeg">${tags.map(t=>`<button data-t="${t}" aria-pressed="${c.tag===t}">${t}</button>`).join('')}</div><input id="cSearch" class="search" placeholder="이름, 전화번호 검색" value="${esc(c.q)}"></div>
-  <section class="panel"><div class="panel-h"><h2>고객 ${list.length}명</h2><span class="sub">채널이 달라도 전화번호로 같은 고객을 하나로 합칩니다</span></div>
-  <div class="panel-b table-wrap"><table><thead><tr><th>고객</th><th>연락처</th><th>첫 유입</th><th class="r">방문</th><th>최근 방문</th><th class="r">누적 결제</th><th>담당</th><th>태그</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  const c=state.cust, tags=['All','VIP','Returning','New','45+ days away','2 no-shows'], ql=c.q.toLowerCase();
+  const list=customers.filter(x=>(c.tag==='All'||x.tags.includes(c.tag))&&(!ql||(x.name+' '+x.phone).toLowerCase().includes(ql)));
+  const tagHtml=t=>`<span class="tag ${t==='VIP'?'vip':''} ${/no-show|Deposit|complaint/i.test(t)?'noshow':''}">${t}</span>`;
+  const rows=list.map(x=>`<tr><td><b>${esc(x.name)}</b></td><td class="num">${x.phone}</td><td>${chip(x.ch)}</td><td class="r num">${x.visits}</td><td class="num">${x.last}</td><td class="r num">${usd(x.spend)}</td><td>${x.who}</td><td><div class="tags">${x.tags.map(tagHtml).join('')}</div></td></tr>`).join('')||`<tr><td colspan="8" class="empty">No customers match these filters.</td></tr>`;
+  return `<div class="toolbar"><div class="seg" id="tagSeg">${tags.map(t=>`<button data-t="${t}" aria-pressed="${c.tag===t}">${t}</button>`).join('')}</div><input id="cSearch" class="search" placeholder="Search name or phone" value="${esc(c.q)}"></div>
+  <section class="panel"><div class="panel-h"><h2>${list.length} customers</h2><span class="sub">Same phone number on different channels is merged into one customer</span></div>
+  <div class="panel-b table-wrap"><table><thead><tr><th>Customer</th><th>Phone</th><th>First channel</th><th class="r">Visits</th><th>Last visit</th><th class="r">Total spent</th><th>Stylist</th><th>Tags</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 function vAutomations(){
   const on=rules.filter(r=>r.on).length, total=rules.reduce((a,r)=>a+r.runs,0);
-  return `<div class="kpis"><div class="kpi"><span class="k">켜진 자동화</span><span class="v">${on}<small>/ ${rules.length}</small></span></div><div class="kpi"><span class="k">최근 30일 실행</span><span class="v">${total}<small>회</small></span></div><div class="kpi"><span class="k">아낀 응대 시간 (추정)</span><span class="v">${Math.round(total*3/60)}<small>시간</small></span><span class="d">1회 평균 3분 기준</span></div></div>
-  <div class="rules">${rules.map((r,i)=>`<div class="rule"><div><h3>${r.name}</h3><div class="flow"><span class="when"><b>조건</b>${r.when}</span><span class="arrow">→</span><span class="then"><b>실행</b>${r.then}</span></div><div class="runs">${r.on?`최근 30일 <span class="num">${r.runs}</span>회 실행`:'꺼져 있음'}</div></div>
-  <label class="switch"><input type="checkbox" id="rule${i}" data-rule="${i}" ${r.on?'checked':''} aria-label="${r.name} 켜기/끄기"><span></span></label></div>`).join('')}</div>`;
+  return `<div class="kpis"><div class="kpi"><span class="k">Active automations</span><span class="v">${on}<small>of ${rules.length}</small></span></div><div class="kpi"><span class="k">Runs, last 30 days</span><span class="v">${total}</span></div><div class="kpi"><span class="k">Staff time saved (est.)</span><span class="v">${Math.round(total*3/60)}<small>hours</small></span><span class="d">At 3 min per task</span></div></div>
+  <div class="rules">${rules.map((r,i)=>`<div class="rule"><div><h3>${r.name}</h3><div class="flow"><span class="when"><b>WHEN</b>${esc(r.when)}</span><span class="arrow">→</span><span class="then"><b>THEN</b>${esc(r.then)}</span></div><div class="runs">${r.on?`Ran <span class="num">${r.runs}</span> times in the last 30 days`:'Off'}</div></div>
+  <label class="switch"><input type="checkbox" id="rule${i}" data-rule="${i}" ${r.on?'checked':''} aria-label="Turn ${esc(r.name)} on or off"><span></span></label></div>`).join('')}</div>`;
 }
 
-const VIEWS={dashboard:['대시보드',vDashboard],inbox:['통합 문의함',vInbox],bookings:['예약 관리',vBookings],customers:['고객 관리',vCustomers],automations:['자동화 규칙',vAutomations]};
+const VIEWS={dashboard:['Dashboard',vDashboard],inbox:['Inbox',vInbox],bookings:['Bookings',vBookings],customers:['Customers',vCustomers],automations:['Automations',vAutomations]};
 
 function render(){
   let v=location.hash.slice(1); if(!VIEWS[v]) v='dashboard';
@@ -445,26 +432,26 @@ function render(){
 
 function bind(v){
   const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
-  if(v==='dashboard'){ $$('tr[data-q]').forEach(tr=>tr.onclick=()=>{state.inbox.sel=tr.dataset.q;state.inbox.filter='전체';location.hash='inbox'}); }
+  if(v==='dashboard'){ $$('tr[data-q]').forEach(tr=>tr.onclick=()=>{state.inbox.sel=tr.dataset.q;state.inbox.filter='All';location.hash='inbox'}); }
   if(v==='inbox'){
     $$('#seg button').forEach(b=>b.onclick=()=>{state.inbox.filter=b.dataset.f;render()});
     $('#chSel').onchange=e=>{state.inbox.ch=e.target.value;render()};
-    const s=$('#qSearch'); s.oninput=e=>{state.inbox.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('#qSearch');n.focus();n.setSelectionRange(pos,pos)};
+    $('#qSearch').oninput=e=>{state.inbox.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('#qSearch');n.focus();n.setSelectionRange(pos,pos)};
     $$('.q-item').forEach(b=>b.onclick=()=>{state.inbox.sel=b.dataset.q;render()});
     const send=$('#sendBtn');
-    if(send) send.onclick=()=>{const q=inquiries.find(x=>x.id===state.inbox.sel);q.ai=$('#replyBox').value;q.st='답변완료';const a=$('#assign');q.staff=a&&a.selectedIndex>0?a.value:'소라 원장';render();toast(`${CH[q.ch].to} 답변을 보냈습니다 (데모라 실제 발송은 없습니다)`)};
+    if(send) send.onclick=()=>{const q=inquiries.find(x=>x.id===state.inbox.sel);q.ai=$('#replyBox').value;q.st='Replied';const a=$('#assign');q.staff=a&&a.selectedIndex>0?a.value:'Sora (owner)';render();toast(`Reply sent via ${CH[q.ch].label} (demo: nothing is actually sent)`)};
   }
   if(v==='bookings'){
     $$('#days button').forEach(b=>b.onclick=()=>{state.day=b.dataset.d;render()});
-    $$('[data-rm]').forEach(b=>b.onclick=()=>{bookings[state.day][+b.dataset.rm].rm='발송완료';render();toast('리마인드 알림톡을 보냈습니다 (데모)')});
-    $$('[data-done]').forEach(b=>b.onclick=()=>{bookings[state.day][+b.dataset.done].st='완료';render();toast('방문 완료로 바꿨습니다')});
+    $$('[data-rm]').forEach(b=>b.onclick=()=>{bookings[state.day][+b.dataset.rm].rm='Sent';render();toast('Reminder sent (demo)')});
+    $$('[data-done]').forEach(b=>b.onclick=()=>{bookings[state.day][+b.dataset.done].st='Completed';render();toast('Marked as completed')});
   }
   if(v==='customers'){
     $$('#tagSeg button').forEach(b=>b.onclick=()=>{state.cust.tag=b.dataset.t;render()});
     $('#cSearch').oninput=e=>{state.cust.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('#cSearch');n.focus();n.setSelectionRange(pos,pos)};
   }
   if(v==='automations'){
-    $$('[data-rule]').forEach(c=>c.onchange=()=>{const r=rules[+c.dataset.rule];r.on=c.checked;render();toast(`'${r.name}' 자동화를 ${r.on?'켰습니다':'껐습니다'}`)});
+    $$('[data-rule]').forEach(c=>c.onchange=()=>{const r=rules[+c.dataset.rule];r.on=c.checked;render();toast(`"${r.name}" turned ${r.on?'on':'off'}`)});
   }
 }
 window.addEventListener('hashchange',render);
