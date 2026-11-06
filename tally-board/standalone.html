@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Tally Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a single white workspace page, notebook-style; chart row (3 panels) over a live contracts database, automations at the foot. Single light theme by design. */
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --panel:#fbfbfa; --hover:#f3f3f1; --line:#e9e9e7; --line-2:#dcdcd8;
+  --fg:#2b2a27; --muted:#7b7a75; --faint:#a5a49f;
+  --accent:#2383e2; --accent-ink:#ffffff; --accent-soft:#e7f1fc;
+  --t1:#2f6fd6; --t2:#d9730d; --t3:#0f7b6c;
+  --ok:#2e8a52; --warn:#b26b00; --crit:#c4392b;
+  --font:"Source Sans 3",-apple-system,"Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14.5px;line-height:1.5}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+.page{max-width:1280px;margin:0 auto;padding-block:28px 64px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+.crumb{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.head h1{margin:0;font-size:32px;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+.head p{margin:4px 0 0;color:var(--muted);max-width:640px}
+.head .sp{flex:1}
+.demo{font-size:12px;color:var(--warn);background:color-mix(in srgb,var(--warn) 9%,transparent);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);padding:2px 9px;border-radius:99px;white-space:nowrap}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.stat{padding:12px 16px;border-right:1px solid var(--line);display:grid;gap:2px}
+.stat:last-child{border-right:0}
+.stat span{font-size:12px;color:var(--muted)}
+.stat b{font-family:var(--mono);font-size:21px;font-weight:500;letter-spacing:-.02em}
+.stat small{font-size:12px;color:var(--muted)}
+.stat.flag b{color:var(--crit)}
+
+.charts{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.35fr) minmax(0,1.35fr);gap:14px;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}
+.panel-h{display:flex;align-items:center;gap:8px;padding:12px 14px 4px;flex-wrap:wrap}
+.panel-h h2{margin:0;font-size:15px;font-weight:600}
+.ico{width:18px;height:18px;border-radius:4px;display:inline-grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:none}
+.viewbar{display:flex;align-items:center;gap:6px;padding:4px 14px 8px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.viewbar .v{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line-2);border-radius:5px;padding:1px 8px;background:var(--bg);color:var(--fg)}
+.panel-b{padding:4px 14px 14px}
+.chart svg{width:100%;height:auto;display:block}
+.chart text{font-family:var(--mono);font-size:10.5px;fill:var(--muted)}
+.chart .lbl{fill:var(--fg)}
+.note{font-size:12px;color:var(--muted)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);justify-content:center}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+
+details.tg{border-top:1px solid var(--line)}
+details.tg:first-of-type{border-top:0}
+details.tg summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:9px 2px;font-weight:600;font-size:14px}
+details.tg summary::-webkit-details-marker{display:none}
+details.tg summary::before{content:"";width:0;height:0;border-left:6px solid var(--muted);border-top:4px solid transparent;border-bottom:4px solid transparent;transition:transform .15s;flex:none}
+details.tg[open] summary::before{transform:rotate(90deg)}
+details.tg summary .tot{margin-left:auto;font-family:var(--mono);font-weight:500;font-size:12px;color:var(--muted)}
+details.tg .in{padding:0 0 10px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+
+/* Database */
+.db-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.db-h h2{margin:0;font-size:20px;font-weight:700}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:0;background:none;padding:7px 10px;cursor:pointer;color:var(--muted);font-size:14px;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button[aria-pressed="true"]{color:var(--fg);border-bottom-color:var(--fg);font-weight:600}
+.tabs .n{font-family:var(--mono);font-size:11px;color:var(--faint);margin-left:4px}
+.tabs .n.bad{color:var(--crit)}
+.tabs .sp{flex:1}
+.btn{border:1px solid var(--line-2);background:var(--bg);border-radius:6px;padding:5px 11px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.btn.blue{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.blue:hover{filter:brightness(1.07)}
+.btn.sm{padding:2px 8px;font-size:12px}
+
+.table-wrap{overflow-x:auto;border-bottom:1px solid var(--line)}
+table{border-collapse:collapse;min-width:1180px;width:100%;font-size:14px}
+th{font-weight:500;font-size:13px;color:var(--muted);text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;background:var(--bg)}
+th:last-child,td:last-child{border-right:0}
+th .t{font-family:var(--mono);font-size:11px;color:var(--faint);margin-right:6px}
+th.r{text-align:right}
+td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:0;vertical-align:middle;height:38px}
+tbody tr:hover td{background:var(--hover)}
+td .cell{padding:6px 8px;white-space:nowrap}
+td.r .cell{text-align:right}
+td select[data-f="plan"]{min-width:92px}
+td input,td select{width:100%;height:37px;border:0;background:transparent;padding:6px 8px;outline-offset:-2px}
+td input[type="number"]{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+td input::-webkit-outer-spin-button,td input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+td input.name{font-weight:600}
+td.calc .cell{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+td.final .cell{font-weight:600}
+td.final.changed .cell{background:color-mix(in srgb,var(--accent) 10%,transparent);transition:background .6s}
+.sel{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;padding:1px 8px;border-radius:4px;white-space:nowrap}
+.team-1{background:color-mix(in srgb,var(--t1) 13%,transparent);color:var(--t1)}
+.team-2{background:color-mix(in srgb,var(--t2) 14%,transparent);color:var(--t2)}
+.team-3{background:color-mix(in srgb,var(--t3) 13%,transparent);color:var(--t3)}
+.st-Paid{background:color-mix(in srgb,var(--ok) 13%,transparent);color:var(--ok)}
+.st-Sent{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
+.st-Overdue{background:color-mix(in srgb,var(--crit) 12%,transparent);color:var(--crit)}
+.st-Held{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}
+.flags{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;padding:0 8px}
+.flag{font-size:12px;white-space:nowrap}
+.flag.bad{color:var(--crit)} .flag.wait{color:var(--warn)} .flag.ok{color:var(--ok)}
+tfoot td{background:var(--bg);color:var(--muted);font-size:12.5px;border-bottom:0}
+tfoot td .cell{font-family:var(--mono)}
+tfoot td.r .cell b{color:var(--fg);font-weight:600}
+
+/* Automations */
+.auto{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px;align-items:start}
+.rules{display:grid}
+.rule{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 14px;border-top:1px solid var(--line)}
+.rule:first-child{border-top:0}
+.rule b{font-size:14px}
+.rule .how{font-size:13px;color:var(--muted)}
+.rule code{font-family:var(--mono);font-size:12px;background:var(--hover);padding:1px 5px;border-radius:4px;color:var(--fg)}
+.on{font-size:12px;color:var(--ok);display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.on::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.log{list-style:none;margin:0;padding:0 14px 12px;display:grid}
+.log li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.log li:first-child{border-top:0}
+.log time{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding-top:2px}
+.log li.new{animation:flash 1.4s ease}
+@keyframes flash{from{background:var(--accent-soft)}to{background:transparent}}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--fg);color:var(--bg);padding:9px 15px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:1100px){.charts{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.charts .p3{grid-column:1 / -1}}
+@media (max-width:760px){.charts,.auto{grid-template-columns:minmax(0,1fr)}.head h1{font-size:26px}.page{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}.stat{border-right:0;border-bottom:1px solid var(--line)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="page">
+  <div class="crumb"><span>Northside Agency</span><span>/</span><span>Finance</span><span>/</span><span style="color:var(--fg)">Revenue &amp; Contracts</span></div>
+  <div class="head">
+    <div><h1>Revenue &amp; Contracts</h1><p>Every client contract in one table. Final amounts, team revenue charts and invoices update on their own when a row changes.</p></div>
+    <div class="sp"></div>
+    <span class="demo">Demo · sample data</span>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="charts">
+    <section class="panel">
+      <div class="panel-h"><span class="ico" style="background:var(--ok)">$</span><h2>2026 total revenue</h2></div>
+      <div class="viewbar"><span class="v">◷ By team, year to date</span></div>
+      <div class="panel-b chart" id="donut"></div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><span class="ico" style="background:var(--t2)">↗</span><h2>Monthly total revenue</h2></div>
+      <div class="viewbar"><span class="v">◷ Monthly revenue data</span><span class="v">≡ Sum of final amount</span></div>
+      <div class="panel-b chart" id="line"></div>
+    </section>
+    <section class="panel p3">
+      <div class="panel-h"><span class="ico" style="background:var(--t1)">▥</span><h2>Monthly revenue by team</h2></div>
+      <div class="viewbar">Open a team to see its revenue for each month.</div>
+      <div class="panel-b">
+        <details class="tg" open><summary><span class="dot" style="background:var(--t1)"></span>Team 1 · Performance<span class="tot" id="tot1"></span></summary><div class="in chart" id="team1"></div></details>
+        <details class="tg"><summary><span class="dot" style="background:var(--t2)"></span>Team 2 · Content<span class="tot" id="tot2"></span></summary><div class="in chart" id="team2"></div></details>
+        <details class="tg"><summary><span class="dot" style="background:var(--t3)"></span>Team 3 · Brand<span class="tot" id="tot3"></span></summary><div class="in chart" id="team3"></div></details>
+        <details class="tg"><summary>Compare all teams</summary><div class="in chart" id="compare"></div></details>
+      </div>
+    </section>
+  </div>
+
+  <section style="display:grid;gap:10px">
+    <div class="db-h"><h2>Contracts</h2><span class="note">November billing · edit fee add-ons, discount, reason or status and everything above recalculates</span></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th><span class="t">Aa</span>Client</th><th><span class="t">◉</span>Team</th><th><span class="t">◉</span>Plan</th>
+        <th class="r"><span class="t">#</span>Monthly fee</th><th class="r"><span class="t">#</span>Add-ons</th><th class="r"><span class="t">Σ</span>Subtotal</th>
+        <th class="r"><span class="t">#</span>Discount %</th><th class="r"><span class="t">Σ</span>Final amount</th><th><span class="t">≡</span>Discount reason</th>
+        <th><span class="t">◉</span>Invoice</th><th><span class="t">⚑</span>Auto-check</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+      <tfoot><tr id="foot"></tr></tfoot>
+    </table></div>
+  </section>
+
+  <section class="auto">
+    <div class="panel">
+      <div class="panel-h"><span class="ico" style="background:var(--accent)">⚡</span><h2>Automations</h2></div>
+      <div class="rules" style="padding-top:6px">
+        <div class="rule"><div><b>Final amount formula</b><div class="how"><code>(Monthly fee + Add-ons) × (1 − Discount %)</code> on every row</div></div><span class="on">On</span></div>
+        <div class="rule"><div><b>Discount needs a reason</b><div class="how">Any discount without a written reason is flagged and kept off the invoice run</div></div><span class="on">On</span></div>
+        <div class="rule"><div><b>Big discounts need approval</b><div class="how">Over 30% off: invoice is held and the owner gets an approval request in Slack</div></div><span class="on">On</span></div>
+        <div class="rule"><div><b>Monthly invoicing</b><div class="how">1st of each month, 9:00 AM: create invoices from this table and email each client</div></div><span class="on">On</span></div>
+        <div class="rule"><div><b>Overdue reminders</b><div class="how">7 days unpaid: polite reminder to the client, alert to the team lead</div></div><span class="on">On</span></div>
+        <div class="rule"><div><b>Month-end report</b><div class="how">Last day of the month: post these charts and totals to #revenue</div></div><span class="on">On</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h2>Activity</h2><span class="note">What the automations did</span></div>
+      <ul class="log" id="log"></ul>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const TEAMS={1:{name:'Team 1',v:'--t1'},2:{name:'Team 2',v:'--t2'},3:{name:'Team 3',v:'--t3'}};
+const PLANS={Starter:1800,Growth:2500,Scale:4000};
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'];
+const HIST={1:[14200,13100,15000,12400,14800,16200,15500,17900,13000,11200],2:[10500,10900,11600,10200,11100,12400,12900,13500,12200,9800],3:[8100,7400,8800,7900,8400,9600,9200,10400,9000,7600]};
+
+let rows=[
+ {name:'Brightleaf Dental',team:1,plan:'Growth',add:100,disc:20,reason:'Annual prepay',st:'Paid'},
+ {name:'Harbor Coffee Co.',team:2,plan:'Growth',add:200,disc:50,reason:'',st:'Sent'},
+ {name:'Atlas Fitness',team:1,plan:'Scale',add:0,disc:50,reason:'',st:'Sent'},
+ {name:'Juniper Skin Clinic',team:1,plan:'Scale',add:0,disc:10,reason:'Referral',st:'Paid'},
+ {name:'Nova Realty',team:3,plan:'Growth',add:0,disc:10,reason:'Referral',st:'Paid'},
+ {name:'Pine & Co. Furniture',team:2,plan:'Growth',add:0,disc:10,reason:'Two-brand bundle',st:'Sent'},
+ {name:'Lumen Optics',team:3,plan:'Growth',add:0,disc:0,reason:'',st:'Overdue'},
+ {name:'Redwood Law Group',team:1,plan:'Scale',add:0,disc:0,reason:'',st:'Paid'},
+ {name:'Cedar Kids Academy',team:2,plan:'Growth',add:0,disc:0,reason:'',st:'Paid'},
+ {name:'Orbit Bikes',team:3,plan:'Growth',add:0,disc:0,reason:'',st:'Sent'},
+ {name:'Maple Bakery',team:2,plan:'Starter',add:0,disc:0,reason:'',st:'Paid'},
+ {name:'Tidewater Inn',team:1,plan:'Starter',add:0,disc:0,reason:'',st:'Sent'},
+ {name:'Fern Yoga Studio',team:3,plan:'Starter',add:0,disc:0,reason:'',st:'Paid'},
+ {name:'Quill Bookshop',team:2,plan:'Starter',add:0,disc:0,reason:'',st:'Overdue'},
+ {name:'Sol Pet Care',team:3,plan:'Starter',add:0,disc:0,reason:'',st:'Paid'}
+].map((r,i)=>({...r,id:i,approved:false}));
+
+let log=[
+ ['Nov 5, 10:02','Reminder emailed to Lumen Optics and Quill Bookshop (7 days unpaid). Team leads alerted.'],
+ ['Nov 1, 9:01','Approval requested in Slack for Harbor Coffee Co. and Atlas Fitness (50% off).'],
+ ['Nov 1, 9:00','13 November invoices created from this table and emailed to clients.'],
+ ['Oct 31, 6:00','October report posted to #revenue: $28,600 billed, down 15% from September.'],
+];
+let tab='all';
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const usd=n=>'$'+Math.round(n).toLocaleString('en-US');
+const k=n=>'$'+(n>=10000||n%1000===0?Math.round(n/1000):(n/1000).toFixed(1))+'k';
+const fee=r=>PLANS[r.plan];
+const sub=r=>fee(r)+(+r.add||0);
+const fin=r=>sub(r)*(1-Math.min(100,Math.max(0,+r.disc||0))/100);
+const noReason=r=>(+r.disc>0)&&!r.reason.trim();
+const needsOk=r=>(+r.disc>30)&&!r.approved;
+const status=r=>needsOk(r)||noReason(r)?'Held':r.st;
+const review=r=>noReason(r)||needsOk(r);
+const nov=t=>rows.filter(r=>r.team===t&&status(r)!=='Held').reduce((a,r)=>a+fin(r),0);
+const series=t=>[...HIST[t],nov(t)];
+const totals=()=>MONTHS.map((_,i)=>[1,2,3].reduce((a,t)=>a+series(t)[i],0));
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2600)}
+
+/* ---------- charts ---------- */
+function niceMax(v){const raw=v/4,p=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/p;return (m<=1?1:m<=1.5?1.5:m<=2?2:m<=2.5?2.5:m<=3?3:m<=4?4:m<=5?5:m<=6?6:m<=8?8:10)*p*4}
+function axes(W,H,L,R,T,B,max,ticks){const y=v=>T+(H-T-B)*(1-v/max);let s='';for(let i=0;i<=ticks;i++){const v=max*i/ticks;s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+3.5}" text-anchor="end">${v?k(v):'$0'}</text>`}return [s,y]}
+
+function drawDonut(){
+  const parts=[1,2,3].map(t=>({t,v:series(t).reduce((a,b)=>a+b,0)})), tot=parts.reduce((a,p)=>a+p.v,0);
+  const cx=110,cy=100,r=62,C=2*Math.PI*r;let off=0;
+  let s=`<svg viewBox="0 0 220 210" role="img" aria-label="2026 revenue to date ${usd(tot)}"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--line)" stroke-width="16"/>`;
+  parts.forEach(p=>{const len=p.v/tot*C;s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(${TEAMS[p.t].v})" stroke-width="16" stroke-dasharray="${len-2.5} ${C-len+2.5}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"><title>${TEAMS[p.t].name}: ${usd(p.v)}</title></circle>`;off+=len});
+  s+=`<text x="${cx}" y="${cy+4}" text-anchor="middle" class="lbl" style="font-family:var(--font);font-size:30px;font-weight:700">${k(tot)}</text><text x="${cx}" y="${cy+24}" text-anchor="middle">Jan–Nov 2026</text></svg>`;
+  s+=`<div class="legend">${parts.map(p=>`<span><i style="background:var(${TEAMS[p.t].v})"></i>${TEAMS[p.t].name} ${Math.round(p.v/tot*100)}%</span>`).join('')}</div>`;
+  $('#donut').innerHTML=s;
+}
+function drawLine(){
+  const d=totals(),W=520,H=250,L=44,R=14,T=24,B=30,max=niceMax(Math.max(...d)*1.08),[g,y]=axes(W,H,L,R,T,B,max,4),step=(W-L-R-20)/(d.length-1),x=i=>L+14+i*step;
+  const pts=d.map((v,i)=>`${x(i)},${y(v)}`).join(' ');
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly total revenue, Nov ${usd(d[d.length-1])}">${g}
+  <polygon points="${x(0)},${y(0)} ${pts} ${x(d.length-1)},${y(0)}" fill="color-mix(in srgb,var(--t3) 10%,transparent)"/>
+  <polyline points="${pts}" fill="none" stroke="var(--t3)" stroke-width="2" stroke-linejoin="round"/>`;
+  d.forEach((v,i)=>{const last=i===d.length-1;s+=`<circle cx="${x(i)}" cy="${y(v)}" r="${last?4.5:3}" fill="${last?'var(--bg)':'var(--t3)'}" stroke="var(--t3)" stroke-width="${last?2:0}"><title>${MONTHS[i]}: ${usd(v)}</title></circle><text x="${x(i)}" y="${y(v)-9}" text-anchor="middle" ${last?'class="lbl" style="font-weight:600"':''}>${k(v)}</text><text x="${x(i)}" y="${H-10}" text-anchor="middle">${MONTHS[i]}</text>`});
+  $('#line').innerHTML=s+`</svg><div class="note">November is this month's billing from the contracts table below. Held invoices are left out until they are fixed.</div>`;
+}
+function drawTeam(t){
+  const d=series(t),W=520,H=230,L=44,R=8,T=22,B=28,max=niceMax(Math.max(...d)*1.12),[g,y]=axes(W,H,L,R,T,B,max,4),step=(W-L-R)/d.length,bw=step*.56,best=d.indexOf(Math.max(...d));
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${TEAMS[t].name} monthly revenue">${g}`;
+  d.forEach((v,i)=>{const bx=L+i*step+(step-bw)/2,last=i===d.length-1;
+    s+=`<rect x="${bx}" y="${y(v)}" width="${bw}" height="${y(0)-y(v)}" rx="2" fill="var(${TEAMS[t].v})" opacity="${i===best||last?1:.45}"><title>${MONTHS[i]}: ${usd(v)}</title></rect><text x="${bx+bw/2}" y="${y(v)-5}" text-anchor="middle" ${i===best||last?'class="lbl"':''}>${k(v)}</text><text x="${bx+bw/2}" y="${H-9}" text-anchor="middle">${MONTHS[i]}</text>`});
+  $('#team'+t).innerHTML=s+`</svg><div class="note">Best month: ${MONTHS[best]} (${usd(d[best])}). November so far: ${usd(d[d.length-1])}.</div>`;
+  $('#tot'+t).textContent=k(d.reduce((a,b)=>a+b,0))+' YTD';
+}
+function drawCompare(){
+  const W=520,H=230,L=44,R=12,T=16,B=28,all=[1,2,3].map(series),max=niceMax(Math.max(...all.flat())*1.08),[g,y]=axes(W,H,L,R,T,B,max,4),step=(W-L-R)/(MONTHS.length-1),x=i=>L+i*step;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly revenue of the three teams">${g}`;
+  all.forEach((d,j)=>{const c=`var(${TEAMS[j+1].v})`;s+=`<polyline points="${d.map((v,i)=>`${x(i)},${y(v)}`).join(' ')}" fill="none" stroke="${c}" stroke-width="2"/>`+d.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="2.5" fill="${c}"><title>${TEAMS[j+1].name} ${MONTHS[i]}: ${usd(v)}</title></circle>`).join('')});
+  MONTHS.forEach((m,i)=>s+=`<text x="${x(i)}" y="${H-9}" text-anchor="middle">${m}</text>`);
+  $('#compare').innerHTML=s+`</svg><div class="legend">${[1,2,3].map(t=>`<span><i style="background:var(${TEAMS[t].v})"></i>${TEAMS[t].name}</span>`).join('')}</div>`;
+}
+function drawStats(){
+  const d=totals(),ytd=d.reduce((a,b)=>a+b,0),billed=rows.filter(r=>status(r)!=='Held').reduce((a,r)=>a+fin(r),0);
+  const disc=rows.reduce((a,r)=>a+(sub(r)-fin(r)),0),flags=rows.filter(review).length,over=rows.filter(r=>status(r)==='Overdue').reduce((a,r)=>a+fin(r),0);
+  $('#stats').innerHTML=`<div class="stat"><span>2026 revenue to date</span><b>${usd(ytd)}</b><small>11 months, 3 teams</small></div>
+  <div class="stat"><span>November billed</span><b>${usd(billed)}</b><small>${rows.length-rows.filter(r=>status(r)==='Held').length} of ${rows.length} invoices sent</small></div>
+  <div class="stat"><span>Discounts given</span><b>${usd(disc)}</b><small>${Math.round(disc/rows.reduce((a,r)=>a+sub(r),0)*100)}% of list price</small></div>
+  <div class="stat"><span>Overdue</span><b>${usd(over)}</b><small>Reminders sent automatically</small></div>
+  <div class="stat ${flags?'flag':''}"><span>Rows needing review</span><b>${flags}</b><small>${flags?'Invoices held until fixed':'All clear'}</small></div>`;
+}
+function drawCharts(){drawStats();drawDonut();drawLine();[1,2,3].forEach(drawTeam);drawCompare()}
+
+/* ---------- database ---------- */
+function flagHtml(r){
+  if(noReason(r)) return `<span class="flag bad">● Add a discount reason</span>`;
+  if(needsOk(r)) return `<span class="flag wait">● Waiting for approval</span><button class="btn sm" data-ok="${r.id}">Approve</button>`;
+  return `<span class="flag ok">✓ OK</span>`;
+}
+function rowHtml(r){
+  const st=status(r);
+  return `<tr data-id="${r.id}">
+   <td><input class="name" id="n${r.id}" data-f="name" value="${esc(r.name)}" aria-label="Client name"></td>
+   <td><div class="cell"><span class="sel team-${r.team}">${TEAMS[r.team].name}</span></div></td>
+   <td><select id="p${r.id}" data-f="plan" aria-label="Plan">${Object.keys(PLANS).map(p=>`<option ${p===r.plan?'selected':''}>${p}</option>`).join('')}</select></td>
+   <td class="calc"><div class="cell">${usd(fee(r))}</div></td>
+   <td><input type="number" id="a${r.id}" data-f="add" min="0" step="50" value="${r.add}" aria-label="Add-ons"></td>
+   <td class="calc" data-c="sub"><div class="cell">${usd(sub(r))}</div></td>
+   <td><input type="number" id="d${r.id}" data-f="disc" min="0" max="100" step="5" value="${r.disc}" aria-label="Discount percent"></td>
+   <td class="calc final" data-c="fin"><div class="cell">${usd(fin(r))}</div></td>
+   <td><input id="r${r.id}" data-f="reason" value="${esc(r.reason)}" placeholder="${+r.disc>0?'Required':''}" aria-label="Discount reason"></td>
+   <td data-c="st"><div class="cell">${st==='Held'?`<span class="sel st-Held">Held</span>`:`<select data-f="st" aria-label="Invoice status" style="height:auto;padding:0;width:auto">${['Paid','Sent','Overdue'].map(s=>`<option ${s===r.st?'selected':''}>${s}</option>`).join('')}</select>`}</div></td>
+   <td data-c="flag"><div class="flags">${flagHtml(r)}</div></td></tr>`;
+}
+function visible(){return rows.filter(r=>tab==='all'||(tab==='review'?review(r):r.team===+tab))}
+function drawTabs(){
+  const n=t=>rows.filter(r=>r.team===t).length,rv=rows.filter(review).length;
+  $('#tabs').innerHTML=[['all','All contracts',rows.length],['1','Team 1',n(1)],['2','Team 2',n(2)],['3','Team 3',n(3)],['review','Needs review',rv]].map(([v,l,c])=>`<button data-tab="${v}" aria-pressed="${tab===v}">${l}<span class="n ${v==='review'&&c?'bad':''}">${c}</span></button>`).join('')+`<span class="sp"></span><button class="btn blue" id="newBtn" style="margin:3px 0">New contract</button>`;
+}
+function drawFoot(){
+  const v=visible(),s=f=>v.reduce((a,r)=>a+f(r),0);
+  $('#foot').innerHTML=`<td><div class="cell">Count ${v.length}</div></td><td></td><td></td><td class="r"><div class="cell">Sum <b>${usd(s(fee))}</b></div></td><td class="r"><div class="cell">Sum <b>${usd(s(r=>+r.add||0))}</b></div></td><td class="r"><div class="cell">Sum <b>${usd(s(sub))}</b></div></td><td class="r"><div class="cell">Avg <b>${v.length?Math.round(s(r=>+r.disc||0)/v.length):0}%</b></div></td><td class="r"><div class="cell">Sum <b>${usd(s(fin))}</b></div></td><td></td><td></td><td></td>`;
+}
+function drawTable(){drawTabs();$('#rows').innerHTML=visible().map(rowHtml).join('')||`<tr><td colspan="11"><div class="cell note">Nothing needs review. Every discount has a reason and an approval.</div></td></tr>`;drawFoot()}
+function refreshRow(r){
+  const tr=document.querySelector(`tr[data-id="${r.id}"]`);if(!tr)return;
+  tr.querySelector('[data-c="sub"] .cell').textContent=usd(sub(r));
+  const f=tr.querySelector('[data-c="fin"]');f.querySelector('.cell').textContent=usd(fin(r));f.classList.add('changed');setTimeout(()=>f.classList.remove('changed'),700);
+  tr.querySelector('[data-c="flag"] .flags').innerHTML=flagHtml(r);
+  tr.children[3].querySelector('.cell').textContent=usd(fee(r));
+  const st=status(r),stc=tr.querySelector('[data-c="st"] .cell');
+  stc.innerHTML=st==='Held'?`<span class="sel st-Held">Held</span>`:`<select data-f="st" aria-label="Invoice status" style="height:auto;padding:0;width:auto">${['Paid','Sent','Overdue'].map(s=>`<option ${s===r.st?'selected':''}>${s}</option>`).join('')}</select>`;
+  tr.querySelector('[data-f="reason"]').placeholder=+r.disc>0?'Required':'';
+}
+function addLog(msg){log.unshift(['Nov 6, '+new Date().toTimeString().slice(0,5),msg]);drawLog(true)}
+function drawLog(fresh){$('#log').innerHTML=log.slice(0,7).map(([t,m],i)=>`<li class="${fresh&&i===0?'new':''}"><time>${t}</time><span>${esc(m)}</span></li>`).join('')}
+
+document.addEventListener('input',e=>{
+  const f=e.target.dataset.f,tr=e.target.closest('tr[data-id]');if(!f||!tr)return;
+  const r=rows.find(x=>x.id===+tr.dataset.id),before=review(r),wasOk=needsOk(r);
+  if(f==='add'||f==='disc'){r[f]=Math.max(0,+e.target.value||0);if(f==='disc'&&r.disc<=30)r.approved=false}else r[f]=e.target.value;
+  refreshRow(r);drawFoot();drawTabs();drawCharts();
+  if(!wasOk&&needsOk(r)) addLog(`Approval requested in Slack for ${r.name} (${r.disc}% off). Invoice held.`);
+  else if(before&&!review(r)) addLog(`${r.name} passed the auto-check. Invoice for ${usd(fin(r))} released.`);
+});
+document.addEventListener('change',e=>{
+  const f=e.target.dataset.f,tr=e.target.closest('tr[data-id]');if(!tr||(f!=='plan'&&f!=='st'))return;
+  const r=rows.find(x=>x.id===+tr.dataset.id);r[f]=e.target.value;refreshRow(r);drawFoot();drawCharts();
+  if(f==='st'&&r.st==='Paid') toast(`${r.name} marked as paid`);
+});
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-tab]');if(t){tab=t.dataset.tab;drawTable();return}
+  const ok=e.target.closest('[data-ok]');
+  if(ok){const r=rows.find(x=>x.id===+ok.dataset.ok);r.approved=true;if(tab==='review')drawTable();else{refreshRow(r);drawTabs();drawFoot()}drawCharts();
+    addLog(noReason(r)?`${r.name} approved by owner. Still needs a discount reason.`:`${r.name} approved by owner. Invoice for ${usd(fin(r))} emailed (demo).`);toast(`${r.name} approved`);return}
+  if(e.target.id==='newBtn'){const id=rows.length?Math.max(...rows.map(r=>r.id))+1:0;const team=tab==='1'||tab==='2'||tab==='3'?+tab:1;
+    rows.push({id,name:'New client',team,plan:'Starter',add:0,disc:0,reason:'',st:'Sent',approved:false});if(tab==='review')tab='all';drawTable();drawCharts();
+    const n=document.getElementById('n'+id);n.focus();n.select();addLog(`New contract added to ${TEAMS[team].name}. It is included in November billing.`)}
+});
+drawTable();drawCharts();drawLog(false);
+</script>
+
+</body>
+</html>
