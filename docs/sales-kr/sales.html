@@ -1,0 +1,564 @@
+<title>브랜드랩 매출관리</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;600;700;800&family=Roboto+Mono:wght@500&display=swap">
+<style>
+/* Layout: 짙은 남보라 사이드 메뉴 + 흰 본문. 상단에 페이지 제목과 기준 월 선택. 항상 밝은 본문.
+   남보라는 메뉴·주요 버튼, 팀 3색(파랑·주황·청록)은 팀 데이터에만. */
+:root {
+  color-scheme: light;
+  --bg: #f6f7fb; --panel: #ffffff; --soft: #f8f9fc; --hover: #f2f3f9;
+  --ink: #1b1d29; --ink-2: #3e4253; --muted: #6e7387; --faint: #a3a7b7; --line: #e7e8ef; --grid: #eef0f5;
+  --side: #1f1d47; --side-2: #2b2960; --side-ink: #e9e8fb; --side-muted: #a3a1cf;
+  --accent: #5b5bd6; --accent-ink: #ffffff; --accent-soft: #ededfc;
+  --t1: #2a78d6; --t2: #eb6834; --t3: #1baf7a; --t1-bg: #e4eefb; --t2-bg: #fdebe1; --t3-bg: #ddf3ea;
+  --good: #14804a; --good-bg: #e3f5eb; --warn: #9a5b00; --warn-bg: #fdf1d8; --crit: #c93535; --crit-bg: #fde8e8; --gray-bg: #eff0f4;
+  --font: "Gothic A1", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "Roboto Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 13.5px; line-height: 1.55; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.app { display: grid; grid-template-columns: 228px minmax(0, 1fr); min-height: 100vh; background: linear-gradient(90deg, var(--side) 228px, transparent 228px); }
+.side { background: var(--side); color: var(--side-ink); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; padding-left: env(safe-area-inset-left, 0px); }
+.logo { display: flex; gap: 10px; align-items: center; padding: 20px 20px 16px; }
+.logo span { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, #7d7cf0, #5b5bd6); display: grid; place-items: center; font-weight: 800; color: #fff; }
+.logo b { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.01em; } .logo small { font-size: 11.5px; color: var(--side-muted); }
+.menu { padding: 6px 12px; display: grid; gap: 2px; align-content: start; flex: 1; overflow-y: auto; }
+.menu .sec { font-size: 11px; letter-spacing: .08em; color: var(--side-muted); padding: 14px 10px 6px; font-weight: 700; }
+.menu a { display: flex; gap: 10px; align-items: center; padding: 9px 12px; border-radius: 9px; color: var(--side-muted); text-decoration: none; font-weight: 600; }
+.menu a:hover { background: var(--side-2); color: var(--side-ink); }
+.menu a.on { background: var(--accent); color: #fff; }
+.menu .cnt { margin-left: auto; background: var(--crit); color: #fff; font-size: 11px; border-radius: 999px; padding: 0 7px; font-weight: 700; }
+.goal { margin: 12px; padding: 14px; border-radius: 12px; background: var(--side-2); display: grid; gap: 8px; font-size: 12.5px; }
+.goal b { font-size: 18px; }
+.goal .bar { height: 6px; background: rgba(255, 255, 255, .15); border-radius: 99px; overflow: hidden; } .goal .bar i { display: block; height: 100%; background: #8f8ef3; }
+.main { min-width: 0; display: flex; flex-direction: column; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-block: 18px; padding-left: 28px; padding-right: max(28px, env(safe-area-inset-right, 0px)); background: var(--panel); border-bottom: 1px solid var(--line); }
+.top h1 { font-size: 21px; font-weight: 800; letter-spacing: -.01em; }
+.top p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+.top .ctrl { display: flex; gap: 8px; align-items: center; }
+.view { padding-block: 22px 44px; padding-left: 28px; padding-right: max(28px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; align-content: start; }
+@media (max-width: 920px) {
+  .app { grid-template-columns: minmax(0, 1fr); background: none; }
+  .side { position: static; height: auto; padding-right: env(safe-area-inset-right, 0px); }
+  .menu { display: flex; overflow-x: auto; padding-bottom: 12px; } .menu .sec, .goal { display: none; }
+  .menu a { white-space: nowrap; }
+  .top, .view { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; min-width: 0; }
+.card-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 16px 18px 4px; }
+.card-h h2 { font-size: 15px; font-weight: 800; }
+.card-h small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.card-b { padding: 10px 18px 18px; min-width: 0; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 9px; padding: 7px 13px; font-weight: 700; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; color: var(--ink-2); font-size: 13px; white-space: nowrap; text-decoration: none; }
+.btn:hover { background: var(--hover); }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.sm { padding: 4px 10px; font-size: 12.5px; }
+.input { border: 1px solid var(--line); border-radius: 9px; background: var(--panel); padding: 6px 10px; min-height: 34px; }
+.seg { display: inline-flex; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { border: 0; background: none; border-radius: 7px; padding: 4px 11px; cursor: pointer; font-weight: 700; color: var(--muted); font-size: 12.5px; }
+.seg button.on { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
+.tag { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.tag.t1 { background: var(--t1-bg); color: #1f5aa6; } .tag.t2 { background: var(--t2-bg); color: #a3461d; } .tag.t3 { background: var(--t3-bg); color: #13704e; }
+.st { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.st::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.st.g { background: var(--good-bg); color: var(--good); } .st.w { background: var(--warn-bg); color: var(--warn); } .st.x { background: var(--gray-bg); color: var(--muted); } .st.c { background: var(--crit-bg); color: var(--crit); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); background: var(--side); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px; z-index: 30; max-width: calc(100% - 32px); }
+
+/* 대시보드 */
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1320px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { padding: 15px 16px; display: grid; gap: 3px; }
+.kpi .lbl { color: var(--muted); font-size: 12.5px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+.kpi .lbl i { width: 8px; height: 8px; border-radius: 50%; }
+.kpi .val { font-size: 23px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kpi .sub { font-size: 12px; color: var(--muted); } .kpi .sub b { font-weight: 700; } .up { color: var(--good); } .down { color: var(--crit); }
+.g3 { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.6fr); gap: 18px; }
+.g2 { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 18px; }
+.g2e { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 1100px) { .g3, .g2, .g2e { grid-template-columns: minmax(0, 1fr); } }
+.chart { position: relative; }
+.tip { position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; box-shadow: 0 6px 18px rgba(20, 20, 40, .12); white-space: nowrap; z-index: 4; }
+.leg { display: grid; gap: 8px; font-size: 13px; }
+.leg div { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.leg i { width: 10px; height: 10px; border-radius: 3px; } .leg .p { color: var(--muted); font-size: 12px; min-width: 34px; text-align: right; }
+.donutwrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; justify-items: center; }
+.hbars { display: grid; gap: 12px; }
+.hbars .r { display: grid; grid-template-columns: 70px minmax(0, 1fr) 96px; gap: 10px; align-items: center; font-size: 13px; }
+.hbars .bar { height: 12px; background: var(--soft); border-radius: 99px; overflow: hidden; } .hbars .bar i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+.goals { display: grid; gap: 14px; }
+.goals .r { display: grid; gap: 6px; }
+.goals .h { display: flex; justify-content: space-between; font-size: 13px; }
+.goals .bar { height: 10px; background: var(--soft); border-radius: 99px; overflow: hidden; position: relative; } .goals .bar i { display: block; height: 100%; border-radius: 99px; }
+.list { display: grid; }
+.list .it { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.list .it:last-child { border-bottom: 0; }
+.list .it span { color: var(--muted); font-size: 12px; }
+
+/* 표 */
+.toolbar { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; padding: 14px 18px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; vertical-align: middle; }
+th { background: var(--soft); color: var(--muted); font-weight: 700; font-size: 12px; }
+th.sortable { cursor: pointer; } th.sortable:hover { color: var(--ink); }
+td.r, th.r { text-align: right; }
+tbody tr:hover td { background: var(--hover); }
+table.db { min-width: 1180px; }
+.db th, .db td { border-right: 1px solid var(--line); }
+.db th:last-child, .db td:last-child { border-right: 0; }
+.db td { padding: 0 10px; height: 38px; }
+.db td.f { background: #fafbfd; }
+.db td.edit { padding: 0; }
+.db td.edit input, .db td.edit select { width: 100%; height: 37px; border: 0; background: none; padding: 0 10px; outline: none; }
+.db td.edit input:focus, .db td.edit select:focus { background: var(--accent-soft); box-shadow: inset 0 0 0 2px #a9a8ee; }
+.db td.edit input.r { text-align: right; }
+.db td.warn { box-shadow: inset 0 0 0 2px #f0b0b0; }
+.db th .ty { color: var(--faint); margin-right: 5px; font-weight: 500; }
+.db th .info { color: var(--faint); cursor: help; margin-left: 3px; }
+.db tfoot td { color: var(--muted); font-size: 12px; background: var(--soft); height: 38px; padding: 0 10px; }
+.db tfoot td b { color: var(--ink); margin-left: 6px; }
+.del { border: 0; background: none; color: var(--faint); cursor: pointer; visibility: hidden; }
+tr:hover .del { visibility: visible; } .del:hover { color: var(--crit); }
+.note { font-size: 12px; color: var(--muted); padding: 10px 18px 16px; display: flex; gap: 14px; flex-wrap: wrap; }
+
+/* 팀 */
+.teams { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 1100px) { .teams { grid-template-columns: minmax(0, 1fr); } }
+.team-h { display: flex; gap: 12px; align-items: center; }
+.team-h .av { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-weight: 800; color: #fff; }
+.people { display: flex; }
+.people span { width: 34px; height: 34px; letter-spacing: -.04em; border-radius: 50%; border: 2px solid #fff; margin-left: -6px; display: grid; place-items: center; font-size: 11px; font-weight: 700; background: var(--soft); color: var(--ink-2); }
+.people span:first-child { margin-left: 0; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 7px 12px; font-size: 13px; }
+.kv span { color: var(--muted); } .kv b { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.form { display: grid; gap: 10px; }
+.form label { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; align-items: center; font-size: 13px; }
+.form label span { color: var(--muted); font-weight: 700; }
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="logo"><span>B</span><div><b>브랜드랩</b><small>매출관리 시스템</small></div></div>
+    <nav class="menu" id="menu" aria-label="메뉴"></nav>
+    <div class="goal" id="sidegoal"></div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <div><h1 id="title">대시보드</h1><p id="sub"></p></div>
+      <div class="ctrl" id="ctrl"></div>
+    </header>
+    <section class="view" id="view"></section>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const W = (n) => `₩${Math.round(n).toLocaleString('ko-KR')}`;
+const MAN = (n) => `${Math.round(n / 1e4).toLocaleString('ko-KR')}만`;
+const EOK = (n) => (Math.abs(n) >= 1e8 ? `${(n / 1e8).toFixed(2).replace(/\.?0+$/, '')}억` : MAN(n));
+const PCT = (n) => `${(n * 100).toFixed(1)}%`;
+const YEAR = 2026;
+const nowM = (() => { const d = new Date(Date.now() + 9 * 3600e3); return d.getUTCFullYear() === YEAR ? d.getUTCMonth() + 1 : 12; })();
+const ym = (m) => `${YEAR}-${String(m).padStart(2, '0')}`;
+const TEAMS = ['1팀', '2팀', '3팀'];
+const MEMBERS = { '1팀': ['김도윤', '이서연', '박지호'], '2팀': ['최민준', '정하은', '강유진'], '3팀': ['윤시우', '임채원', '한지민'] };
+const LEAD = { '1팀': '김도윤', '2팀': '최민준', '3팀': '윤시우' };
+const tcls = (t) => 't' + (TEAMS.indexOf(t) + 1);
+const tcol = (t) => `var(--t${TEAMS.indexOf(t) + 1})`;
+
+// ───────── 샘플 계약 (가상의 고객사) ─────────
+const SEED = [
+  ['온새미한의원', '1팀', '스탠다드', 150000, 20, '연 계약 선결제', '2026-01', ''],
+  ['브릭하우스 카페', '1팀', '스탠다드', 300000, 50, '런칭 프로모션 (3개월)', '2026-08', '2026-10'],
+  ['한빛세무회계', '2팀', '프리미엄', 0, 50, '파트너사 소개 할인', '2026-09', ''],
+  ['그린라인치과', '2팀', '프리미엄', 0, 10, '', '2026-02', ''],
+  ['모아필라테스', '3팀', '스탠다드', 0, 10, '', '2026-03', ''],
+  ['라온뷰티 청담점', '1팀', '스탠다드', 0, 10, '', '2026-01', '2026-06'],
+  ['다온한식뷔페', '3팀', '스탠다드', 0, 0, '', '2026-04', ''],
+  ['스튜디오 무브', '2팀', '프리미엄', 0, 0, '', '2026-05', ''],
+  ['바른정형외과', '1팀', '스탠다드', 0, 0, '', '2026-01', '2026-12'],
+  ['노을공인중개사', '3팀', '스탠다드', 0, 0, '', '2026-06', ''],
+  ['오름수학학원', '2팀', '스탠다드', 0, 0, '', '2026-02', '2026-09'],
+  ['하루꽃집', '3팀', '베이직', 0, 0, '', '2026-01', ''],
+  ['클린홈 이사', '1팀', '베이직', 0, 0, '', '2026-03', ''],
+  ['서울피부과의원', '2팀', '베이직', 0, 0, '', '2026-07', ''],
+  ['도담어린이집', '3팀', '베이직', 0, 0, '', '2026-02', '2026-07'],
+  ['미소한방병원', '1팀', '프리미엄', 300000, 15, '', '2026-04', ''],
+  ['더웨이 헬스', '3팀', '스탠다드', 150000, 0, '', '2026-05', ''],
+  ['선한동물병원', '2팀', '스탠다드', 0, 5, '', '2026-03', ''],
+  ['제이앤 법률사무소', '1팀', '프리미엄', 0, 0, '', '2026-10', ''],
+  ['담소 막국수', '3팀', '베이직', 0, 0, '', '2026-11', ''],
+  ['리본스튜디오 사진관', '1팀', '베이직', 0, 0, '', '2026-05', ''],
+  ['봄날요양원', '2팀', '스탠다드', 200000, 0, '', '2026-06', ''],
+  ['코어짐 강남', '3팀', '프리미엄', 0, 25, '3개 지점 일괄 계약', '2026-02', ''],
+  ['맑은안과', '1팀', '프리미엄', 500000, 10, '', '2026-07', ''],
+  ['한결 인테리어', '2팀', '베이직', 0, 0, '', '2026-04', '2026-08'],
+  ['소담 베이커리', '3팀', '베이직', 100000, 0, '', '2026-09', ''],
+  ['위드펫 동물병원', '1팀', '스탠다드', 0, 20, '', '2026-10', ''],
+  ['이음 영어학원', '3팀', '스탠다드', 0, 30, '', '2026-08', ''],
+  ['청담 글로우 피부과', '2팀', '프리미엄', 300000, 0, '', '2026-12', ''],
+  ['가온 정육식당', '3팀', '베이직', 0, 0, '', '2026-01', '2026-04'],
+  ['미래내과', '2팀', '스탠다드', 0, 10, '', '2026-08', ''],
+  ['스테이 오션 펜션', '1팀', '베이직', 150000, 0, '', '2026-06', '2026-11'],
+];
+const CFG0 = { plans: { 베이직: 2500000, 스탠다드: 3500000, 프리미엄: 6000000 }, reasonAt: 20, maxDisc: 50, targets: { '1팀': 260000000, '2팀': 250000000, '3팀': 230000000 } };
+const fresh = () => {
+  const cnt = {};
+  return { v: 1, cfg: JSON.parse(JSON.stringify(CFG0)), rows: SEED.map(([client, team, plan, opt, disc, reason, start, end], i) => {
+    cnt[team] = (cnt[team] || 0) + 1;
+    return { id: 'R' + (i + 1), client, team, owner: MEMBERS[team][cnt[team] % 3], plan, opt, disc, reason, start, end };
+  }) };
+};
+const KEY = 'brandlab-sales-v1';
+let S; try { const raw = localStorage.getItem(KEY); if (raw) { const p = JSON.parse(raw); if (p && p.v === 1 && p.cfg && Array.isArray(p.rows)) S = p; } } catch {}
+if (!S) S = fresh();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+
+// ───────── 수식 ─────────
+const base = (r) => S.cfg.plans[r.plan] || 0;
+const monthly = (r) => base(r) + (+r.opt || 0);
+const final = (r) => monthly(r) * (1 - Math.min(100, Math.max(0, +r.disc || 0)) / 100);
+const activeIn = (r, m) => r.start <= ym(m) && (!r.end || r.end >= ym(m));
+const status = (r, m = ui.m) => (r.start > ym(m) ? '대기' : r.end && r.end < ym(m) ? '종료' : '진행중');
+const needsReason = (r) => (+r.disc || 0) >= S.cfg.reasonAt && !String(r.reason || '').trim();
+const overMax = (r) => (+r.disc || 0) > S.cfg.maxDisc;
+const revM = (m, f = () => true) => S.rows.filter((r) => f(r) && activeIn(r, m)).reduce((s, r) => s + final(r), 0);
+const ytd = (m, f) => { let s = 0; for (let i = 1; i <= m; i++) s += revM(i, f); return s; };
+const series = (m, f) => Array.from({ length: m }, (_, i) => revM(i + 1, f));
+const byTeam = (t) => (r) => r.team === t;
+const paidTo = (r, m) => { let s = 0; for (let i = 1; i <= m; i++) if (activeIn(r, i)) s += final(r); return s; };
+const monthsIn = (r, m) => { let c = 0; for (let i = 1; i <= m; i++) if (activeIn(r, i)) c++; return c; };
+const totalTarget = () => TEAMS.reduce((s, t) => s + (+S.cfg.targets[t] || 0), 0);
+
+let toastT; function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 2600); }
+const ui = { m: nowM, dteam: '전체', team: '전체', st: '전체', sort: null, dir: 1, q: '', cteam: '전체' };
+
+// ───────── 아이콘 ─────────
+const IC = {
+  dash: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  contracts: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+  clients: '<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>',
+  teams: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.7 3.1 2.4 3.5 5.2"/>',
+  report: '<path d="M3 3v18h18"/><path d="M7 16V11M12 16V7M17 16v-3"/>',
+  config: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  down: '<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>', copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>', plus: '<path d="M12 5v14M5 12h14"/>',
+};
+const ic = (k) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC[k]}</svg>`;
+const PAGES = [
+  ['dash', '대시보드', '팀별·월별 매출과 목표 달성 현황을 한눈에 봅니다.', '현황'],
+  ['contracts', '계약 관리', '계약 금액·할인·최종 결제금액을 입력하면 매출이 자동 집계됩니다.', '현황'],
+  ['clients', '고객사', '고객사별 누적 결제액과 이용 기간을 확인합니다.', '현황'],
+  ['teams', '팀 관리', '팀별 목표 대비 실적과 담당자별 매출입니다.', '분석'],
+  ['report', '매출 리포트', '월×팀 매출표를 내려받거나 복사해 보고에 씁니다.', '분석'],
+  ['config', '설정', '상품 단가·할인 규칙·팀 목표를 바꾸면 전체 숫자가 다시 계산됩니다.', '관리'],
+];
+let page = 'dash';
+
+// ───────── 공통 ─────────
+function tipOn(el, html, x, y) { let t = $('.tip', el); if (!t) { t = document.createElement('div'); t.className = 'tip'; el.appendChild(t); } t.innerHTML = html; t.hidden = false; const w = t.offsetWidth || 150; t.style.left = Math.max(0, Math.min(el.clientWidth - w, x - w / 2)) + 'px'; t.style.top = Math.max(0, y - t.offsetHeight - 10) + 'px'; }
+function tipOff(el) { const t = $('.tip', el); if (t) t.hidden = true; }
+const niceStep = (max, n = 4) => { const raw = max / n; const p = 10 ** Math.floor(Math.log10(raw || 1)); const k = raw / p; return (k <= 1 ? 1 : k <= 2 ? 2 : k <= 2.5 ? 2.5 : k <= 5 ? 5 : 10) * p; };
+const LBL = (m) => Array.from({ length: m }, (_, i) => `${i + 1}월`);
+const card = (title, sub, body, extra = '') => `<section class="card"><div class="card-h"><h2>${title}${sub ? ` <small>${sub}</small>` : ''}</h2>${extra}</div><div class="card-b">${body}</div></section>`;
+
+function sideGoal() {
+  const a = ytd(ui.m), tg = totalTarget() * ui.m / 12, r = tg ? a / tg : 0;
+  $('#sidegoal').innerHTML = `<span style="color:var(--side-muted)">${ui.m}월까지 목표 달성률</span><b class="num">${PCT(r)}</b><div class="bar"><i style="width:${Math.min(100, r * 100)}%"></i></div><span style="color:var(--side-muted)" class="num">${EOK(a)} / ${EOK(tg)}</span>`;
+}
+function menu() {
+  const miss = S.rows.filter((r) => needsReason(r) || overMax(r)).length;
+  let sec = '';
+  $('#menu').innerHTML = PAGES.map(([k, l, , s]) => { const h = s !== sec ? `<div class="sec">${s}</div>` : ''; sec = s; return `${h}<a href="#${k}" class="${page === k ? 'on' : ''}" ${page === k ? 'aria-current="page"' : ''}>${ic(k)}${l}${k === 'contracts' && miss ? `<span class="cnt" title="할인 검토 필요">${miss}</span>` : ''}</a>`; }).join('');
+}
+function ctrl() {
+  if (page === 'config') { $('#ctrl').innerHTML = ''; return; }
+  $('#ctrl').innerHTML = `<label class="muted" for="msel" style="font-size:12.5px;font-weight:700">기준 월</label><select class="input" id="msel">${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}" ${ui.m === i + 1 ? 'selected' : ''}>${YEAR}년 ${i + 1}월${i + 1 === nowM ? ' (이번 달)' : ''}</option>`).join('')}</select>`;
+}
+
+// ───────── 대시보드 ─────────
+function vDash() {
+  const m = ui.m, cur = revM(m), prev = m > 1 ? revM(m - 1) : 0, a = ytd(m), tg = totalTarget() * m / 12;
+  const act = S.rows.filter((r) => activeIn(r, m)); const nw = S.rows.filter((r) => r.start === ym(m)).length;
+  const avgD = act.length ? act.reduce((s, r) => s + (+r.disc || 0), 0) / act.length : 0;
+  const miss = S.rows.filter(needsReason).length;
+  const ending = S.rows.filter((r) => r.end && (r.end === ym(m) || r.end === ym(m + 1)));
+  const delta = prev ? (cur - prev) / prev : 0;
+  const k = (lbl, col, val, sub) => `<div class="card kpi"><div class="lbl">${lbl}<i style="background:${col}"></i></div><div class="val">${val}</div><div class="sub">${sub}</div></div>`;
+  const plans = Object.keys(S.cfg.plans).map((p) => [p, S.rows.filter((r) => r.plan === p).reduce((s, r) => s + paidTo(r, m), 0)]);
+  const pmax = Math.max(...plans.map((x) => x[1]), 1);
+  return `<div class="kpis">
+    ${k('연 누적 매출', 'var(--accent)', EOK(a), `목표 대비 <b>${PCT(tg ? a / tg : 0)}</b>`)}
+    ${k(`${m}월 매출`, 'var(--accent)', EOK(cur), m > 1 ? `전월 대비 <b class="${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta * 100).toFixed(1)}%</b>` : '1월 기준')}
+    ${k('진행 중 계약', 'var(--good)', `${act.length}건`, `이번 달 신규 <b>${nw}건</b>`)}
+    ${k('평균 할인율', 'var(--warn)', `${avgD.toFixed(1)}%`, `진행 계약 기준`)}
+    ${k('할인사유 누락', 'var(--crit)', `${miss}건`, miss ? `<a href="#contracts" style="color:var(--crit);font-weight:700">계약 관리에서 확인 →</a>` : '모두 입력됨')}
+    ${k('종료 예정', 'var(--muted)', `${ending.length}건`, `${m}~${Math.min(12, m + 1)}월 종료`)}
+  </div>
+  <div class="g3">
+    ${card('팀별 연 매출', `1~${m}월`, `<div class="donutwrap"><div class="chart" id="donut" style="width:100%;max-width:240px"></div><div class="leg" style="width:100%">${TEAMS.map((t) => { const v = ytd(m, byTeam(t)); return `<div><i style="background:${tcol(t)}"></i><span>${t}</span><b class="num">${EOK(v)}</b><span class="p num">${PCT(a ? v / a : 0)}</span></div>`; }).join('')}</div></div>`)}
+    ${card('월별 매출 추이', '최종 결제금액 합계 · 점선은 월 목표', `<div class="chart" id="line"></div>`)}
+  </div>
+  <div class="g2">
+    ${card('팀별 월 매출', '', `<div class="chart" id="tbar"></div><div class="row" style="justify-content:center;gap:14px;font-size:12.5px;margin-top:4px" id="tleg"></div>`, `<div class="seg" role="group" aria-label="팀 선택">${['전체', ...TEAMS].map((t) => `<button type="button" class="${ui.dteam === t ? 'on' : ''}" data-dteam="${t}">${t}</button>`).join('')}</div>`)}
+    ${card('팀 목표 달성률', `${m}월까지 목표 대비`, `<div class="goals">${TEAMS.map((t) => { const v = ytd(m, byTeam(t)), g = (+S.cfg.targets[t] || 0) * m / 12, r = g ? v / g : 0; return `<div class="r"><div class="h"><span><span class="tag ${tcls(t)}">${t}</span> <span class="muted">${LEAD[t]} 팀장</span></span><b class="num">${PCT(r)}</b></div><div class="bar"><i style="width:${Math.min(100, r * 100)}%;background:${tcol(t)}"></i></div><div class="muted num" style="font-size:12px">${EOK(v)} / 목표 ${EOK(g)}</div></div>`; }).join('')}</div>`)}
+  </div>
+  <div class="g2e">
+    ${card('상품별 매출', `1~${m}월 누적`, `<div class="hbars">${plans.map(([p, v]) => `<div class="r"><span>${p}</span><div class="bar"><i style="width:${v / pmax * 100}%"></i></div><b class="num" style="text-align:right">${EOK(v)}</b></div>`).join('')}</div><p class="muted" style="font-size:12px;margin:12px 0 0">단가: ${Object.entries(S.cfg.plans).map(([p, v]) => `${p} ${MAN(v)}`).join(' · ')}</p>`)}
+    ${card('계약 일정', '종료 예정 · 이번 달 신규', `<div class="list">${[...ending.map((r) => [r, '종료 예정', 'w', r.end]), ...S.rows.filter((r) => r.start === ym(m)).map((r) => [r, '신규', 'g', r.start]), ...S.rows.filter((r) => r.start === ym(m + 1)).map((r) => [r, '시작 예정', 'x', r.start])].map(([r, l, c, d]) => `<div class="it"><b>${esc(r.client)} <span class="tag ${tcls(r.team)}">${r.team}</span></b><span class="st ${c}">${l}</span><span>${r.plan} · ${W(final(r))}/월 · ${r.owner}</span><span class="num">${d.replace('-', '.')}</span></div>`).join('') || '<p class="muted">예정된 일정이 없습니다.</p>'}</div>`)}
+  </div>`;
+}
+function drawDonut() {
+  const el = $('#donut'); if (!el) return;
+  const vals = TEAMS.map((t) => ytd(ui.m, byTeam(t))); const total = vals.reduce((a, b) => a + b, 0) || 1;
+  const R = 86, r0 = 62, cx = 100, cy = 100; let a0 = -Math.PI / 2; let s = '';
+  const p = (r, a) => `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`;
+  vals.forEach((v, i) => { if (!v) return; const a1 = a0 + v / total * Math.PI * 2; const lg = a1 - a0 > Math.PI ? 1 : 0;
+    s += `<path class="seg" data-i="${i}" d="M${p(R, a0)} A${R},${R} 0 ${lg} 1 ${p(R, a1)} L${p(r0, a1)} A${r0},${r0} 0 ${lg} 0 ${p(r0, a0)} Z" fill="var(--t${i + 1})" stroke="#fff" stroke-width="2"/>`; a0 = a1; });
+  el.innerHTML = `<svg viewBox="0 0 200 200" width="100%" role="img" aria-label="팀별 연 매출 도넛 차트">${s}<text x="100" y="100" text-anchor="middle" font-size="24" font-weight="800" fill="var(--ink)">${EOK(total)}</text><text x="100" y="120" text-anchor="middle" font-size="11" fill="var(--muted)">1~${ui.m}월 합계</text></svg>`;
+  el.querySelectorAll('.seg').forEach((g) => { g.addEventListener('mousemove', (e) => { const i = +g.dataset.i; const b = el.getBoundingClientRect(); tipOn(el, `<b>${TEAMS[i]}</b> ${W(vals[i])} · ${PCT(vals[i] / total)}`, e.clientX - b.left, e.clientY - b.top); }); g.addEventListener('mouseleave', () => tipOff(el)); });
+}
+function axis(Wd, H, pl, pr, pt, pb, top, step) {
+  const y = (v) => pt + (H - pt - pb) * (1 - v / top); let s = '';
+  for (let v = 0; v <= top + 1; v += step) s += `<line x1="${pl}" x2="${Wd - pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${pl - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v ? EOK(v) : '0'}</text>`;
+  return [s, y];
+}
+function lineChart(el, data, labels, target) {
+  const Wd = Math.max(300, el.clientWidth), H = 300, pl = 54, pr = 16, pt = 22, pb = 28;
+  const max = Math.max(...data, target || 0, 1); const step = niceStep(max * 1.1); const top = Math.ceil(max * 1.1 / step) * step;
+  const [g, y] = axis(Wd, H, pl, pr, pt, pb, top, step);
+  const x = (i) => pl + (Wd - pl - pr) * (data.length === 1 ? 0.5 : i / (data.length - 1));
+  let s = `<svg viewBox="0 0 ${Wd} ${H}" width="100%" height="${H}" role="img" aria-label="월별 매출 선 차트">${g}`;
+  if (target) s += `<line x1="${pl}" x2="${Wd - pr}" y1="${y(target)}" y2="${y(target)}" stroke="var(--faint)" stroke-dasharray="4 4"/><text x="${pl + 6}" y="${y(target) - 6}" font-size="11" fill="var(--muted)">월 목표 ${EOK(target)}</text>`;
+  const pts = data.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+  s += `<polygon points="${x(0)},${y(0)} ${pts} ${x(data.length - 1)},${y(0)}" fill="var(--accent)" opacity=".1"/><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>`;
+  const every = data.length > 8 && Wd < 560 ? 2 : 1;
+  data.forEach((v, i) => { const last = i === data.length - 1; s += `<circle cx="${x(i)}" cy="${y(v)}" r="${last ? 5 : 3.5}" fill="var(--accent)" stroke="#fff" stroke-width="2"/>`;
+    if (last) s += `<text x="${x(i) - 8}" y="${y(v) - 11}" text-anchor="end" font-size="12" font-weight="700" fill="var(--ink)">${EOK(v)}</text>`;
+    if (i % every === 0 || last) s += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${labels[i]}</text>`;
+    s += `<rect class="hit" data-i="${i}" x="${x(i) - (Wd - pl - pr) / data.length / 2}" y="${pt}" width="${(Wd - pl - pr) / data.length}" height="${H - pt - pb}" fill="transparent"/>`; });
+  el.innerHTML = s + '</svg>';
+  el.querySelectorAll('.hit').forEach((h) => { h.addEventListener('mouseenter', () => { const i = +h.dataset.i; tipOn(el, `<b>${labels[i]}</b> ${W(data[i])}${target ? `<br><span class="muted">목표 대비 ${PCT(data[i] / target)}</span>` : ''}`, x(i) / Wd * el.clientWidth, y(data[i]) / H * el.clientHeight); }); h.addEventListener('mouseleave', () => tipOff(el)); });
+}
+function barChart(el, sets, labels, H = 250) {
+  // sets: [{name, color, data}] — 1개면 단일 막대, 여러 개면 묶음 막대
+  const Wd = Math.max(300, el.clientWidth), pl = 54, pr = 8, pt = 18, pb = 28, n = labels.length;
+  const max = Math.max(1, ...sets.flatMap((s) => s.data)); const step = niceStep(max * 1.1); const top = Math.ceil(max * 1.1 / step) * step;
+  const [g, y] = axis(Wd, H, pl, pr, pt, pb, top, step);
+  const bw = (Wd - pl - pr) / n; const gw = Math.min(bw * 0.72, sets.length * 16 + (sets.length - 1) * 2); const one = (gw - (sets.length - 1) * 2) / sets.length;
+  let s = `<svg viewBox="0 0 ${Wd} ${H}" width="100%" height="${H}" role="img" aria-label="팀별 월 매출 막대 차트">${g}`;
+  const every = n > 8 && Wd < 560 ? 2 : 1;
+  labels.forEach((lb, i) => { const x0 = pl + bw * i + (bw - gw) / 2;
+    sets.forEach((st, j) => { const v = st.data[i]; const h = y(0) - y(v); if (h <= 0) return; const rr = Math.min(3, h / 2, one / 2); const bx = x0 + j * (one + 2);
+      s += `<path d="M${bx},${y(0)} v${-(h - rr)} q0,${-rr} ${rr},${-rr} h${one - 2 * rr} q${rr},0 ${rr},${rr} v${h - rr} z" fill="${st.color}"/>`; });
+    if (sets.length === 1 && i === n - 1) s += `<text x="${x0 + gw / 2}" y="${y(sets[0].data[i]) - 6}" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--ink)">${EOK(sets[0].data[i])}</text>`;
+    if (i % every === 0 || i === n - 1) s += `<text x="${pl + bw * i + bw / 2}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${lb}</text>`;
+    s += `<rect class="hit" data-i="${i}" x="${pl + bw * i}" y="${pt}" width="${bw}" height="${H - pt - pb}" fill="transparent"/>`; });
+  el.innerHTML = s + '</svg>';
+  el.querySelectorAll('.hit').forEach((h) => { h.addEventListener('mouseenter', () => { const i = +h.dataset.i; const mx = Math.max(...sets.map((st) => st.data[i]));
+    tipOn(el, `<b>${labels[i]}</b>${sets.map((st) => `<br><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${st.color};margin-right:5px"></span>${st.name} ${W(st.data[i])}`).join('')}`, (pl + bw * i + bw / 2) / Wd * el.clientWidth, y(mx) / H * el.clientHeight); });
+    h.addEventListener('mouseleave', () => tipOff(el)); });
+}
+function drawDash() {
+  drawDonut();
+  const l = $('#line'); if (l) lineChart(l, series(ui.m), LBL(ui.m), totalTarget() / 12);
+  const b = $('#tbar'); if (b) { const teams = ui.dteam === '전체' ? TEAMS : [ui.dteam];
+    barChart(b, teams.map((t) => ({ name: t, color: tcol(t), data: series(ui.m, byTeam(t)) })), LBL(ui.m));
+    $('#tleg').innerHTML = teams.map((t) => `<span class="row" style="gap:5px"><i style="width:10px;height:10px;border-radius:3px;background:${tcol(t)};display:inline-block"></i>${t} <b class="num">${EOK(ytd(ui.m, byTeam(t)))}</b></span>`).join(''); }
+}
+
+// ───────── 계약 관리 ─────────
+const COLS = [
+  ['client', '고객사', 'Aa', ''], ['team', '담당팀', '◉', ''], ['owner', '담당자', '◉', ''], ['plan', '상품', '◉', ''],
+  ['base', '결제금액(월)', 'Σ', '상품 단가 (설정에서 변경)'], ['opt', '월 추가옵션', '#', '추가 콘텐츠·광고 운영 등'],
+  ['monthly', '월 결제금액', 'Σ', '결제금액(월) + 월 추가옵션'], ['disc', '할인율', '#', '0~100%'],
+  ['final', '최종 결제금액', 'Σ', '월 결제금액 × (1 − 할인율)'], ['reason', '할인사유', '≡', ''],
+  ['period', '계약기간', '▤', '시작 월 ~ 종료 월 (비우면 계속)'], ['status', '상태', '◎', '기준 월 기준 자동 계산'],
+];
+const val = (r, k) => ({ base: base(r), monthly: monthly(r), final: final(r), status: status(r), period: r.start }[k] ?? r[k]);
+const stCls = { 진행중: 'g', 대기: 'w', 종료: 'x' };
+function vContracts() {
+  let rows = S.rows.filter((r) => (ui.team === '전체' || r.team === ui.team) && (ui.st === '전체' || (ui.st === '검토' ? needsReason(r) || overMax(r) : status(r) === ui.st)));
+  if (ui.sort) rows = [...rows].sort((a, b) => { const x = val(a, ui.sort), y = val(b, ui.sort); return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'ko')) * ui.dir; });
+  const sum = (f) => rows.reduce((s, r) => s + f(r), 0);
+  const avgDisc = rows.length ? rows.reduce((s, r) => s + (+r.disc || 0), 0) / rows.length : 0;
+  const rev = S.rows.filter((r) => needsReason(r) || overMax(r)).length;
+  const num = ['base', 'opt', 'monthly', 'disc', 'final'];
+  return `<section class="card"><div class="toolbar"><div class="row">
+      <div class="seg" role="group" aria-label="팀">${['전체', ...TEAMS].map((t) => `<button type="button" class="${ui.team === t ? 'on' : ''}" data-team="${t}">${t === '전체' ? '전체 팀' : t}</button>`).join('')}</div>
+      <div class="seg" role="group" aria-label="상태">${['전체', '진행중', '대기', '종료', '검토'].map((s) => `<button type="button" class="${ui.st === s ? 'on' : ''}" data-st="${s}">${s === '전체' ? '모든 상태' : s === '검토' ? `할인 검토 ${rev}` : s}</button>`).join('')}</div></div>
+      <div class="row"><button class="btn" type="button" id="reset">샘플로 되돌리기</button><button class="btn pri" type="button" id="add">${ic('plus')}계약 추가</button></div></div>
+    <div class="scroll"><table class="db"><thead><tr>${COLS.map(([k, l, ty, info]) => `<th class="sortable ${num.includes(k) ? 'r' : ''}" data-sort="${k}" ${info ? `title="${esc(info)}"` : ''}><span class="ty">${ty}</span>${l}${info ? '<span class="info">ⓘ</span>' : ''}${ui.sort === k ? (ui.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}<th style="width:30px"><span class="sr" style="position:absolute;left:-9999px">삭제</span></th></tr></thead>
+    <tbody>${rows.map((r) => `<tr data-id="${r.id}">
+      <td class="edit" style="min-width:150px"><input data-f="client" value="${esc(r.client)}" aria-label="고객사"></td>
+      <td class="edit" style="min-width:76px"><select data-f="team" aria-label="담당팀">${TEAMS.map((t) => `<option ${r.team === t ? 'selected' : ''}>${t}</option>`).join('')}</select></td>
+      <td class="edit" style="min-width:86px"><select data-f="owner" aria-label="담당자">${MEMBERS[r.team].map((p) => `<option ${r.owner === p ? 'selected' : ''}>${p}</option>`).join('')}</select></td>
+      <td class="edit" style="min-width:96px"><select data-f="plan" aria-label="상품">${Object.keys(S.cfg.plans).map((p) => `<option ${r.plan === p ? 'selected' : ''}>${p}</option>`).join('')}</select></td>
+      <td class="r f num">${W(base(r))}</td>
+      <td class="edit" style="min-width:104px"><input class="r num" data-f="opt" inputmode="numeric" value="${W(r.opt)}" aria-label="월 추가옵션"></td>
+      <td class="r f num">${W(monthly(r))}</td>
+      <td class="edit ${overMax(r) ? 'warn' : ''}" style="min-width:70px"><input class="r num" data-f="disc" inputmode="numeric" value="${r.disc}%" aria-label="할인율"></td>
+      <td class="r f num"><b>${W(final(r))}</b></td>
+      <td class="edit ${needsReason(r) ? 'warn' : ''}" style="min-width:170px"><input data-f="reason" value="${esc(r.reason)}" placeholder="${needsReason(r) ? '사유를 입력하세요' : ''}" aria-label="할인사유"></td>
+      <td class="edit" style="min-width:250px"><span style="display:flex;align-items:center"><input type="month" data-f="start" value="${r.start}" aria-label="시작 월" style="width:118px"><span class="muted">~</span><input type="month" data-f="end" value="${r.end}" aria-label="종료 월" style="width:118px"></span></td>
+      <td><span class="st ${stCls[status(r)]}">${status(r)}</span></td>
+      <td><button class="del" type="button" data-del="${r.id}" title="삭제" aria-label="${esc(r.client)} 삭제">✕</button></td></tr>`).join('') || `<tr><td colspan="13" class="muted" style="text-align:center;height:60px">조건에 맞는 계약이 없습니다.</td></tr>`}</tbody>
+    <tfoot><tr><td colspan="4">계약<b>${rows.length}건</b></td><td class="r">합계<b>${W(sum(base))}</b></td><td class="r">합계<b>${W(sum((r) => +r.opt || 0))}</b></td><td class="r">합계<b>${W(sum(monthly))}</b></td><td class="r">평균<b>${avgDisc.toFixed(1)}%</b></td><td class="r">합계<b>${W(sum(final))}</b></td><td colspan="4">${rows.filter(needsReason).length ? `<span style="color:var(--crit)">할인사유 누락 ${rows.filter(needsReason).length}건</span>` : ''}</td></tr></tfoot>
+  </table></div>
+  <div class="note"><span>Σ 칸은 자동 계산됩니다.</span><span>할인율 ${S.cfg.reasonAt}% 이상은 할인사유 필수, ${S.cfg.maxDisc}% 초과는 승인 필요(빨간 테두리).</span><span>머리글을 누르면 정렬됩니다.</span></div></section>`;
+}
+
+// ───────── 고객사 ─────────
+function clientRows() {
+  const q = ui.q.trim().toLowerCase();
+  return S.rows.filter((r) => (ui.cteam === '전체' || r.team === ui.cteam) && (!q || r.client.toLowerCase().includes(q) || r.owner.includes(q)))
+    .sort((a, b) => paidTo(b, ui.m) - paidTo(a, ui.m));
+}
+function clientBody() {
+  const rows = clientRows(); const mx = Math.max(1, ...S.rows.map((r) => paidTo(r, ui.m)));
+  return rows.map((r) => { const p = paidTo(r, ui.m); return `<tr><td><b>${esc(r.client)}</b></td><td><span class="tag ${tcls(r.team)}">${r.team}</span></td><td>${r.owner}</td><td>${r.plan}</td><td class="num">${r.start.replace('-', '.')}${r.end ? ` ~ ${r.end.replace('-', '.')}` : ' ~'}</td><td class="r num">${monthsIn(r, ui.m)}개월</td>
+    <td class="r num">${activeIn(r, ui.m) ? W(final(r)) : '<span class="muted">-</span>'}</td><td style="min-width:180px"><div class="row" style="flex-wrap:nowrap"><div style="flex:1;height:8px;background:var(--soft);border-radius:99px;overflow:hidden"><i style="display:block;height:100%;width:${p / mx * 100}%;background:var(--accent);border-radius:99px"></i></div><b class="num" style="min-width:86px;text-align:right">${W(p)}</b></div></td>
+    <td><span class="st ${stCls[status(r)]}">${status(r)}</span></td></tr>`; }).join('') || `<tr><td colspan="9" class="muted" style="text-align:center;height:60px">검색 결과가 없습니다.</td></tr>`;
+}
+function vClients() {
+  const act = S.rows.filter((r) => activeIn(r, ui.m)); const all = S.rows.reduce((s, r) => s + paidTo(r, ui.m), 0);
+  const avgM = S.rows.filter((r) => monthsIn(r, ui.m)).reduce((s, r, _, a) => s + monthsIn(r, ui.m) / a.length, 0);
+  const k = (l, v, s) => `<div class="card kpi"><div class="lbl">${l}</div><div class="val">${v}</div><div class="sub">${s}</div></div>`;
+  return `<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">${k('전체 고객사', `${S.rows.length}곳`, `진행 중 <b>${act.length}곳</b>`)}${k('누적 결제액', EOK(all), `1~${ui.m}월 합계`)}${k('고객사 평균 결제액', EOK(S.rows.length ? all / S.rows.length : 0), '누적 기준')}${k('평균 이용 기간', `${avgM.toFixed(1)}개월`, `${YEAR}년 기준`)}</div>
+  <section class="card"><div class="toolbar"><div class="row"><input class="input" id="q" type="search" placeholder="고객사·담당자 검색" value="${esc(ui.q)}" aria-label="검색" style="width:220px">
+    <div class="seg" role="group" aria-label="팀">${['전체', ...TEAMS].map((t) => `<button type="button" class="${ui.cteam === t ? 'on' : ''}" data-cteam="${t}">${t === '전체' ? '전체 팀' : t}</button>`).join('')}</div></div><span class="muted" style="font-size:12.5px">누적 결제액 높은 순</span></div>
+  <div class="scroll"><table><thead><tr><th>고객사</th><th>담당팀</th><th>담당자</th><th>상품</th><th>계약기간</th><th class="r">이용</th><th class="r">${ui.m}월 결제액</th><th>누적 결제액</th><th>상태</th></tr></thead><tbody id="cbody">${clientBody()}</tbody></table></div></section>`;
+}
+
+// ───────── 팀 관리 ─────────
+function vTeams() {
+  const m = ui.m;
+  return `<div class="teams">${TEAMS.map((t, i) => { const f = byTeam(t); const v = ytd(m, f), g = (+S.cfg.targets[t] || 0) * m / 12, r = g ? v / g : 0;
+    const act = S.rows.filter((x) => f(x) && activeIn(x, m)); const avgD = act.length ? act.reduce((s, x) => s + (+x.disc || 0), 0) / act.length : 0;
+    return `<section class="card"><div class="card-b" style="padding-top:18px;display:grid;gap:14px">
+      <div class="team-h"><div class="av" style="background:${tcol(t)}">${i + 1}</div><div><h2 style="font-size:16px">${t}</h2><span class="muted" style="font-size:12.5px">${LEAD[t]} 팀장 · ${MEMBERS[t].length}명</span></div><div class="people" style="margin-left:auto">${MEMBERS[t].map((p) => `<span title="${p}">${p.slice(1)}</span>`).join('')}</div></div>
+      <div><div class="row" style="justify-content:space-between"><b class="num" style="font-size:22px">${EOK(v)}</b><span class="tag ${tcls(t)}">달성 ${PCT(r)}</span></div><div class="goals" style="margin-top:6px"><div class="bar"><i style="width:${Math.min(100, r * 100)}%;background:${tcol(t)}"></i></div></div></div>
+      <div class="kv"><span>연 목표</span><b>${EOK(+S.cfg.targets[t] || 0)}</b><span>${m}월 매출</span><b>${EOK(revM(m, f))}</b><span>진행 계약</span><b>${act.length}건</b><span>평균 할인율</span><b>${avgD.toFixed(1)}%</b></div>
+      <div class="chart" id="tb_${i}"></div></div></section>`; }).join('')}</div>
+  ${card('담당자별 실적', `1~${m}월 누적`, `<div class="scroll"><table><thead><tr><th>담당자</th><th>팀</th><th class="r">담당 계약</th><th class="r">진행 중</th><th class="r">${m}월 매출</th><th class="r">누적 매출</th><th class="r">평균 할인율</th></tr></thead><tbody>${TEAMS.flatMap((t) => MEMBERS[t].map((p) => { const rs = S.rows.filter((r) => r.owner === p && r.team === t); const f = (r) => r.owner === p && r.team === t;
+      return [ytd(m, f), `<tr><td><b>${p}</b>${LEAD[t] === p ? ' <span class="muted" style="font-size:12px">팀장</span>' : ''}</td><td><span class="tag ${tcls(t)}">${t}</span></td><td class="r num">${rs.length}건</td><td class="r num">${rs.filter((r) => activeIn(r, m)).length}건</td><td class="r num">${W(revM(m, f))}</td><td class="r num"><b>${W(ytd(m, f))}</b></td><td class="r num">${rs.length ? (rs.reduce((s, r) => s + (+r.disc || 0), 0) / rs.length).toFixed(1) : '0.0'}%</td></tr>`]; })).sort((a, b) => b[0] - a[0]).map((x) => x[1]).join('')}</tbody></table></div>`)}`;
+}
+function drawTeams() { TEAMS.forEach((t, i) => { const el = $('#tb_' + i); if (el) barChart(el, [{ name: t, color: tcol(t), data: series(ui.m, byTeam(t)) }], LBL(ui.m), 190); }); }
+
+// ───────── 매출 리포트 ─────────
+function reportData() {
+  const ms = Array.from({ length: ui.m }, (_, i) => i + 1);
+  const rows = ms.map((m) => [m, ...TEAMS.map((t) => revM(m, byTeam(t)))]);
+  return { ms, rows };
+}
+function vReport() {
+  const { rows } = reportData(); const mt = totalTarget() / 12;
+  const tot = TEAMS.map((_, j) => rows.reduce((s, r) => s + r[j + 1], 0)); const T = tot.reduce((a, b) => a + b, 0);
+  const cl = [...S.rows].filter((r) => monthsIn(r, ui.m)).sort((a, b) => a.team.localeCompare(b.team) || paidTo(b, ui.m) - paidTo(a, ui.m));
+  return `${card(`${YEAR}년 월별·팀별 매출`, `1~${ui.m}월 · 최종 결제금액 기준`, `<div class="scroll"><table><thead><tr><th>월</th>${TEAMS.map((t) => `<th class="r">${t}</th>`).join('')}<th class="r">합계</th><th class="r">월 목표</th><th class="r">달성률</th><th class="r">전월 대비</th></tr></thead><tbody>
+      ${rows.map((r, i) => { const s = r.slice(1).reduce((a, b) => a + b, 0); const p = i ? rows[i - 1].slice(1).reduce((a, b) => a + b, 0) : 0; const d = p ? (s - p) / p : null;
+        return `<tr><td>${r[0]}월</td>${r.slice(1).map((v) => `<td class="r num">${W(v)}</td>`).join('')}<td class="r num"><b>${W(s)}</b></td><td class="r num muted">${W(mt)}</td><td class="r num"><b class="${s >= mt ? 'up' : ''}">${PCT(s / mt)}</b></td><td class="r num">${d === null ? '<span class="muted">-</span>' : `<span class="${d >= 0 ? 'up' : 'down'}">${d >= 0 ? '▲' : '▼'} ${Math.abs(d * 100).toFixed(1)}%</span>`}</td></tr>`; }).join('')}</tbody>
+      <tfoot><tr><td><b>합계</b></td>${tot.map((v) => `<td class="r num"><b>${W(v)}</b></td>`).join('')}<td class="r num"><b>${W(T)}</b></td><td class="r num muted">${W(mt * ui.m)}</td><td class="r num"><b>${PCT(T / (mt * ui.m))}</b></td><td></td></tr></tfoot></table></div>`,
+    `<div class="row"><button class="btn" type="button" id="copy">${ic('copy')}표 복사</button><button class="btn pri" type="button" id="csv">${ic('down')}엑셀(CSV) 받기</button></div>`)}
+  ${card('고객사별 월 결제액', '팀 → 누적 결제액 순', `<div class="scroll"><table><thead><tr><th>고객사</th><th>팀</th>${Array.from({ length: ui.m }, (_, i) => `<th class="r">${i + 1}월</th>`).join('')}<th class="r">합계</th></tr></thead><tbody>
+      ${cl.map((r) => `<tr><td>${esc(r.client)}</td><td><span class="tag ${tcls(r.team)}">${r.team}</span></td>${Array.from({ length: ui.m }, (_, i) => `<td class="r num">${activeIn(r, i + 1) ? MAN(final(r)) : '<span class="muted">-</span>'}</td>`).join('')}<td class="r num"><b>${MAN(paidTo(r, ui.m))}</b></td></tr>`).join('')}</tbody></table></div><p class="muted" style="font-size:12px;margin:10px 0 0">단위: 만원</p>`)}`;
+}
+function reportTSV(sep) {
+  const { rows } = reportData(); const q = (s) => (sep === ',' && /[",]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+  const out = [['월', ...TEAMS, '합계'].map(q).join(sep)];
+  rows.forEach((r) => out.push([`${r[0]}월`, ...r.slice(1).map((v) => Math.round(v)), Math.round(r.slice(1).reduce((a, b) => a + b, 0))].join(sep)));
+  return out.join('\n');
+}
+
+// ───────── 설정 ─────────
+function vConfig() {
+  const c = S.cfg;
+  return `<div class="g2e">
+    ${card('상품 단가', '월 기준', `<div class="form">${Object.entries(c.plans).map(([p, v]) => `<label><span>${p}</span><input class="input num" data-cfg="plan:${p}" inputmode="numeric" value="${W(v)}"></label>`).join('')}</div>`)}
+    ${card('할인 규칙', '', `<div class="form"><label><span>사유 필수 기준</span><input class="input num" data-cfg="reasonAt" inputmode="numeric" value="${c.reasonAt}%"></label><label><span>승인 필요 기준</span><input class="input num" data-cfg="maxDisc" inputmode="numeric" value="${c.maxDisc}%"></label></div><p class="muted" style="font-size:12.5px;margin:12px 0 0">사유 필수 기준 이상 할인인데 사유가 비어 있거나, 승인 기준을 넘는 할인은 계약 관리 메뉴에 빨간 숫자로 표시됩니다.</p>`)}
+    ${card('팀 연간 목표', `${YEAR}년`, `<div class="form">${TEAMS.map((t) => `<label><span>${t} (${LEAD[t]})</span><input class="input num" data-cfg="target:${t}" inputmode="numeric" value="${W(c.targets[t])}"></label>`).join('')}<label><span>전체</span><b class="num">${W(totalTarget())}</b></label></div>`)}
+    ${card('데이터', '', `<p style="margin:0 0 12px" class="muted">계약 ${S.rows.length}건 · 이 브라우저에 자동 저장됩니다. 화면의 고객사·담당자·금액은 예시 데이터입니다.</p><div class="row"><button class="btn" type="button" id="resetall">처음 상태로 되돌리기</button></div>`)}
+  </div>`;
+}
+
+// ───────── 렌더·이벤트 ─────────
+function render() {
+  const p = PAGES.find((x) => x[0] === page);
+  $('#title').textContent = p[1]; $('#sub').textContent = p[2]; document.title = `${p[1]} · 브랜드랩 매출관리`;
+  menu(); ctrl(); sideGoal();
+  $('#view').innerHTML = { dash: vDash, contracts: vContracts, clients: vClients, teams: vTeams, report: vReport, config: vConfig }[page]();
+  if (page === 'dash') drawDash(); if (page === 'teams') drawTeams();
+}
+function route() { const h = location.hash.slice(1); page = PAGES.some((x) => x[0] === h) ? h : 'dash'; render(); window.scrollTo(0, 0); }
+window.addEventListener('hashchange', route);
+const parseNum = (s) => +String(s).replace(/[^0-9.]/g, '') || 0;
+async function download(name, text) { const dl = window.claude?.use ? await window.claude.use('downloads').catch(() => null) : null;
+  if (dl) { try { await dl.save({ filename: name, data: new Blob(['﻿' + text], { type: 'text/csv' }) }); toast(`${name} 파일을 저장했습니다.`); } catch (e) { toast(e?.code === 'declined' ? '저장을 취소했습니다.' : '이 화면에서는 저장할 수 없습니다. 표 복사를 이용해 주세요.'); } return; }
+  try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); toast(`${name} 파일을 내려받았습니다.`); } catch { toast('이 화면에서는 내려받기가 막혀 있습니다. 표 복사를 이용해 주세요.'); } }
+document.addEventListener('click', async (e) => {
+  const t = e.target;
+  const b = (s) => t.closest(s);
+  let x;
+  if ((x = b('[data-dteam]'))) { ui.dteam = x.dataset.dteam; render(); return; }
+  if ((x = b('[data-team]'))) { ui.team = x.dataset.team; render(); return; }
+  if ((x = b('[data-st]'))) { ui.st = x.dataset.st; render(); return; }
+  if ((x = b('[data-cteam]'))) { ui.cteam = x.dataset.cteam; render(); return; }
+  if ((x = b('[data-sort]'))) { const k = x.dataset.sort; ui.dir = ui.sort === k ? -ui.dir : 1; ui.sort = k; render(); return; }
+  if ((x = b('[data-del]'))) { const r = S.rows.find((y) => y.id === x.dataset.del); S.rows = S.rows.filter((y) => y !== r); save(); render(); toast(`${r.client} 계약을 삭제했습니다.`); return; }
+  if (b('#add')) { const id = 'R' + Date.now().toString(36); const team = ui.team === '전체' ? '1팀' : ui.team; S.rows.unshift({ id, client: '새 고객사', team, owner: MEMBERS[team][0], plan: '스탠다드', opt: 0, disc: 0, reason: '', start: ym(ui.m), end: '' }); ui.st = '전체'; ui.sort = null; save(); render(); $(`tr[data-id="${id}"] [data-f="client"]`)?.select(); return; }
+  if (b('#reset') || b('#resetall')) { S = fresh(); save(); render(); toast('처음 상태로 되돌렸습니다.'); return; }
+  if (b('#csv')) { download(`브랜드랩_매출_${YEAR}_1-${ui.m}월.csv`, reportTSV(',')); return; }
+  if (b('#copy')) { try { await navigator.clipboard.writeText(reportTSV('\t')); toast('표를 복사했습니다. 엑셀·구글시트에 붙여넣으세요.'); } catch { toast('복사가 막혀 있습니다. 엑셀(CSV) 받기를 이용해 주세요.'); } }
+});
+document.addEventListener('input', (e) => { if (e.target.id === 'q') { ui.q = e.target.value; $('#cbody').innerHTML = clientBody(); } });
+function commit(el, value = el.value) {
+  const next = document.activeElement !== el ? document.activeElement : null; const nextKey = next?.closest?.('tr[data-id]') ? [next.closest('tr').dataset.id, next.dataset.f] : null;
+  const tr = el.closest('tr[data-id]'); if (!tr) return; const r = S.rows.find((x) => x.id === tr.dataset.id); if (!r) return; const f = el.dataset.f;
+  if (f === 'opt') r.opt = parseNum(value);
+  else if (f === 'disc') r.disc = Math.min(100, parseNum(value));
+  else if (f === 'team') { r.team = value; if (!MEMBERS[value].includes(r.owner)) r.owner = MEMBERS[value][0]; }
+  else if (f === 'client') r.client = value.trim() || r.client;
+  else r[f] = value;
+  save(); render();
+  if (nextKey) $(`tr[data-id="${nextKey[0]}"] [data-f="${nextKey[1]}"]`)?.focus();
+}
+function commitCfg(el, value) {
+  const [k, sub] = el.dataset.cfg.split(':'); const n = parseNum(value);
+  if (k === 'plan') S.cfg.plans[sub] = n; else if (k === 'target') S.cfg.targets[sub] = n; else S.cfg[k] = Math.min(100, n);
+  save(); render(); toast('설정을 저장했습니다. 전체 숫자를 다시 계산했습니다.');
+}
+document.addEventListener('change', (e) => {
+  const el = e.target;
+  if (el.id === 'msel') { ui.m = +el.value; render(); return; }
+  if (el.dataset?.f) { const v = el.value; setTimeout(() => commit(el, v), 0); return; }
+  if (el.dataset?.cfg) { const v = el.value; setTimeout(() => commitCfg(el, v), 0); }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.target.dataset?.f || e.target.dataset?.cfg) && e.target.tagName === 'INPUT') { e.preventDefault(); e.target.blur(); } });
+const rowOf = (el) => S.rows.find((x) => x.id === el.closest('tr[data-id]')?.dataset.id);
+const cfgRaw = (k) => { const [a, b] = k.split(':'); return a === 'plan' ? S.cfg.plans[b] : a === 'target' ? S.cfg.targets[b] : S.cfg[a]; };
+document.addEventListener('focusin', (e) => { const el = e.target, f = el.dataset?.f;
+  if (f === 'opt' || f === 'disc') { const r = rowOf(el); if (r) el.value = String(r[f]); }
+  if (el.dataset?.cfg) el.value = String(cfgRaw(el.dataset.cfg)); });
+document.addEventListener('focusout', (e) => { const el = e.target, f = el.dataset?.f;
+  if (f === 'opt' || f === 'disc') { const r = rowOf(el); if (r) el.value = f === 'opt' ? W(r.opt) : `${r.disc}%`; }
+  if (el.dataset?.cfg) { const k = el.dataset.cfg; const v = cfgRaw(k); el.value = /^(plan|target)/.test(k) ? W(v) : `${v}%`; } });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (page === 'dash') drawDash(); if (page === 'teams') drawTeams(); }, 150); });
+route();
+})();
+</script>
