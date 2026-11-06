@@ -6,8 +6,10 @@
 <style>
 /* Layout: 관리자 화면 양식 — 하위 메뉴가 펼쳐지는 흰 사이드 메뉴 + 경로 표시 상단바 + 연회색 바탕 위 흰 카드.
    파란색은 실행 버튼, 채널 4색(파랑·주황·청록·보라)은 차트와 채널 배지에만. */
+/* 항상 밝은(흰색) 화면으로 고정 */
 :root {
-  --bg: #f4f6f9; --panel: #ffffff; --panel-2: #f7f8fb; --hover: #f1f4fa;
+  color-scheme: light;
+  --bg: #f8f9fb; --panel: #ffffff; --panel-2: #f7f8fb; --hover: #f1f4fa;
   --ink: #171c26; --ink-2: #3c4556; --muted: #6b7486; --line: #e6e9ef; --grid: #edf0f4;
   --primary: #2f6fed; --primary-ink: #ffffff; --primary-soft: #eaf1ff;
   --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #6250d6;
@@ -16,24 +18,6 @@
   --shadow: 0 1px 2px rgba(23, 28, 38, .04);
   --font: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #12151c; --panel: #1a1f2b; --panel-2: #202633; --hover: #232a39;
-    --ink: #e7ebf3; --ink-2: #c3cad8; --muted: #8f99ac; --line: #2a3141; --grid: #252c3a;
-    --primary: #5b8ff5; --primary-ink: #0b1220; --primary-soft: #1d2a45;
-    --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #9085e9;
-    --good: #4cc38a; --good-bg: #163023; --warn: #f0b44c; --warn-bg: #33280f; --crit: #ff8a80; --crit-bg: #3a1d1d; --info: #8fb2ff; --info-bg: #1b2a48; --mute-bg: #262d3b;
-    --ic-blue: #1d2a45; --ic-green: #163023; --ic-violet: #2a2445; --ic-orange: #3a2715; --ic-red: #3a1d1d; --ic-teal: #12312f; --shadow: none; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #12151c; --panel: #1a1f2b; --panel-2: #202633; --hover: #232a39;
-  --ink: #e7ebf3; --ink-2: #c3cad8; --muted: #8f99ac; --line: #2a3141; --grid: #252c3a;
-  --primary: #5b8ff5; --primary-ink: #0b1220; --primary-soft: #1d2a45;
-  --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #9085e9;
-  --good: #4cc38a; --good-bg: #163023; --warn: #f0b44c; --warn-bg: #33280f; --crit: #ff8a80; --crit-bg: #3a1d1d; --info: #8fb2ff; --info-bg: #1b2a48; --mute-bg: #262d3b;
-  --ic-blue: #1d2a45; --ic-green: #163023; --ic-violet: #2a2445; --ic-orange: #3a2715; --ic-red: #3a1d1d; --ic-teal: #12312f; --shadow: none; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { min-height: 100%; }
