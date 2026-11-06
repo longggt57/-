@@ -1,0 +1,567 @@
+<title>Brandwell Revenue Hub</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Roboto+Mono:wght@500&display=swap">
+<style>
+/* Layout: deep indigo sidebar + white content; page title and reporting-month picker on top. Always light.
+   Indigo for nav and primary buttons; the three team colors only for team data. */
+:root {
+  color-scheme: light;
+  --bg: #f6f7fb; --panel: #ffffff; --soft: #f8f9fc; --hover: #f2f3f9;
+  --ink: #1b1d29; --ink-2: #3e4253; --muted: #6e7387; --faint: #a3a7b7; --line: #e7e8ef; --grid: #eef0f5;
+  --side: #1f1d47; --side-2: #2b2960; --side-ink: #e9e8fb; --side-muted: #a3a1cf;
+  --accent: #5b5bd6; --accent-ink: #ffffff; --accent-soft: #ededfc;
+  --t1: #2a78d6; --t2: #eb6834; --t3: #1baf7a; --t1-bg: #e4eefb; --t2-bg: #fdebe1; --t3-bg: #ddf3ea;
+  --good: #14804a; --good-bg: #e3f5eb; --warn: #9a5b00; --warn-bg: #fdf1d8; --crit: #c93535; --crit-bg: #fde8e8; --gray-bg: #eff0f4;
+  --font: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --mono: "Roboto Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 13.5px; line-height: 1.55; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.app { display: grid; grid-template-columns: 228px minmax(0, 1fr); min-height: 100vh; background: linear-gradient(90deg, var(--side) 228px, transparent 228px); }
+.side { background: var(--side); color: var(--side-ink); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; padding-left: env(safe-area-inset-left, 0px); }
+.logo { display: flex; gap: 10px; align-items: center; padding: 20px 20px 16px; }
+.logo span { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, #7d7cf0, #5b5bd6); display: grid; place-items: center; font-weight: 800; color: #fff; }
+.logo b { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.01em; } .logo small { font-size: 11.5px; color: var(--side-muted); }
+.menu { padding: 6px 12px; display: grid; gap: 2px; align-content: start; flex: 1; overflow-y: auto; }
+.menu .sec { font-size: 11px; letter-spacing: .08em; color: var(--side-muted); padding: 14px 10px 6px; font-weight: 700; }
+.menu a { display: flex; gap: 10px; align-items: center; padding: 9px 12px; border-radius: 9px; color: var(--side-muted); text-decoration: none; font-weight: 600; }
+.menu a:hover { background: var(--side-2); color: var(--side-ink); }
+.menu a.on { background: var(--accent); color: #fff; }
+.menu .cnt { margin-left: auto; background: var(--crit); color: #fff; font-size: 11px; border-radius: 999px; padding: 0 7px; font-weight: 700; }
+.goal { margin: 12px; padding: 14px; border-radius: 12px; background: var(--side-2); display: grid; gap: 8px; font-size: 12.5px; }
+.goal b { font-size: 18px; }
+.goal .bar { height: 6px; background: rgba(255, 255, 255, .15); border-radius: 99px; overflow: hidden; } .goal .bar i { display: block; height: 100%; background: #8f8ef3; }
+.main { min-width: 0; display: flex; flex-direction: column; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-block: 18px; padding-left: 28px; padding-right: max(28px, env(safe-area-inset-right, 0px)); background: var(--panel); border-bottom: 1px solid var(--line); }
+.top h1 { font-size: 21px; font-weight: 800; letter-spacing: -.01em; }
+.top p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+.top .ctrl { display: flex; gap: 8px; align-items: center; }
+.view { padding-block: 22px 44px; padding-left: 28px; padding-right: max(28px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; align-content: start; }
+@media (max-width: 920px) {
+  .app { grid-template-columns: minmax(0, 1fr); background: none; }
+  .side { position: static; height: auto; padding-right: env(safe-area-inset-right, 0px); }
+  .menu { display: flex; overflow-x: auto; padding-bottom: 12px; } .menu .sec, .goal { display: none; }
+  .menu a { white-space: nowrap; }
+  .top, .view { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; min-width: 0; }
+.card-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 16px 18px 4px; }
+.card-h h2 { font-size: 15px; font-weight: 800; }
+.card-h small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.card-b { padding: 10px 18px 18px; min-width: 0; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 9px; padding: 7px 13px; font-weight: 700; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; color: var(--ink-2); font-size: 13px; white-space: nowrap; text-decoration: none; }
+.btn:hover { background: var(--hover); }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.sm { padding: 4px 10px; font-size: 12.5px; }
+.input { border: 1px solid var(--line); border-radius: 9px; background: var(--panel); padding: 6px 10px; min-height: 34px; }
+.seg { display: inline-flex; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { border: 0; background: none; border-radius: 7px; padding: 4px 11px; cursor: pointer; font-weight: 700; color: var(--muted); font-size: 12.5px; }
+.seg button.on { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
+.tag { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.tag.t1 { background: var(--t1-bg); color: #1f5aa6; } .tag.t2 { background: var(--t2-bg); color: #a3461d; } .tag.t3 { background: var(--t3-bg); color: #13704e; }
+.st { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.st::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.st.g { background: var(--good-bg); color: var(--good); } .st.w { background: var(--warn-bg); color: var(--warn); } .st.x { background: var(--gray-bg); color: var(--muted); } .st.c { background: var(--crit-bg); color: var(--crit); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); background: var(--side); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px; z-index: 30; max-width: calc(100% - 32px); }
+
+/* Dashboard */
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1320px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { padding: 15px 16px; display: grid; gap: 3px; }
+.kpi .lbl { color: var(--muted); font-size: 12.5px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+.kpi .lbl i { width: 8px; height: 8px; border-radius: 50%; }
+.kpi .val { font-size: 23px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kpi .sub { font-size: 12px; color: var(--muted); } .kpi .sub b { font-weight: 700; } .up { color: var(--good); } .down { color: var(--crit); }
+.g3 { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.6fr); gap: 18px; }
+.g2 { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 18px; }
+.g2e { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 1100px) { .g3, .g2, .g2e { grid-template-columns: minmax(0, 1fr); } }
+.chart { position: relative; }
+.tip { position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; box-shadow: 0 6px 18px rgba(20, 20, 40, .12); white-space: nowrap; z-index: 4; }
+.leg { display: grid; gap: 8px; font-size: 13px; }
+.leg div { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.leg i { width: 10px; height: 10px; border-radius: 3px; } .leg .p { color: var(--muted); font-size: 12px; min-width: 34px; text-align: right; }
+.donutwrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; justify-items: center; }
+.hbars { display: grid; gap: 12px; }
+.hbars .r { display: grid; grid-template-columns: 76px minmax(0, 1fr) 96px; gap: 10px; align-items: center; font-size: 13px; }
+.hbars .bar { height: 12px; background: var(--soft); border-radius: 99px; overflow: hidden; } .hbars .bar i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+.goals { display: grid; gap: 14px; }
+.goals .r { display: grid; gap: 6px; }
+.goals .h { display: flex; justify-content: space-between; font-size: 13px; }
+.goals .bar { height: 10px; background: var(--soft); border-radius: 99px; overflow: hidden; position: relative; } .goals .bar i { display: block; height: 100%; border-radius: 99px; }
+.list { display: grid; }
+.list .it { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.list .it:last-child { border-bottom: 0; }
+.list .it span { color: var(--muted); font-size: 12px; }
+
+/* Tables */
+.toolbar { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; padding: 14px 18px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; vertical-align: middle; }
+th { background: var(--soft); color: var(--muted); font-weight: 700; font-size: 12px; }
+th.sortable { cursor: pointer; } th.sortable:hover { color: var(--ink); }
+td.r, th.r { text-align: right; }
+tbody tr:hover td { background: var(--hover); }
+table.db { min-width: 1180px; }
+.db th, .db td { border-right: 1px solid var(--line); }
+.db th:last-child, .db td:last-child { border-right: 0; }
+.db td { padding: 0 10px; height: 38px; }
+.db td.f { background: #fafbfd; }
+.db td.edit { padding: 0; }
+.db td.edit input, .db td.edit select { width: 100%; height: 37px; border: 0; background: none; padding: 0 10px; outline: none; }
+.db td.edit input:focus, .db td.edit select:focus { background: var(--accent-soft); box-shadow: inset 0 0 0 2px #a9a8ee; }
+.db td.edit input.r { text-align: right; }
+.db td.warn { box-shadow: inset 0 0 0 2px #f0b0b0; }
+.db th .ty { color: var(--faint); margin-right: 5px; font-weight: 500; }
+.db th .info { color: var(--faint); cursor: help; margin-left: 3px; }
+.db tfoot td { color: var(--muted); font-size: 12px; background: var(--soft); height: 38px; padding: 0 10px; }
+.db tfoot td b { color: var(--ink); margin-left: 6px; }
+.del { border: 0; background: none; color: var(--faint); cursor: pointer; visibility: hidden; }
+tr:hover .del { visibility: visible; } .del:hover { color: var(--crit); }
+.note { font-size: 12px; color: var(--muted); padding: 10px 18px 16px; display: flex; gap: 14px; flex-wrap: wrap; }
+
+/* Teams */
+.teams { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 1100px) { .teams { grid-template-columns: minmax(0, 1fr); } }
+.team-h { display: flex; gap: 12px; align-items: center; }
+.team-h .av { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-weight: 800; color: #fff; }
+.people { display: flex; }
+.people span { width: 34px; height: 34px; letter-spacing: -.04em; border-radius: 50%; border: 2px solid #fff; margin-left: -6px; display: grid; place-items: center; font-size: 11px; font-weight: 700; background: var(--soft); color: var(--ink-2); }
+.people span:first-child { margin-left: 0; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 7px 12px; font-size: 13px; }
+.kv span { color: var(--muted); } .kv b { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.form { display: grid; gap: 10px; }
+.form label { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; align-items: center; font-size: 13px; }
+.form label span { color: var(--muted); font-weight: 700; }
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="logo"><span>B</span><div><b>Brandwell</b><small>Revenue Hub</small></div></div>
+    <nav class="menu" id="menu" aria-label="Menu"></nav>
+    <div class="goal" id="sidegoal"></div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <div><h1 id="title">Dashboard</h1><p id="sub"></p></div>
+      <div class="ctrl" id="ctrl"></div>
+    </header>
+    <section class="view" id="view"></section>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const W = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
+const K = (n) => (Math.abs(n) >= 1e6 ? `$${(n / 1e6).toFixed(2)}M` : `$${(n / 1e3).toFixed(n >= 1e5 || n === 0 ? 0 : 1).replace(/\.0$/, '')}K`);
+const PCT = (n) => `${(n * 100).toFixed(1)}%`;
+const YEAR = 2026;
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const nowM = (() => { const d = new Date(); return d.getFullYear() === YEAR ? d.getMonth() + 1 : 12; })();
+const ym = (m) => `${YEAR}-${String(m).padStart(2, '0')}`;
+const ymTxt = (s) => { const [y, m] = s.split('-'); return `${MON[+m - 1]} ${y}`; };
+const TEAMS = ['Team A', 'Team B', 'Team C'];
+const MEMBERS = { 'Team A': ['Emma Carter', 'Liam Brooks', 'Noah Patel'], 'Team B': ['Olivia Reyes', 'Ethan Park', 'Ava Nguyen'], 'Team C': ['Mason Clark', 'Sophia Hughes', 'Lucas Kim'] };
+const LEAD = { 'Team A': 'Emma Carter', 'Team B': 'Olivia Reyes', 'Team C': 'Mason Clark' };
+const ini = (p) => p.split(' ').map((x) => x[0]).join('');
+const tcls = (t) => 't' + (TEAMS.indexOf(t) + 1);
+const tcol = (t) => `var(--t${TEAMS.indexOf(t) + 1})`;
+
+// ───────── Sample contracts (fictional clients) ─────────
+const SEED = [
+  ['Willow Acupuncture', 'Team A', 'Standard', 100, 20, 'Annual prepay', '2026-01', ''],
+  ['Brickhouse Café', 'Team A', 'Standard', 200, 50, 'Launch promo (3 months)', '2026-08', '2026-10'],
+  ['Hartley Tax & Accounting', 'Team B', 'Premium', 0, 50, 'Partner referral discount', '2026-09', ''],
+  ['Greenline Dental', 'Team B', 'Premium', 0, 10, '', '2026-02', ''],
+  ['Core Pilates Studio', 'Team C', 'Standard', 0, 10, '', '2026-03', ''],
+  ['Glow Beauty Bar', 'Team A', 'Standard', 0, 10, '', '2026-01', '2026-06'],
+  ['Harvest Table Buffet', 'Team C', 'Standard', 0, 0, '', '2026-04', ''],
+  ['Studio Move', 'Team B', 'Premium', 0, 0, '', '2026-05', ''],
+  ['Summit Orthopedics', 'Team A', 'Standard', 0, 0, '', '2026-01', '2026-12'],
+  ['Sunset Realty', 'Team C', 'Standard', 0, 0, '', '2026-06', ''],
+  ['Peak Math Tutoring', 'Team B', 'Standard', 0, 0, '', '2026-02', '2026-09'],
+  ['Daily Bloom Florist', 'Team C', 'Basic', 0, 0, '', '2026-01', ''],
+  ['CleanNest Movers', 'Team A', 'Basic', 0, 0, '', '2026-03', ''],
+  ['Metro Skin Clinic', 'Team B', 'Basic', 0, 0, '', '2026-07', ''],
+  ['Little Acorn Daycare', 'Team C', 'Basic', 0, 0, '', '2026-02', '2026-07'],
+  ['Evergreen Wellness Center', 'Team A', 'Premium', 200, 15, '', '2026-04', ''],
+  ['The Way Fitness', 'Team C', 'Standard', 100, 0, '', '2026-05', ''],
+  ['Kindpaw Veterinary', 'Team B', 'Standard', 0, 5, '', '2026-03', ''],
+  ['Jensen Law Group', 'Team A', 'Premium', 0, 0, '', '2026-10', ''],
+  ['Noodle Corner', 'Team C', 'Basic', 0, 0, '', '2026-11', ''],
+  ['Ribbon Photo Studio', 'Team A', 'Basic', 0, 0, '', '2026-05', ''],
+  ['Springdale Senior Living', 'Team B', 'Standard', 150, 0, '', '2026-06', ''],
+  ['Core Gym Downtown', 'Team C', 'Premium', 0, 25, '3-location bundle', '2026-02', ''],
+  ['ClearView Eye Care', 'Team A', 'Premium', 350, 10, '', '2026-07', ''],
+  ['Oakline Interiors', 'Team B', 'Basic', 0, 0, '', '2026-04', '2026-08'],
+  ['Crumb & Co. Bakery', 'Team C', 'Basic', 80, 0, '', '2026-09', ''],
+  ['WithPet Animal Hospital', 'Team A', 'Standard', 0, 20, '', '2026-10', ''],
+  ['Bridge English Academy', 'Team C', 'Standard', 0, 30, '', '2026-08', ''],
+  ['Lumière Dermatology', 'Team B', 'Premium', 200, 0, '', '2026-12', ''],
+  ['Prime Cut Steakhouse', 'Team C', 'Basic', 0, 0, '', '2026-01', '2026-04'],
+  ['Northside Family Medicine', 'Team B', 'Standard', 0, 10, '', '2026-08', ''],
+  ['Ocean Stay Cottages', 'Team A', 'Basic', 100, 0, '', '2026-06', '2026-11'],
+];
+const CFG0 = { plans: { Basic: 1800, Standard: 2600, Premium: 4500 }, reasonAt: 20, maxDisc: 50, targets: { 'Team A': 190000, 'Team B': 185000, 'Team C': 170000 } };
+const fresh = () => {
+  const cnt = {};
+  return { v: 1, cfg: JSON.parse(JSON.stringify(CFG0)), rows: SEED.map(([client, team, plan, opt, disc, reason, start, end], i) => {
+    cnt[team] = (cnt[team] || 0) + 1;
+    return { id: 'R' + (i + 1), client, team, owner: MEMBERS[team][cnt[team] % 3], plan, opt, disc, reason, start, end };
+  }) };
+};
+const KEY = 'brandwell-revenue-v1';
+let S; try { const raw = localStorage.getItem(KEY); if (raw) { const p = JSON.parse(raw); if (p && p.v === 1 && p.cfg && Array.isArray(p.rows)) S = p; } } catch {}
+if (!S) S = fresh();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+
+// ───────── Formulas ─────────
+const base = (r) => S.cfg.plans[r.plan] || 0;
+const monthly = (r) => base(r) + (+r.opt || 0);
+const final = (r) => monthly(r) * (1 - Math.min(100, Math.max(0, +r.disc || 0)) / 100);
+const activeIn = (r, m) => r.start <= ym(m) && (!r.end || r.end >= ym(m));
+const status = (r, m = ui.m) => (r.start > ym(m) ? 'Upcoming' : r.end && r.end < ym(m) ? 'Ended' : 'Active');
+const needsReason = (r) => (+r.disc || 0) >= S.cfg.reasonAt && !String(r.reason || '').trim();
+const overMax = (r) => (+r.disc || 0) > S.cfg.maxDisc;
+const revM = (m, f = () => true) => S.rows.filter((r) => f(r) && activeIn(r, m)).reduce((s, r) => s + final(r), 0);
+const ytd = (m, f) => { let s = 0; for (let i = 1; i <= m; i++) s += revM(i, f); return s; };
+const series = (m, f) => Array.from({ length: m }, (_, i) => revM(i + 1, f));
+const byTeam = (t) => (r) => r.team === t;
+const paidTo = (r, m) => { let s = 0; for (let i = 1; i <= m; i++) if (activeIn(r, i)) s += final(r); return s; };
+const monthsIn = (r, m) => { let c = 0; for (let i = 1; i <= m; i++) if (activeIn(r, i)) c++; return c; };
+const totalTarget = () => TEAMS.reduce((s, t) => s + (+S.cfg.targets[t] || 0), 0);
+const range = (m) => (m === 1 ? 'Jan' : `Jan–${MON[m - 1]}`);
+
+let toastT; function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 2600); }
+const ui = { m: nowM, dteam: 'All', team: 'All', st: 'All', sort: null, dir: 1, q: '', cteam: 'All' };
+
+// ───────── Icons ─────────
+const IC = {
+  dash: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  contracts: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+  clients: '<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>',
+  teams: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.7 3.1 2.4 3.5 5.2"/>',
+  report: '<path d="M3 3v18h18"/><path d="M7 16V11M12 16V7M17 16v-3"/>',
+  config: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  down: '<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>', copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>', plus: '<path d="M12 5v14M5 12h14"/>',
+};
+const ic = (k) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC[k]}</svg>`;
+const PAGES = [
+  ['dash', 'Dashboard', 'Revenue by team and month, and progress toward targets, at a glance.', 'OVERVIEW'],
+  ['contracts', 'Contracts', 'Enter fees and discounts; net revenue is calculated and rolled up automatically.', 'OVERVIEW'],
+  ['clients', 'Clients', 'Lifetime billing and tenure for every client.', 'OVERVIEW'],
+  ['teams', 'Teams', 'Each team against its target, plus revenue by account manager.', 'INSIGHTS'],
+  ['report', 'Revenue Report', 'Month × team revenue table, ready to copy or export.', 'INSIGHTS'],
+  ['config', 'Settings', 'Change plan prices, discount rules or team targets and every number recalculates.', 'ADMIN'],
+];
+let page = 'dash';
+
+// ───────── Shared ─────────
+function tipOn(el, html, x, y) { let t = $('.tip', el); if (!t) { t = document.createElement('div'); t.className = 'tip'; el.appendChild(t); } t.innerHTML = html; t.hidden = false; const w = t.offsetWidth || 150; t.style.left = Math.max(0, Math.min(el.clientWidth - w, x - w / 2)) + 'px'; t.style.top = Math.max(0, y - t.offsetHeight - 10) + 'px'; }
+function tipOff(el) { const t = $('.tip', el); if (t) t.hidden = true; }
+const niceStep = (max, n = 4) => { const raw = max / n; const p = 10 ** Math.floor(Math.log10(raw || 1)); const k = raw / p; return (k <= 1 ? 1 : k <= 2 ? 2 : k <= 2.5 ? 2.5 : k <= 5 ? 5 : 10) * p; };
+const LBL = (m) => MON.slice(0, m);
+const card = (title, sub, body, extra = '') => `<section class="card"><div class="card-h"><h2>${title}${sub ? ` <small>${sub}</small>` : ''}</h2>${extra}</div><div class="card-b">${body}</div></section>`;
+
+function sideGoal() {
+  const a = ytd(ui.m), tg = totalTarget() * ui.m / 12, r = tg ? a / tg : 0;
+  $('#sidegoal').innerHTML = `<span style="color:var(--side-muted)">Target progress (${range(ui.m)})</span><b class="num">${PCT(r)}</b><div class="bar"><i style="width:${Math.min(100, r * 100)}%"></i></div><span style="color:var(--side-muted)" class="num">${K(a)} / ${K(tg)}</span>`;
+}
+function menu() {
+  const miss = S.rows.filter((r) => needsReason(r) || overMax(r)).length;
+  let sec = '';
+  $('#menu').innerHTML = PAGES.map(([k, l, , s]) => { const h = s !== sec ? `<div class="sec">${s}</div>` : ''; sec = s; return `${h}<a href="#${k}" class="${page === k ? 'on' : ''}" ${page === k ? 'aria-current="page"' : ''}>${ic(k)}${l}${k === 'contracts' && miss ? `<span class="cnt" title="Discounts to review">${miss}</span>` : ''}</a>`; }).join('');
+}
+function ctrl() {
+  if (page === 'config') { $('#ctrl').innerHTML = ''; return; }
+  $('#ctrl').innerHTML = `<label class="muted" for="msel" style="font-size:12.5px;font-weight:700">Reporting month</label><select class="input" id="msel">${MON.map((mn, i) => `<option value="${i + 1}" ${ui.m === i + 1 ? 'selected' : ''}>${mn} ${YEAR}${i + 1 === nowM ? ' (current)' : ''}</option>`).join('')}</select>`;
+}
+
+// ───────── Dashboard ─────────
+function vDash() {
+  const m = ui.m, cur = revM(m), prev = m > 1 ? revM(m - 1) : 0, a = ytd(m), tg = totalTarget() * m / 12;
+  const act = S.rows.filter((r) => activeIn(r, m)); const nw = S.rows.filter((r) => r.start === ym(m)).length;
+  const avgD = act.length ? act.reduce((s, r) => s + (+r.disc || 0), 0) / act.length : 0;
+  const miss = S.rows.filter(needsReason).length;
+  const ending = S.rows.filter((r) => r.end && (r.end === ym(m) || r.end === ym(m + 1)));
+  const delta = prev ? (cur - prev) / prev : 0;
+  const k = (lbl, col, val, sub) => `<div class="card kpi"><div class="lbl">${lbl}<i style="background:${col}"></i></div><div class="val">${val}</div><div class="sub">${sub}</div></div>`;
+  const plans = Object.keys(S.cfg.plans).map((p) => [p, S.rows.filter((r) => r.plan === p).reduce((s, r) => s + paidTo(r, m), 0)]);
+  const pmax = Math.max(...plans.map((x) => x[1]), 1);
+  return `<div class="kpis">
+    ${k('Revenue YTD', 'var(--accent)', K(a), `<b>${PCT(tg ? a / tg : 0)}</b> of target`)}
+    ${k(`${MON[m - 1]} revenue`, 'var(--accent)', K(cur), m > 1 ? `<b class="${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta * 100).toFixed(1)}%</b> vs ${MON[m - 2]}` : 'First month')}
+    ${k('Active contracts', 'var(--good)', `${act.length}`, `<b>${nw} new</b> this month`)}
+    ${k('Avg. discount', 'var(--warn)', `${avgD.toFixed(1)}%`, 'Across active contracts')}
+    ${k('Missing reasons', 'var(--crit)', `${miss}`, miss ? `<a href="#contracts" style="color:var(--crit);font-weight:700">Review in Contracts →</a>` : 'All filled in')}
+    ${k('Ending soon', 'var(--muted)', `${ending.length}`, `Ending ${MON[m - 1]}–${MON[Math.min(11, m)]}`)}
+  </div>
+  <div class="g3">
+    ${card('Revenue by team', range(m), `<div class="donutwrap"><div class="chart" id="donut" style="width:100%;max-width:240px"></div><div class="leg" style="width:100%">${TEAMS.map((t) => { const v = ytd(m, byTeam(t)); return `<div><i style="background:${tcol(t)}"></i><span>${t}</span><b class="num">${K(v)}</b><span class="p num">${PCT(a ? v / a : 0)}</span></div>`; }).join('')}</div></div>`)}
+    ${card('Monthly revenue', 'Net billed · dashed line = monthly target', `<div class="chart" id="line"></div>`)}
+  </div>
+  <div class="g2">
+    ${card('Monthly revenue by team', '', `<div class="chart" id="tbar"></div><div class="row" style="justify-content:center;gap:14px;font-size:12.5px;margin-top:4px" id="tleg"></div>`, `<div class="seg" role="group" aria-label="Team">${['All', ...TEAMS].map((t) => `<button type="button" class="${ui.dteam === t ? 'on' : ''}" data-dteam="${t}">${t}</button>`).join('')}</div>`)}
+    ${card('Target progress', `${range(m)}, pro-rated`, `<div class="goals">${TEAMS.map((t) => { const v = ytd(m, byTeam(t)), g = (+S.cfg.targets[t] || 0) * m / 12, r = g ? v / g : 0; return `<div class="r"><div class="h"><span><span class="tag ${tcls(t)}">${t}</span> <span class="muted">Lead: ${LEAD[t]}</span></span><b class="num">${PCT(r)}</b></div><div class="bar"><i style="width:${Math.min(100, r * 100)}%;background:${tcol(t)}"></i></div><div class="muted num" style="font-size:12px">${K(v)} of ${K(g)} target</div></div>`; }).join('')}</div>`)}
+  </div>
+  <div class="g2e">
+    ${card('Revenue by plan', `${range(m)} total`, `<div class="hbars">${plans.map(([p, v]) => `<div class="r"><span>${p}</span><div class="bar"><i style="width:${v / pmax * 100}%"></i></div><b class="num" style="text-align:right">${K(v)}</b></div>`).join('')}</div><p class="muted" style="font-size:12px;margin:12px 0 0">Monthly price: ${Object.entries(S.cfg.plans).map(([p, v]) => `${p} ${W(v)}`).join(' · ')}</p>`)}
+    ${card('Contract calendar', 'Ending soon · new this month', `<div class="list">${[...ending.map((r) => [r, 'Ending', 'w', r.end]), ...S.rows.filter((r) => r.start === ym(m)).map((r) => [r, 'New', 'g', r.start]), ...S.rows.filter((r) => r.start === ym(m + 1)).map((r) => [r, 'Starts next month', 'x', r.start])].map(([r, l, c, d]) => `<div class="it"><b>${esc(r.client)} <span class="tag ${tcls(r.team)}">${r.team}</span></b><span class="st ${c}">${l}</span><span>${r.plan} · ${W(final(r))}/mo · ${r.owner}</span><span class="num">${ymTxt(d)}</span></div>`).join('') || '<p class="muted">Nothing scheduled.</p>'}</div>`)}
+  </div>`;
+}
+function drawDonut() {
+  const el = $('#donut'); if (!el) return;
+  const vals = TEAMS.map((t) => ytd(ui.m, byTeam(t))); const total = vals.reduce((a, b) => a + b, 0) || 1;
+  const R = 86, r0 = 62, cx = 100, cy = 100; let a0 = -Math.PI / 2; let s = '';
+  const p = (r, a) => `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`;
+  vals.forEach((v, i) => { if (!v) return; const a1 = a0 + v / total * Math.PI * 2; const lg = a1 - a0 > Math.PI ? 1 : 0;
+    s += `<path class="seg" data-i="${i}" d="M${p(R, a0)} A${R},${R} 0 ${lg} 1 ${p(R, a1)} L${p(r0, a1)} A${r0},${r0} 0 ${lg} 0 ${p(r0, a0)} Z" fill="var(--t${i + 1})" stroke="#fff" stroke-width="2"/>`; a0 = a1; });
+  el.innerHTML = `<svg viewBox="0 0 200 200" width="100%" role="img" aria-label="Donut chart of revenue by team">${s}<text x="100" y="100" text-anchor="middle" font-size="24" font-weight="800" fill="var(--ink)">${K(total)}</text><text x="100" y="120" text-anchor="middle" font-size="11" fill="var(--muted)">${range(ui.m)} total</text></svg>`;
+  el.querySelectorAll('.seg').forEach((g) => { g.addEventListener('mousemove', (e) => { const i = +g.dataset.i; const b = el.getBoundingClientRect(); tipOn(el, `<b>${TEAMS[i]}</b> ${W(vals[i])} · ${PCT(vals[i] / total)}`, e.clientX - b.left, e.clientY - b.top); }); g.addEventListener('mouseleave', () => tipOff(el)); });
+}
+function axis(Wd, H, pl, pr, pt, pb, top, step) {
+  const y = (v) => pt + (H - pt - pb) * (1 - v / top); let s = '';
+  for (let v = 0; v <= top + 1; v += step) s += `<line x1="${pl}" x2="${Wd - pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${pl - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v ? K(v) : '0'}</text>`;
+  return [s, y];
+}
+function lineChart(el, data, labels, target) {
+  const Wd = Math.max(300, el.clientWidth), H = 300, pl = 54, pr = 16, pt = 22, pb = 28;
+  const max = Math.max(...data, target || 0, 1); const step = niceStep(max * 1.1); const top = Math.ceil(max * 1.1 / step) * step;
+  const [g, y] = axis(Wd, H, pl, pr, pt, pb, top, step);
+  const x = (i) => pl + (Wd - pl - pr) * (data.length === 1 ? 0.5 : i / (data.length - 1));
+  let s = `<svg viewBox="0 0 ${Wd} ${H}" width="100%" height="${H}" role="img" aria-label="Line chart of monthly revenue">${g}`;
+  if (target) s += `<line x1="${pl}" x2="${Wd - pr}" y1="${y(target)}" y2="${y(target)}" stroke="var(--faint)" stroke-dasharray="4 4"/><text x="${pl + 6}" y="${y(target) - 6}" font-size="11" fill="var(--muted)">Monthly target ${K(target)}</text>`;
+  const pts = data.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+  s += `<polygon points="${x(0)},${y(0)} ${pts} ${x(data.length - 1)},${y(0)}" fill="var(--accent)" opacity=".1"/><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>`;
+  const every = data.length > 8 && Wd < 560 ? 2 : 1;
+  data.forEach((v, i) => { const last = i === data.length - 1; s += `<circle cx="${x(i)}" cy="${y(v)}" r="${last ? 5 : 3.5}" fill="var(--accent)" stroke="#fff" stroke-width="2"/>`;
+    if (last) s += `<text x="${x(i) - 8}" y="${y(v) - 11}" text-anchor="end" font-size="12" font-weight="700" fill="var(--ink)">${K(v)}</text>`;
+    if (i % every === 0 || last) s += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${labels[i]}</text>`;
+    s += `<rect class="hit" data-i="${i}" x="${x(i) - (Wd - pl - pr) / data.length / 2}" y="${pt}" width="${(Wd - pl - pr) / data.length}" height="${H - pt - pb}" fill="transparent"/>`; });
+  el.innerHTML = s + '</svg>';
+  el.querySelectorAll('.hit').forEach((h) => { h.addEventListener('mouseenter', () => { const i = +h.dataset.i; tipOn(el, `<b>${labels[i]}</b> ${W(data[i])}${target ? `<br><span class="muted">${PCT(data[i] / target)} of target</span>` : ''}`, x(i) / Wd * el.clientWidth, y(data[i]) / H * el.clientHeight); }); h.addEventListener('mouseleave', () => tipOff(el)); });
+}
+function barChart(el, sets, labels, H = 250) {
+  // sets: [{name, color, data}] — one set = simple bars, several = grouped bars
+  const Wd = Math.max(300, el.clientWidth), pl = 54, pr = 8, pt = 18, pb = 28, n = labels.length;
+  const max = Math.max(1, ...sets.flatMap((s) => s.data)); const step = niceStep(max * 1.1); const top = Math.ceil(max * 1.1 / step) * step;
+  const [g, y] = axis(Wd, H, pl, pr, pt, pb, top, step);
+  const bw = (Wd - pl - pr) / n; const gw = Math.min(bw * 0.72, sets.length * 16 + (sets.length - 1) * 2); const one = (gw - (sets.length - 1) * 2) / sets.length;
+  let s = `<svg viewBox="0 0 ${Wd} ${H}" width="100%" height="${H}" role="img" aria-label="Bar chart of monthly revenue by team">${g}`;
+  const every = n > 8 && Wd < 560 ? 2 : 1;
+  labels.forEach((lb, i) => { const x0 = pl + bw * i + (bw - gw) / 2;
+    sets.forEach((st, j) => { const v = st.data[i]; const h = y(0) - y(v); if (h <= 0) return; const rr = Math.min(3, h / 2, one / 2); const bx = x0 + j * (one + 2);
+      s += `<path d="M${bx},${y(0)} v${-(h - rr)} q0,${-rr} ${rr},${-rr} h${one - 2 * rr} q${rr},0 ${rr},${rr} v${h - rr} z" fill="${st.color}"/>`; });
+    if (sets.length === 1 && i === n - 1) s += `<text x="${x0 + gw / 2}" y="${y(sets[0].data[i]) - 6}" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--ink)">${K(sets[0].data[i])}</text>`;
+    if (i % every === 0 || i === n - 1) s += `<text x="${pl + bw * i + bw / 2}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${lb}</text>`;
+    s += `<rect class="hit" data-i="${i}" x="${pl + bw * i}" y="${pt}" width="${bw}" height="${H - pt - pb}" fill="transparent"/>`; });
+  el.innerHTML = s + '</svg>';
+  el.querySelectorAll('.hit').forEach((h) => { h.addEventListener('mouseenter', () => { const i = +h.dataset.i; const mx = Math.max(...sets.map((st) => st.data[i]));
+    tipOn(el, `<b>${labels[i]}</b>${sets.map((st) => `<br><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${st.color};margin-right:5px"></span>${st.name} ${W(st.data[i])}`).join('')}`, (pl + bw * i + bw / 2) / Wd * el.clientWidth, y(mx) / H * el.clientHeight); });
+    h.addEventListener('mouseleave', () => tipOff(el)); });
+}
+function drawDash() {
+  drawDonut();
+  const l = $('#line'); if (l) lineChart(l, series(ui.m), LBL(ui.m), totalTarget() / 12);
+  const b = $('#tbar'); if (b) { const teams = ui.dteam === 'All' ? TEAMS : [ui.dteam];
+    barChart(b, teams.map((t) => ({ name: t, color: tcol(t), data: series(ui.m, byTeam(t)) })), LBL(ui.m));
+    $('#tleg').innerHTML = teams.map((t) => `<span class="row" style="gap:5px"><i style="width:10px;height:10px;border-radius:3px;background:${tcol(t)};display:inline-block"></i>${t} <b class="num">${K(ytd(ui.m, byTeam(t)))}</b></span>`).join(''); }
+}
+
+// ───────── Contracts ─────────
+const COLS = [
+  ['client', 'Client', 'Aa', ''], ['team', 'Team', '◉', ''], ['owner', 'Account mgr', '◉', ''], ['plan', 'Plan', '◉', ''],
+  ['base', 'Plan fee', 'Σ', 'Monthly plan price (change in Settings)'], ['opt', 'Add-ons', '#', 'Extra content, ad management, etc. per month'],
+  ['monthly', 'Monthly fee', 'Σ', 'Plan fee + add-ons'], ['disc', 'Discount', '#', '0–100%'],
+  ['final', 'Net billed', 'Σ', 'Monthly fee × (1 − discount)'], ['reason', 'Discount reason', '≡', ''],
+  ['period', 'Term', '▤', 'Start month – end month (blank = ongoing)'], ['status', 'Status', '◎', 'Calculated for the reporting month'],
+];
+const val = (r, k) => ({ base: base(r), monthly: monthly(r), final: final(r), status: status(r), period: r.start }[k] ?? r[k]);
+const stCls = { Active: 'g', Upcoming: 'w', Ended: 'x' };
+function vContracts() {
+  let rows = S.rows.filter((r) => (ui.team === 'All' || r.team === ui.team) && (ui.st === 'All' || (ui.st === 'Review' ? needsReason(r) || overMax(r) : status(r) === ui.st)));
+  if (ui.sort) rows = [...rows].sort((a, b) => { const x = val(a, ui.sort), y = val(b, ui.sort); return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y))) * ui.dir; });
+  const sum = (f) => rows.reduce((s, r) => s + f(r), 0);
+  const avgDisc = rows.length ? rows.reduce((s, r) => s + (+r.disc || 0), 0) / rows.length : 0;
+  const rev = S.rows.filter((r) => needsReason(r) || overMax(r)).length;
+  const num = ['base', 'opt', 'monthly', 'disc', 'final'];
+  const miss = rows.filter(needsReason).length;
+  return `<section class="card"><div class="toolbar"><div class="row">
+      <div class="seg" role="group" aria-label="Team">${['All', ...TEAMS].map((t) => `<button type="button" class="${ui.team === t ? 'on' : ''}" data-team="${t}">${t === 'All' ? 'All teams' : t}</button>`).join('')}</div>
+      <div class="seg" role="group" aria-label="Status">${['All', 'Active', 'Upcoming', 'Ended', 'Review'].map((s) => `<button type="button" class="${ui.st === s ? 'on' : ''}" data-st="${s}">${s === 'All' ? 'Any status' : s === 'Review' ? `Needs review ${rev}` : s}</button>`).join('')}</div></div>
+      <div class="row"><button class="btn" type="button" id="reset">Reset sample</button><button class="btn pri" type="button" id="add">${ic('plus')}New contract</button></div></div>
+    <div class="scroll"><table class="db"><thead><tr>${COLS.map(([k, l, ty, info]) => `<th class="sortable ${num.includes(k) ? 'r' : ''}" data-sort="${k}" ${info ? `title="${esc(info)}"` : ''}><span class="ty">${ty}</span>${l}${info ? '<span class="info">ⓘ</span>' : ''}${ui.sort === k ? (ui.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}<th style="width:30px"><span style="position:absolute;left:-9999px">Delete</span></th></tr></thead>
+    <tbody>${rows.map((r) => `<tr data-id="${r.id}">
+      <td class="edit" style="min-width:190px"><input data-f="client" value="${esc(r.client)}" aria-label="Client"></td>
+      <td class="edit" style="min-width:92px"><select data-f="team" aria-label="Team">${TEAMS.map((t) => `<option ${r.team === t ? 'selected' : ''}>${t}</option>`).join('')}</select></td>
+      <td class="edit" style="min-width:126px"><select data-f="owner" aria-label="Account manager">${MEMBERS[r.team].map((p) => `<option ${r.owner === p ? 'selected' : ''}>${p}</option>`).join('')}</select></td>
+      <td class="edit" style="min-width:104px"><select data-f="plan" aria-label="Plan">${Object.keys(S.cfg.plans).map((p) => `<option ${r.plan === p ? 'selected' : ''}>${p}</option>`).join('')}</select></td>
+      <td class="r f num">${W(base(r))}</td>
+      <td class="edit" style="min-width:88px"><input class="r num" data-f="opt" inputmode="numeric" value="${W(r.opt)}" aria-label="Add-ons"></td>
+      <td class="r f num">${W(monthly(r))}</td>
+      <td class="edit ${overMax(r) ? 'warn' : ''}" style="min-width:76px"><input class="r num" data-f="disc" inputmode="numeric" value="${r.disc}%" aria-label="Discount"></td>
+      <td class="r f num"><b>${W(final(r))}</b></td>
+      <td class="edit ${needsReason(r) ? 'warn' : ''}" style="min-width:190px"><input data-f="reason" value="${esc(r.reason)}" placeholder="${needsReason(r) ? 'Add a reason' : ''}" aria-label="Discount reason"></td>
+      <td class="edit" style="min-width:250px"><span style="display:flex;align-items:center"><input type="month" data-f="start" value="${r.start}" aria-label="Start month" style="width:118px"><span class="muted">–</span><input type="month" data-f="end" value="${r.end}" aria-label="End month" style="width:118px"></span></td>
+      <td><span class="st ${stCls[status(r)]}">${status(r)}</span></td>
+      <td><button class="del" type="button" data-del="${r.id}" title="Delete" aria-label="Delete ${esc(r.client)}">✕</button></td></tr>`).join('') || `<tr><td colspan="13" class="muted" style="text-align:center;height:60px">No contracts match these filters.</td></tr>`}</tbody>
+    <tfoot><tr><td colspan="4">Count<b>${rows.length}</b></td><td class="r">Sum<b>${W(sum(base))}</b></td><td class="r">Sum<b>${W(sum((r) => +r.opt || 0))}</b></td><td class="r">Sum<b>${W(sum(monthly))}</b></td><td class="r">Avg<b>${avgDisc.toFixed(1)}%</b></td><td class="r">Sum<b>${W(sum(final))}</b></td><td colspan="4">${miss ? `<span style="color:var(--crit)">${miss} missing reason${miss > 1 ? 's' : ''}</span>` : ''}</td></tr></tfoot>
+  </table></div>
+  <div class="note"><span>Σ columns are calculated.</span><span>Discounts of ${S.cfg.reasonAt}%+ need a reason; above ${S.cfg.maxDisc}% needs approval (red outline).</span><span>Click a header to sort.</span></div></section>`;
+}
+
+// ───────── Clients ─────────
+function clientRows() {
+  const q = ui.q.trim().toLowerCase();
+  return S.rows.filter((r) => (ui.cteam === 'All' || r.team === ui.cteam) && (!q || r.client.toLowerCase().includes(q) || r.owner.toLowerCase().includes(q)))
+    .sort((a, b) => paidTo(b, ui.m) - paidTo(a, ui.m));
+}
+function clientBody() {
+  const rows = clientRows(); const mx = Math.max(1, ...S.rows.map((r) => paidTo(r, ui.m)));
+  return rows.map((r) => { const p = paidTo(r, ui.m); return `<tr><td><b>${esc(r.client)}</b></td><td><span class="tag ${tcls(r.team)}">${r.team}</span></td><td>${r.owner}</td><td>${r.plan}</td><td class="num">${ymTxt(r.start)} – ${r.end ? ymTxt(r.end) : 'ongoing'}</td><td class="r num">${monthsIn(r, ui.m)} mo</td>
+    <td class="r num">${activeIn(r, ui.m) ? W(final(r)) : '<span class="muted">–</span>'}</td><td style="min-width:180px"><div class="row" style="flex-wrap:nowrap"><div style="flex:1;height:8px;background:var(--soft);border-radius:99px;overflow:hidden"><i style="display:block;height:100%;width:${p / mx * 100}%;background:var(--accent);border-radius:99px"></i></div><b class="num" style="min-width:76px;text-align:right">${W(p)}</b></div></td>
+    <td><span class="st ${stCls[status(r)]}">${status(r)}</span></td></tr>`; }).join('') || `<tr><td colspan="9" class="muted" style="text-align:center;height:60px">No matches.</td></tr>`;
+}
+function vClients() {
+  const act = S.rows.filter((r) => activeIn(r, ui.m)); const all = S.rows.reduce((s, r) => s + paidTo(r, ui.m), 0);
+  const avgM = S.rows.filter((r) => monthsIn(r, ui.m)).reduce((s, r, _, a) => s + monthsIn(r, ui.m) / a.length, 0);
+  const k = (l, v, s) => `<div class="card kpi"><div class="lbl">${l}</div><div class="val">${v}</div><div class="sub">${s}</div></div>`;
+  return `<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">${k('Clients', `${S.rows.length}`, `<b>${act.length}</b> active`)}${k('Lifetime billed', K(all), `${range(ui.m)} ${YEAR}`)}${k('Avg. per client', K(S.rows.length ? all / S.rows.length : 0), 'Lifetime billed')}${k('Avg. tenure', `${avgM.toFixed(1)} mo`, `In ${YEAR}`)}</div>
+  <section class="card"><div class="toolbar"><div class="row"><input class="input" id="q" type="search" placeholder="Search client or manager" value="${esc(ui.q)}" aria-label="Search" style="width:230px">
+    <div class="seg" role="group" aria-label="Team">${['All', ...TEAMS].map((t) => `<button type="button" class="${ui.cteam === t ? 'on' : ''}" data-cteam="${t}">${t === 'All' ? 'All teams' : t}</button>`).join('')}</div></div><span class="muted" style="font-size:12.5px">Sorted by lifetime billed</span></div>
+  <div class="scroll"><table><thead><tr><th>Client</th><th>Team</th><th>Account mgr</th><th>Plan</th><th>Term</th><th class="r">Tenure</th><th class="r">${MON[ui.m - 1]} billed</th><th>Lifetime billed</th><th>Status</th></tr></thead><tbody id="cbody">${clientBody()}</tbody></table></div></section>`;
+}
+
+// ───────── Teams ─────────
+function vTeams() {
+  const m = ui.m;
+  return `<div class="teams">${TEAMS.map((t, i) => { const f = byTeam(t); const v = ytd(m, f), g = (+S.cfg.targets[t] || 0) * m / 12, r = g ? v / g : 0;
+    const act = S.rows.filter((x) => f(x) && activeIn(x, m)); const avgD = act.length ? act.reduce((s, x) => s + (+x.disc || 0), 0) / act.length : 0;
+    return `<section class="card"><div class="card-b" style="padding-top:18px;display:grid;gap:14px">
+      <div class="team-h"><div class="av" style="background:${tcol(t)}">${t.slice(-1)}</div><div><h2 style="font-size:16px">${t}</h2><span class="muted" style="font-size:12.5px">Lead: ${LEAD[t]} · ${MEMBERS[t].length} people</span></div><div class="people" style="margin-left:auto">${MEMBERS[t].map((p) => `<span title="${p}">${ini(p)}</span>`).join('')}</div></div>
+      <div><div class="row" style="justify-content:space-between"><b class="num" style="font-size:22px">${K(v)}</b><span class="tag ${tcls(t)}">${PCT(r)} of target</span></div><div class="goals" style="margin-top:6px"><div class="bar"><i style="width:${Math.min(100, r * 100)}%;background:${tcol(t)}"></i></div></div></div>
+      <div class="kv"><span>Annual target</span><b>${K(+S.cfg.targets[t] || 0)}</b><span>${MON[m - 1]} revenue</span><b>${K(revM(m, f))}</b><span>Active contracts</span><b>${act.length}</b><span>Avg. discount</span><b>${avgD.toFixed(1)}%</b></div>
+      <div class="chart" id="tb_${i}"></div></div></section>`; }).join('')}</div>
+  ${card('Account manager performance', `${range(m)} total`, `<div class="scroll"><table><thead><tr><th>Account mgr</th><th>Team</th><th class="r">Contracts</th><th class="r">Active</th><th class="r">${MON[m - 1]} revenue</th><th class="r">Revenue YTD</th><th class="r">Avg. discount</th></tr></thead><tbody>${TEAMS.flatMap((t) => MEMBERS[t].map((p) => { const rs = S.rows.filter((r) => r.owner === p && r.team === t); const f = (r) => r.owner === p && r.team === t;
+      return [ytd(m, f), `<tr><td><b>${p}</b>${LEAD[t] === p ? ' <span class="muted" style="font-size:12px">Lead</span>' : ''}</td><td><span class="tag ${tcls(t)}">${t}</span></td><td class="r num">${rs.length}</td><td class="r num">${rs.filter((r) => activeIn(r, m)).length}</td><td class="r num">${W(revM(m, f))}</td><td class="r num"><b>${W(ytd(m, f))}</b></td><td class="r num">${rs.length ? (rs.reduce((s, r) => s + (+r.disc || 0), 0) / rs.length).toFixed(1) : '0.0'}%</td></tr>`]; })).sort((a, b) => b[0] - a[0]).map((x) => x[1]).join('')}</tbody></table></div>`)}`;
+}
+function drawTeams() { TEAMS.forEach((t, i) => { const el = $('#tb_' + i); if (el) barChart(el, [{ name: t, color: tcol(t), data: series(ui.m, byTeam(t)) }], LBL(ui.m), 190); }); }
+
+// ───────── Revenue report ─────────
+function reportData() {
+  const rows = Array.from({ length: ui.m }, (_, i) => [i + 1, ...TEAMS.map((t) => revM(i + 1, byTeam(t)))]);
+  return { rows };
+}
+function vReport() {
+  const { rows } = reportData(); const mt = totalTarget() / 12;
+  const tot = TEAMS.map((_, j) => rows.reduce((s, r) => s + r[j + 1], 0)); const T = tot.reduce((a, b) => a + b, 0);
+  const cl = [...S.rows].filter((r) => monthsIn(r, ui.m)).sort((a, b) => a.team.localeCompare(b.team) || paidTo(b, ui.m) - paidTo(a, ui.m));
+  return `${card(`${YEAR} revenue by month and team`, `${range(ui.m)} · net billed`, `<div class="scroll"><table><thead><tr><th>Month</th>${TEAMS.map((t) => `<th class="r">${t}</th>`).join('')}<th class="r">Total</th><th class="r">Target</th><th class="r">Attainment</th><th class="r">MoM</th></tr></thead><tbody>
+      ${rows.map((r, i) => { const s = r.slice(1).reduce((a, b) => a + b, 0); const p = i ? rows[i - 1].slice(1).reduce((a, b) => a + b, 0) : 0; const d = p ? (s - p) / p : null;
+        return `<tr><td>${MON[r[0] - 1]}</td>${r.slice(1).map((v) => `<td class="r num">${W(v)}</td>`).join('')}<td class="r num"><b>${W(s)}</b></td><td class="r num muted">${W(mt)}</td><td class="r num"><b class="${s >= mt ? 'up' : ''}">${PCT(s / mt)}</b></td><td class="r num">${d === null ? '<span class="muted">–</span>' : `<span class="${d >= 0 ? 'up' : 'down'}">${d >= 0 ? '▲' : '▼'} ${Math.abs(d * 100).toFixed(1)}%</span>`}</td></tr>`; }).join('')}</tbody>
+      <tfoot><tr><td><b>Total</b></td>${tot.map((v) => `<td class="r num"><b>${W(v)}</b></td>`).join('')}<td class="r num"><b>${W(T)}</b></td><td class="r num muted">${W(mt * ui.m)}</td><td class="r num"><b>${PCT(T / (mt * ui.m))}</b></td><td></td></tr></tfoot></table></div>`,
+    `<div class="row"><button class="btn" type="button" id="copy">${ic('copy')}Copy table</button><button class="btn pri" type="button" id="csv">${ic('down')}Export CSV</button></div>`)}
+  ${card('Monthly billing by client', 'By team, then lifetime billed', `<div class="scroll"><table><thead><tr><th>Client</th><th>Team</th>${LBL(ui.m).map((l) => `<th class="r">${l}</th>`).join('')}<th class="r">Total</th></tr></thead><tbody>
+      ${cl.map((r) => `<tr><td>${esc(r.client)}</td><td><span class="tag ${tcls(r.team)}">${r.team}</span></td>${LBL(ui.m).map((_, i) => `<td class="r num">${activeIn(r, i + 1) ? W(final(r)) : '<span class="muted">–</span>'}</td>`).join('')}<td class="r num"><b>${W(paidTo(r, ui.m))}</b></td></tr>`).join('')}</tbody></table></div>`)}`;
+}
+function reportTSV(sep) {
+  const { rows } = reportData();
+  const out = [['Month', ...TEAMS, 'Total'].join(sep)];
+  rows.forEach((r) => out.push([MON[r[0] - 1], ...r.slice(1).map((v) => Math.round(v)), Math.round(r.slice(1).reduce((a, b) => a + b, 0))].join(sep)));
+  return out.join('\n');
+}
+
+// ───────── Settings ─────────
+function vConfig() {
+  const c = S.cfg;
+  return `<div class="g2e">
+    ${card('Plan prices', 'per month', `<div class="form">${Object.entries(c.plans).map(([p, v]) => `<label><span>${p}</span><input class="input num" data-cfg="plan:${p}" inputmode="numeric" value="${W(v)}"></label>`).join('')}</div>`)}
+    ${card('Discount rules', '', `<div class="form"><label><span>Reason required at</span><input class="input num" data-cfg="reasonAt" inputmode="numeric" value="${c.reasonAt}%"></label><label><span>Approval above</span><input class="input num" data-cfg="maxDisc" inputmode="numeric" value="${c.maxDisc}%"></label></div><p class="muted" style="font-size:12.5px;margin:12px 0 0">Discounts at or above the reason threshold with no reason, and discounts above the approval limit, are flagged with a red count on the Contracts menu.</p>`)}
+    ${card('Annual team targets', `${YEAR}`, `<div class="form">${TEAMS.map((t) => `<label><span>${t} (${LEAD[t].split(' ')[0]})</span><input class="input num" data-cfg="target:${t}" inputmode="numeric" value="${W(c.targets[t])}"></label>`).join('')}<label><span>Company total</span><b class="num">${W(totalTarget())}</b></label></div>`)}
+    ${card('Data', '', `<p style="margin:0 0 12px" class="muted">${S.rows.length} contracts · saved automatically in this browser. Clients, people and amounts shown are sample data.</p><div class="row"><button class="btn" type="button" id="resetall">Restore defaults</button></div>`)}
+  </div>`;
+}
+
+// ───────── Render & events ─────────
+function render() {
+  const p = PAGES.find((x) => x[0] === page);
+  $('#title').textContent = p[1]; $('#sub').textContent = p[2]; document.title = `${p[1]} · Brandwell Revenue Hub`;
+  menu(); ctrl(); sideGoal();
+  $('#view').innerHTML = { dash: vDash, contracts: vContracts, clients: vClients, teams: vTeams, report: vReport, config: vConfig }[page]();
+  if (page === 'dash') drawDash(); if (page === 'teams') drawTeams();
+}
+function route() { const h = location.hash.slice(1); page = PAGES.some((x) => x[0] === h) ? h : 'dash'; render(); window.scrollTo(0, 0); }
+window.addEventListener('hashchange', route);
+const parseNum = (s) => +String(s).replace(/[^0-9.]/g, '') || 0;
+async function download(name, text) { const dl = window.claude?.use ? await window.claude.use('downloads').catch(() => null) : null;
+  if (dl) { try { await dl.save({ filename: name, data: new Blob([text], { type: 'text/csv' }) }); toast(`Saved ${name}.`); } catch (e) { toast(e?.code === 'declined' ? 'Save cancelled.' : 'Saving is not available here. Use Copy table instead.'); } return; }
+  try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); toast(`Downloaded ${name}.`); } catch { toast('Downloads are blocked here. Use Copy table instead.'); } }
+document.addEventListener('click', async (e) => {
+  const t = e.target;
+  const b = (s) => t.closest(s);
+  let x;
+  if ((x = b('[data-dteam]'))) { ui.dteam = x.dataset.dteam; render(); return; }
+  if ((x = b('[data-team]'))) { ui.team = x.dataset.team; render(); return; }
+  if ((x = b('[data-st]'))) { ui.st = x.dataset.st; render(); return; }
+  if ((x = b('[data-cteam]'))) { ui.cteam = x.dataset.cteam; render(); return; }
+  if ((x = b('[data-sort]'))) { const k = x.dataset.sort; ui.dir = ui.sort === k ? -ui.dir : 1; ui.sort = k; render(); return; }
+  if ((x = b('[data-del]'))) { const r = S.rows.find((y) => y.id === x.dataset.del); S.rows = S.rows.filter((y) => y !== r); save(); render(); toast(`Deleted ${r.client}.`); return; }
+  if (b('#add')) { const id = 'R' + Date.now().toString(36); const team = ui.team === 'All' ? 'Team A' : ui.team; S.rows.unshift({ id, client: 'New client', team, owner: MEMBERS[team][0], plan: 'Standard', opt: 0, disc: 0, reason: '', start: ym(ui.m), end: '' }); ui.st = 'All'; ui.sort = null; save(); render(); $(`tr[data-id="${id}"] [data-f="client"]`)?.select(); return; }
+  if (b('#reset') || b('#resetall')) { S = fresh(); save(); render(); toast('Restored the sample data.'); return; }
+  if (b('#csv')) { download(`brandwell-revenue-${YEAR}-jan-${MON[ui.m - 1].toLowerCase()}.csv`, reportTSV(',')); return; }
+  if (b('#copy')) { try { await navigator.clipboard.writeText(reportTSV('\t')); toast('Table copied — paste it into Excel or Google Sheets.'); } catch { toast('Copy is blocked here. Use Export CSV instead.'); } }
+});
+document.addEventListener('input', (e) => { if (e.target.id === 'q') { ui.q = e.target.value; $('#cbody').innerHTML = clientBody(); } });
+function commit(el, value = el.value) {
+  const next = document.activeElement !== el ? document.activeElement : null; const nextKey = next?.closest?.('tr[data-id]') ? [next.closest('tr').dataset.id, next.dataset.f] : null;
+  const tr = el.closest('tr[data-id]'); if (!tr) return; const r = S.rows.find((x) => x.id === tr.dataset.id); if (!r) return; const f = el.dataset.f;
+  if (f === 'opt') r.opt = parseNum(value);
+  else if (f === 'disc') r.disc = Math.min(100, parseNum(value));
+  else if (f === 'team') { r.team = value; if (!MEMBERS[value].includes(r.owner)) r.owner = MEMBERS[value][0]; }
+  else if (f === 'client') r.client = value.trim() || r.client;
+  else r[f] = value;
+  save(); render();
+  if (nextKey) $(`tr[data-id="${nextKey[0]}"] [data-f="${nextKey[1]}"]`)?.focus();
+}
+function commitCfg(el, value) {
+  const [k, sub] = el.dataset.cfg.split(':'); const n = parseNum(value);
+  if (k === 'plan') S.cfg.plans[sub] = n; else if (k === 'target') S.cfg.targets[sub] = n; else S.cfg[k] = Math.min(100, n);
+  save(); render(); toast('Settings saved — all numbers recalculated.');
+}
+document.addEventListener('change', (e) => {
+  const el = e.target;
+  if (el.id === 'msel') { ui.m = +el.value; render(); return; }
+  if (el.dataset?.f) { const v = el.value; setTimeout(() => commit(el, v), 0); return; }
+  if (el.dataset?.cfg) { const v = el.value; setTimeout(() => commitCfg(el, v), 0); }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.target.dataset?.f || e.target.dataset?.cfg) && e.target.tagName === 'INPUT') { e.preventDefault(); e.target.blur(); } });
+const rowOf = (el) => S.rows.find((x) => x.id === el.closest('tr[data-id]')?.dataset.id);
+const cfgRaw = (k) => { const [a, b] = k.split(':'); return a === 'plan' ? S.cfg.plans[b] : a === 'target' ? S.cfg.targets[b] : S.cfg[a]; };
+document.addEventListener('focusin', (e) => { const el = e.target, f = el.dataset?.f;
+  if (f === 'opt' || f === 'disc') { const r = rowOf(el); if (r) el.value = String(r[f]); }
+  if (el.dataset?.cfg) el.value = String(cfgRaw(el.dataset.cfg)); });
+document.addEventListener('focusout', (e) => { const el = e.target, f = el.dataset?.f;
+  if (f === 'opt' || f === 'disc') { const r = rowOf(el); if (r) el.value = f === 'opt' ? W(r.opt) : `${r.disc}%`; }
+  if (el.dataset?.cfg) { const k = el.dataset.cfg; const v = cfgRaw(k); el.value = /^(plan|target)/.test(k) ? W(v) : `${v}%`; } });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (page === 'dash') drawDash(); if (page === 'teams') drawTeams(); }, 150); });
+route();
+})();
+</script>

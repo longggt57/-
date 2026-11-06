@@ -205,6 +205,13 @@ ANTHROPIC_API_KEY=sk-ant-... python3 test/live_claude_check.py
 
 - **고친 뒤 다시 만들기:** `body.html`, `style.css`를 수정하고 `python3 docs/sales-kr/assemble.py` → `python3 docs/sales-kr/build_page.py` 순서로 실행하세요.
 
+## Revenue Hub (English, for Fiverr)
+
+[`docs/sales-en/index.html`](docs/sales-en/index.html): the English version of the sales management site above, with USD amounts and sample agency "Brandwell". Same menus: Dashboard, Contracts, Clients, Teams, Revenue Report, Settings.
+
+- Portfolio captures (1024×768): `docs/fiverr/portfolio/sales_01_dashboard.png`, `sales_02_contracts.png`, `sales_03_teams.png`
+- Rebuild after edits: `python3 docs/sales-en/assemble.py` → `python3 docs/sales-en/build_page.py`
+
 ## 계약·매출 DB (노션 스타일, 한국어)
 
 [`docs/db-kr/index.html`](docs/db-kr/index.html): 노션 데이터베이스처럼 생긴 계약·매출 관리 페이지입니다.
