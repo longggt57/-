@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>OpsLoop Automation Hub</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: dark ink control rail + white operations workspace. The business loop (lead → quote → job → invoice → review) is the spine of every view. Single light workspace by design. */
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --soft:#f5f6f8; --soft-2:#eceef2; --line:#e3e6eb; --fg:#141a26; --muted:#5f6878;
+  --ink:#121826; --ink-2:#1c2436; --ink-fg:#e7eaf0; --ink-muted:#8d97ab;
+  --accent:#d9480f; --accent-soft:#fdeee6; --accent-text:#b93c0a;
+  --ok:#15803d; --warn:#b45309; --crit:#c0392b; --info:#1d4ed8; --bar:#d7dce4;
+  --a-hook:#5f6878; --a-ai:#d9480f; --a-hub:#e2571f; --a-sms:#c0392b; --a-mail:#b91c1c; --a-slack:#6d28d9; --a-pay:#4f46e5; --a-qb:#15803d; --a-sheet:#16a34a; --a-cal:#1d4ed8; --a-time:#475569; --a-rev:#ca8a04;
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:12px; --rail:236px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.55}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+.app{display:grid;grid-template-columns:var(--rail) minmax(0,1fr);min-height:100%}
+.rail{background:var(--ink);color:var(--ink-fg);display:flex;flex-direction:column;gap:22px;padding:20px 14px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px}
+.brand-mark{width:32px;height:32px;border-radius:9px;background:var(--accent);display:grid;place-items:center;flex:none}
+.brand-mark svg{width:20px;height:20px}
+.brand b{display:block;font-size:15px;letter-spacing:-.01em}
+.brand small{color:var(--ink-muted);font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);padding:10px 10px 4px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--ink-muted);text-decoration:none;font-weight:500;white-space:nowrap}
+.nav a:hover{background:var(--ink-2);color:var(--ink-fg)}
+.nav a[aria-current="page"]{background:var(--ink-2);color:#fff;box-shadow:inset 2px 0 0 var(--accent)}
+.nav svg{width:18px;height:18px;flex:none}
+.nav .badge{margin-left:auto;background:var(--crit);color:#fff;border-radius:99px;font-size:11px;padding:0 7px;line-height:18px;font-family:var(--mono)}
+.rail-foot{margin-top:auto;background:var(--ink-2);border-radius:10px;padding:12px;display:grid;gap:4px;font-size:12px;color:var(--ink-muted)}
+.rail-foot b{color:var(--ink-fg);font-size:20px;font-family:var(--mono);font-weight:500}
+
+.main{min-width:0;padding-block:22px 56px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+.topbar{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.crumb{color:var(--muted);font-size:12px}
+.topbar h1{margin:2px 0 0;font-size:24px;letter-spacing:-.02em;text-wrap:balance}
+.topbar .spacer{flex:1}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ok);font-weight:600}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.demo-tag{font-size:12px;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 7%,transparent);padding:3px 9px;border-radius:99px;white-space:nowrap}
+.today{font-size:13px;color:var(--muted)}
+#view{display:flex;flex-direction:column;gap:16px}
+
+.panel{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.panel-h{display:flex;align-items:center;gap:10px;padding:16px 18px 0;flex-wrap:wrap}
+.panel-h h2{margin:0;font-size:15px;letter-spacing:-.01em}
+.panel-h .sub{color:var(--muted);font-size:12px}
+.panel-b{padding:14px 18px 18px}
+.grow{flex:1}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:3px;background:var(--bg)}
+.kpi .k{font-size:12px;color:var(--muted)}
+.kpi .v{font-size:26px;font-weight:600;font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.kpi .v small{font-size:13px;color:var(--muted);font-family:var(--font);font-weight:500;margin-left:3px;letter-spacing:0}
+.kpi .d{font-size:12px;color:var(--muted)}
+.kpi.hero{background:var(--ink);border-color:var(--ink);color:var(--ink-fg)}
+.kpi.hero .k,.kpi.hero .d,.kpi.hero small{color:var(--ink-muted)}
+.kpi.hero .v{color:#fff}
+.kpi.alert{border-color:color-mix(in srgb,var(--crit) 45%,var(--line))}
+.kpi.alert .v{color:var(--crit)}
+.up{color:var(--ok)}
+
+.grid-2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px}
+.grid-2b{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+
+/* loop funnel */
+.loop{display:grid;gap:10px}
+.stage{display:grid;grid-template-columns:150px minmax(0,1fr) 64px 70px;gap:12px;align-items:center;font-size:13px}
+.stage .lbl{display:flex;gap:8px;align-items:center;font-weight:600}
+.stage .lbl span{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400}
+.stage .track{height:22px;background:var(--soft);border-radius:6px;overflow:hidden}
+.stage .fill{height:100%;background:var(--ink);border-radius:6px}
+.stage:first-child .fill{background:var(--accent)}
+.stage .n{font-family:var(--mono);text-align:right;font-weight:500}
+.stage .c{font-size:12px;color:var(--muted);text-align:right}
+.loop-note{font-size:12px;color:var(--muted);margin-top:4px}
+
+.chart svg{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-family:var(--mono);font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+.alerts{display:grid;gap:8px}
+.alert-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--soft)}
+.alert-row .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff}
+.alert-row b{display:block;font-size:13px}
+.alert-row small{color:var(--muted);font-size:12px}
+.feed{display:grid;gap:0;max-height:330px;overflow:auto}
+.feed li{display:grid;grid-template-columns:62px auto minmax(0,1fr);gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.feed li:last-child{border-bottom:0}
+.feed .t{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:1px}
+.feed ul{margin:0;padding:0;list-style:none}
+.feed .new{animation:flash 1.6s ease-out}
+@keyframes flash{from{background:var(--accent-soft)}to{background:transparent}}
+
+.app-chip{--c:var(--muted);display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--c);white-space:nowrap}
+.app-chip::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--c)}
+.pill{--c:var(--muted);display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--c);white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c)}
+.p-ok{--c:var(--ok)} .p-warn{--c:var(--warn)} .p-crit{--c:var(--crit)} .p-info{--c:var(--info)} .p-mute{--c:var(--muted)}
+.src{font-size:11px;font-weight:600;padding:1px 7px;border-radius:5px;background:var(--soft-2);color:var(--muted);white-space:nowrap}
+
+.btn{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:7px 13px;cursor:pointer;font-weight:600;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.sm{padding:4px 10px;font-size:12px}
+
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:12px;font-weight:500;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+
+/* workflows */
+.wf{display:grid;grid-template-columns:minmax(0,330px) minmax(0,1fr);gap:16px;align-items:start}
+.wf-list{display:flex;flex-direction:column}
+.wf-item{display:grid;gap:4px;text-align:left;padding:13px 16px;border:0;border-bottom:1px solid var(--line);background:none;cursor:pointer;width:100%}
+.wf-item:last-child{border-bottom:0}
+.wf-item:hover{background:var(--soft)}
+.wf-item[aria-selected="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.wf-item b{font-size:14px}
+.wf-item .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.canvas{background-color:var(--soft);background-image:radial-gradient(var(--bar) 1px,transparent 1px);background-size:18px 18px;border-radius:10px;padding:22px 16px;display:flex;flex-direction:column;align-items:center}
+.node{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:min(100%,420px);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 1px 2px rgb(20 26 38/.05);transition:border-color .2s,box-shadow .2s}
+.node .ab{--c:var(--muted);width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:#fff;background:var(--c);font-size:11px;font-weight:700;letter-spacing:.02em}
+.node b{display:block;font-size:13px}
+.node small{display:block;font-size:12px;color:var(--muted)}
+.node .nt{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:40px;text-align:right}
+.node.running{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.node.done{border-color:color-mix(in srgb,var(--ok) 50%,var(--line))}
+.node.done .nt{color:var(--ok)}
+.node.fail{border-color:var(--crit);box-shadow:0 0 0 3px color-mix(in srgb,var(--crit) 14%,transparent)}
+.node.fail .nt{color:var(--crit)}
+.node.skip{opacity:.45}
+.conn{width:2px;height:22px;background:var(--bar)}
+.branch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;width:min(100%,760px)}
+.branch .path{display:flex;flex-direction:column;align-items:center;border:1px dashed var(--bar);border-radius:10px;padding:10px 8px 12px;min-width:0}
+.branch .cond{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:1px 9px;margin-bottom:8px;text-transform:uppercase}
+.branch .node{width:100%}
+.wf-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.wf-stat{background:var(--soft);border-radius:8px;padding:9px 12px}
+.wf-stat span{font-size:12px;color:var(--muted)}
+.wf-stat b{display:block;font-family:var(--mono);font-size:18px;font-weight:500}
+
+/* leads */
+.board{display:grid;grid-template-columns:repeat(4,minmax(210px,1fr));gap:12px;overflow-x:auto;padding-bottom:4px}
+.col{background:var(--soft);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.col-h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
+.col-h .num{color:var(--muted);font-weight:400}
+.col-h .sum{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:400}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px}
+.card .top{display:flex;gap:8px;align-items:center}
+.card .top{flex-wrap:wrap}
+.card .top b{font-size:14px;white-space:nowrap}
+.card .val{margin-left:auto;font-family:var(--mono);font-weight:500}
+.card .svc{font-size:12px;color:var(--muted)}
+.score{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11px;color:var(--muted)}
+.score .bar{height:6px;background:var(--soft-2);border-radius:99px;overflow:hidden}
+.score .bar i{display:block;height:100%;border-radius:99px}
+.score b{font-family:var(--mono);color:var(--fg);font-size:12px}
+.next{font-size:12px;color:var(--accent-text);display:flex;gap:6px;align-items:flex-start}
+.card .foot{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+
+/* report */
+.report{max-width:760px;display:grid;gap:18px}
+.report p{margin:0;font-size:15px;line-height:1.7;max-width:68ch}
+.report h3{margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.report ul{margin:0;padding-left:18px;display:grid;gap:6px}
+.recs{display:grid;gap:8px}
+.rec{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:10px}
+.rec b{display:block;font-size:14px}
+.rec small{font-size:12px;color:var(--muted)}
+.ai-mark{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:99px;padding:2px 10px}
+
+/* integrations */
+.ints{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.int{border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:10px}
+.int .top{display:flex;gap:10px;align-items:center}
+.int .ab{--c:var(--muted);width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:#fff;background:var(--c);font-size:12px;font-weight:700}
+.int b{display:block}
+.int small{color:var(--muted);font-size:12px}
+.int.err{border-color:color-mix(in srgb,var(--crit) 45%,var(--line));background:color-mix(in srgb,var(--crit) 4%,var(--bg))}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.empty{padding:30px 12px;text-align:center;color:var(--muted)}
+
+@media (max-width:1100px){.grid-2,.grid-2b,.wf{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;height:auto;flex-direction:row;align-items:center;gap:12px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--ink)}
+  .brand small,.rail-foot,.nav-label{display:none}
+  .nav{flex-direction:row;overflow-x:auto;min-width:0}
+  .nav a[aria-current="page"]{box-shadow:inset 0 -2px 0 var(--accent)}
+  .main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .stage{grid-template-columns:100px minmax(0,1fr) 44px}
+  .stage .c{display:none}
+  .branch{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){.brand b{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M17 7a7 7 0 1 0 1.9 6.8"/><path d="M19 3v4.5h-4.5"/></svg></div><div><b>OpsLoop</b><small>Business automation hub</small></div></div>
+    <nav class="nav" id="nav" aria-label="Menu">
+      <span class="nav-label">Monitor</span>
+      <a href="#overview" data-v="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 13h4l3-8 4 14 3-6h4"/></svg>Overview</a>
+      <a href="#workflows" data-v="workflows"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="15" y="15" width="6" height="6" rx="1.5"/><path d="M9 6h4a2 2 0 0 1 2 2v7"/></svg><span>Workflows</span><span class="badge" id="wfBadge"></span></a>
+      <span class="nav-label">Business</span>
+      <a href="#leads" data-v="leads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>Lead pipeline</a>
+      <a href="#invoices" data-v="invoices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Invoices</a>
+      <a href="#report" data-v="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg>AI weekly report</a>
+      <span class="nav-label">Setup</span>
+      <a href="#integrations" data-v="integrations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 7V3M15 7V3M6 7h12v4a6 6 0 0 1-12 0z"/><path d="M12 17v4"/></svg><span>Integrations</span><span class="badge" id="intBadge"></span></a>
+    </nav>
+    <div class="rail-foot"><span>Staff time saved, last 14 days</span><b id="railHours"></b><span>at 2.5 min per automated task</span></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div><div class="crumb">Brightline Home Cleaning · Austin, TX</div><h1 id="viewTitle">Overview</h1></div>
+      <div class="spacer"></div>
+      <span class="live"><i></i>Automations running</span>
+      <span class="today">Fri, Nov 6, 2026 · 2:40 PM</span>
+      <span class="demo-tag">Demo · sample data</span>
+    </div>
+    <div id="view"></div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const APPS = {
+  hook:{n:'Webhook',s:'WH',v:'--a-hook'}, ai:{n:'Claude AI',s:'AI',v:'--a-ai'}, hub:{n:'HubSpot',s:'HS',v:'--a-hub'},
+  sms:{n:'Twilio SMS',s:'SMS',v:'--a-sms'}, mail:{n:'Gmail',s:'GM',v:'--a-mail'}, slack:{n:'Slack',s:'SL',v:'--a-slack'},
+  pay:{n:'Stripe',s:'ST',v:'--a-pay'}, qb:{n:'QuickBooks',s:'QB',v:'--a-qb'}, sheet:{n:'Google Sheets',s:'GS',v:'--a-sheet'},
+  cal:{n:'Google Calendar',s:'GC',v:'--a-cal'}, time:{n:'Schedule',s:'⏱',v:'--a-time'}, rev:{n:'Google Reviews',s:'GR',v:'--a-rev'}
+};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const usd = n => '$' + n.toLocaleString('en-US');
+const appChip = k => `<span class="app-chip" style="--c:var(${APPS[k].v})">${APPS[k].n}</span>`;
+
+let qbConnected = false;
+
+const days = {labels:['10/24','10/25','10/26','10/27','10/28','10/29','10/30','10/31','11/01','11/02','11/03','11/04','11/05','11/06'],
+  runs:[118,96,238,244,251,239,246,122,101,256,262,249,258,173], failed:[0,0,2,1,0,3,1,0,0,2,0,9,4,2]};
+const RUNS = days.runs.reduce((a,b)=>a+b,0), FAILED = days.failed.reduce((a,b)=>a+b,0);
+const HOURS = Math.round(RUNS*2.5/60);
+
+const loop = [
+  {k:'Leads in',n:214,app:'hook'},{k:'Replied < 2 min',n:209,app:'ai'},{k:'Quotes sent',n:132,app:'hub'},
+  {k:'Jobs booked',n:81,app:'cal'},{k:'Paid',n:69,app:'pay'},{k:'Reviews',n:41,app:'rev'}];
+
+const workflows = [
+ {id:'w1',name:'New lead → AI qualify → instant reply',st:'Active',runs:642,ok:99.7,avg:'6.2s',last:'2 min ago',
+  steps:[{a:'hook',t:'New lead arrives',d:'Website form, Google Ads, Facebook Lead Ads',ms:120},
+         {a:'ai',t:'Score lead and draft reply',d:'Reads job size, zip code, budget, urgency',ms:2100},
+         {branch:['Score 70 or higher','Score below 70'],take:0,paths:[
+           [{a:'sms',t:'Text instant quote link',d:'Sent within 60 seconds',ms:640},{a:'hub',t:'Create deal: Hot',d:'Owner: Dana',ms:410}],
+           [{a:'mail',t:'Start 3-email nurture',d:'Day 0, 3, 7',ms:520},{a:'hub',t:'Create contact: Nurture',d:'',ms:380}]]},
+         {a:'slack',t:'Post to #sales',d:'Lead summary with AI score',ms:300}],
+  log:[['2:38 PM','Success','5.9s','Megan T. · score 86 · quote texted'],['2:12 PM','Success','6.4s','Carlos R. · score 54 · nurture started'],['1:47 PM','Success','6.1s','Priya S. · score 91 · quote texted'],['12:55 PM','Success','5.7s','Tom B. · score 72 · quote texted']]},
+ {id:'w2',name:'Deposit paid → schedule job',st:'Active',runs:188,ok:100,avg:'4.8s',last:'38 min ago',
+  steps:[{a:'pay',t:'Deposit payment received',d:'Stripe checkout from quote link',ms:150},
+         {a:'sheet',t:'Find cleaner by zip code',d:'Crew roster sheet, 3 crews',ms:700},
+         {a:'cal',t:'Create job on crew calendar',d:'2–4 hr slot with travel buffer',ms:900},
+         {a:'sms',t:'Send booking confirmation',d:'Date, crew name, checklist link',ms:600},
+         {a:'hub',t:'Move deal to Booked',d:'',ms:350}],
+  log:[['2:02 PM','Success','4.6s','Priya S. · Tue Nov 10, 9 AM · Crew B'],['11:30 AM','Success','5.1s','Hannah L. · Mon Nov 9, 1 PM · Crew A']]},
+ {id:'w3',name:'Job done → invoice → review request',st:'Error',runs:164,ok:94.5,avg:'7.4s',last:'Failed 1 hr ago',
+  steps:[{a:'sheet',t:'Crew marks job complete',d:'Mobile checklist submitted',ms:180},
+         {a:'qb',t:'Create invoice',d:'Line items from quote, minus deposit',ms:1200,needsQb:true},
+         {a:'mail',t:'Email invoice with pay link',d:'',ms:700},
+         {a:'time',t:'Wait 2 days',d:'Skipped in test runs',ms:250},
+         {branch:['Invoice paid','Not paid yet'],take:0,paths:[
+           [{a:'sms',t:'Ask for a Google review',d:'Only if rating ≥ 4 on checklist',ms:520}],
+           [{a:'mail',t:'Friendly payment reminder',d:'Hands off to invoice chaser',ms:480}]]}],
+  log:[['1:41 PM','Failed','1.3s','QuickBooks: authorization expired'],['11:58 AM','Failed','1.2s','QuickBooks: authorization expired'],['Nov 5','Success','7.1s','INV-1088 · review requested']]},
+ {id:'w4',name:'Overdue invoice chaser',st:'Active',runs:42,ok:100,avg:'9.3s',last:'Today 9:00 AM',
+  steps:[{a:'time',t:'Every weekday at 9:00 AM',d:'',ms:100},{a:'qb',t:'Find invoices past due',d:'',ms:900,needsQb:true},
+         {a:'ai',t:'Write a polite reminder',d:'Tone gets firmer at 7 and 14 days',ms:1800},
+         {a:'mail',t:'Send reminder email',d:'',ms:600},{a:'slack',t:'Flag 14+ days to owner',d:'#finance',ms:300}],
+  log:[['9:00 AM','Success','9.8s','3 reminders sent'],['Nov 5','Success','8.7s','2 reminders sent']]},
+ {id:'w5',name:'Monday AI business report',st:'Active',runs:9,ok:100,avg:'24s',last:'Mon 8:00 AM',
+  steps:[{a:'time',t:'Every Monday at 8:00 AM',d:'',ms:100},{a:'hub',t:'Pull leads and deals',d:'',ms:1100},
+         {a:'qb',t:'Pull revenue and unpaid',d:'',ms:1000,needsQb:true},{a:'cal',t:'Pull jobs and crew load',d:'',ms:800},
+         {a:'ai',t:'Write the weekly summary',d:'Wins, risks, 3 actions',ms:3200},{a:'mail',t:'Email to owner',d:'',ms:500}],
+  log:[['Mon 8:00 AM','Success','23.4s','Report for Oct 26 – Nov 1 sent']]},
+ {id:'w6',name:'New Google review → AI reply',st:'Paused',runs:31,ok:100,avg:'3.1s',last:'Oct 28',
+  steps:[{a:'rev',t:'New review posted',d:'',ms:150},{a:'ai',t:'Draft a reply',d:'Matches the star rating and details',ms:1600},
+         {a:'slack',t:'Owner approves in Slack',d:'One-tap approve or edit',ms:400},{a:'rev',t:'Post reply',d:'',ms:500}],
+  log:[['Oct 28','Success','3.0s','Reply posted to 5-star review']]}
+];
+
+const leads = [
+ {name:'Megan T.',svc:'Move-out deep clean · 3 bd',val:420,src:'Website',score:86,stage:0,next:'Quote opened 2× · follow-up text at 5 PM'},
+ {name:'Carlos R.',svc:'Biweekly clean · 2 bd',val:160,src:'Facebook',score:54,stage:0,next:'Nurture email 2 of 3 on Nov 9'},
+ {name:'Jenna W.',svc:'Post-construction clean',val:980,src:'Google Ads',score:92,stage:0,next:'Owner call suggested (high value)'},
+ {name:'Tom B.',svc:'Standard clean · 4 bd',val:210,src:'Google Ads',score:72,stage:1,next:'Asked about pets · AI replied'},
+ {name:'Aisha K.',svc:'Office clean · weekly',val:1450,src:'Referral',score:88,stage:1,next:'Site visit Mon 10 AM booked'},
+ {name:'Luis M.',svc:'Airbnb turnover',val:130,src:'Yelp',score:63,stage:1,next:'Follow-up text tomorrow 10 AM'},
+ {name:'Priya S.',svc:'Deep clean · 2 bd',val:310,src:'Website',score:91,stage:2,next:'Deposit paid · job scheduled'},
+ {name:'Grant O.',svc:'Monthly clean · 3 bd',val:190,src:'Google Ads',score:77,stage:2,next:'Quote expires in 2 days'},
+ {name:'Hannah L.',svc:'Move-in clean · 1 bd',val:240,src:'Referral',score:84,stage:3,next:'Job Mon Nov 9 · Crew A'},
+ {name:'Rob & Kim D.',svc:'Biweekly clean · 3 bd',val:3840,src:'Website',score:95,stage:3,next:'Recurring · 24 visits/yr'},
+ {name:'Elena V.',svc:'Window + deep clean',val:560,src:'Facebook',score:81,stage:3,next:'Job Thu Nov 12 · Crew C'}
+];
+const STAGES = ['New','Contacted','Quote sent','Won'];
+
+const invoices = [
+ {no:'INV-1094',who:'Rob & Kim D.',amt:320,issued:'Nov 5',due:'Nov 19',st:'Sent',rem:0},
+ {no:'INV-1093',who:'Delgado Dental (office)',amt:1450,issued:'Nov 2',due:'Nov 16',st:'Sent',rem:0},
+ {no:'INV-1092',who:'Megan F.',amt:280,issued:'Oct 30',due:'Nov 6',st:'Due today',rem:1},
+ {no:'INV-1091',who:'Sam P.',amt:190,issued:'Oct 29',due:'Nov 5',st:'Paid',rem:0},
+ {no:'INV-1090',who:'Alicia N.',amt:610,issued:'Oct 22',due:'Oct 29',st:'Overdue',rem:2,days:8},
+ {no:'INV-1089',who:'Ward Realty (move-out)',amt:1220,issued:'Oct 16',due:'Oct 23',st:'Overdue',rem:3,days:14},
+ {no:'INV-1088',who:'Hector G.',amt:310,issued:'Oct 15',due:'Oct 22',st:'Overdue',rem:3,days:15},
+ {no:'INV-1087',who:'Chloe B.',amt:240,issued:'Oct 14',due:'Oct 21',st:'Paid',rem:1},
+ {no:'INV-1086',who:'Patel family',amt:420,issued:'Oct 12',due:'Oct 19',st:'Paid',rem:0},
+ {no:'—',who:'2 finished jobs waiting',amt:500,issued:'—',due:'—',st:'Blocked',rem:0}
+];
+
+const ints = [
+ {k:'hub',d:'Leads, deals, contacts',used:3},{k:'ai',d:'Lead scoring, replies, reports',used:4},{k:'sms',d:'Quotes, confirmations, reviews',used:3},
+ {k:'mail',d:'Invoices, nurture, reminders',used:5},{k:'pay',d:'Deposits and card payments',used:1},{k:'qb',d:'Invoices and revenue',used:3,qb:true},
+ {k:'sheet',d:'Crew roster and checklists',used:2},{k:'cal',d:'Crew job calendars',used:2},{k:'slack',d:'#sales, #finance alerts',used:4},
+ {k:'rev',d:'Business profile reviews',used:1}];
+
+const feedSeed = [
+ ['2:38 PM','ai','Scored Megan T. at 86 and texted a quote in 48s'],
+ ['2:31 PM','mail','Sent nurture email 1 of 3 to Carlos R.'],
+ ['2:02 PM','cal','Booked Priya S. for Tue Nov 10, 9 AM with Crew B'],
+ ['1:41 PM','qb','Invoice for Ortiz job failed: QuickBooks authorization expired'],
+ ['1:15 PM','sms','Sent booking reminder to 6 customers for tomorrow'],
+ ['12:40 PM','slack','Posted lead summary for Jenna W. ($980) to #sales'],
+ ['9:00 AM','ai','Wrote 3 overdue invoice reminders (8, 14 and 15 days late)']];
+const feedLive = [
+ ['ai','Scored a new lead, Dev P., at 78 and texted a quote in 52s'],
+ ['sms','Confirmed tomorrow\'s 8 AM job with Hannah L.'],
+ ['hub','Moved Grant O. to Quote sent after he opened the link'],
+ ['mail','Sent the INV-1092 due-today reminder to Megan F.']];
+let feed = feedSeed.map(f=>({t:f[0],a:f[1],m:f[2]}));
+
+let state = {wf:'w1', running:false};
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),3000)}
+function wfStatus(w){ if(w.id==='w3') return qbConnected?'Active':'Error'; return w.st; }
+const stPill = s => `<span class="pill ${({Active:'p-ok',Error:'p-crit',Paused:'p-mute'})[s]}">${s}</span>`;
+function badges(){
+  const err=workflows.filter(w=>wfStatus(w)==='Error').length;
+  const b1=document.getElementById('wfBadge'); b1.textContent=err||''; b1.hidden=!err;
+  const b2=document.getElementById('intBadge'); b2.textContent=qbConnected?'':'1'; b2.hidden=qbConnected;
+  document.getElementById('railHours').textContent=HOURS+' hours';
+}
+
+/* ---------- charts ---------- */
+function runsChart(){
+  const W=640,H=250,L=38,R=8,T=14,B=46,n=days.labels.length,max=300;
+  const iw=W-L-R, ih=H-T-B, step=iw/n, bw=step*.58, y=v=>T+ih-(v/max)*ih;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Automation runs per day, last 14 days">`;
+  [0,100,200,300].forEach(v=>{s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${v}</text>`});
+  days.labels.forEach((lb,i)=>{const x=L+i*step+(step-bw)/2, v=days.runs[i], f=days.failed[i], last=i===n-1;
+    s+=`<rect x="${x}" y="${y(v)}" width="${bw}" height="${y(0)-y(v)}" rx="2" fill="${last?'var(--accent)':'var(--ink)'}"><title>${lb}: ${v} runs, ${f} failed</title></rect>`;
+    if(i%2===1||last) s+=`<text x="${x+bw/2}" y="${H-28}" text-anchor="middle" ${last?'style="fill:var(--fg)"':''}>${last?'Today':lb}</text>`;
+    s+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle" style="fill:${f?'var(--crit)':'var(--bar)'};font-weight:${f>4?600:400}">${f||'·'}</text>`;
+  });
+  s+=`<text x="${L-8}" y="${H-8}" text-anchor="end" style="fill:var(--crit)">fail</text>`;
+  return s+'</svg>';
+}
+function loopHtml(){
+  const top=loop[0].n;
+  return `<div class="loop">${loop.map((s,i)=>`<div class="stage"><div class="lbl" style="color:var(${APPS[s.app].v})"><span style="color:inherit">●</span><b style="color:var(--fg)">${s.k}</b></div><div class="track"><div class="fill" style="width:${(s.n/top*100).toFixed(1)}%"></div></div><div class="n">${s.n}</div><div class="c">${i?Math.round(s.n/loop[i-1].n*100)+'% of prev':'October'}</div></div>`).join('')}</div>
+  <div class="loop-note">Every step in this loop runs on its own. The biggest drop is quote → booked (61%), which the "Quote expires" follow-up targets.</div>`;
+}
+
+/* ---------- views ---------- */
+function vOverview(){
+  const ok=((1-FAILED/RUNS)*100).toFixed(1);
+  const overdue=invoices.filter(i=>i.st==='Overdue'), od=overdue.reduce((a,b)=>a+b.amt,0);
+  const pipeline=leads.filter(l=>l.stage<3).reduce((a,b)=>a+b.val,0);
+  const alerts=[];
+  if(!qbConnected) alerts.push(`<div class="alert-row"><span class="ic" style="background:var(--crit)">!</span><div><b>QuickBooks disconnected</b><small>2 invoices could not be created. Reconnect to resume “Job done → invoice”.</small></div><a class="btn sm" href="#integrations">Reconnect</a></div>`);
+  alerts.push(`<div class="alert-row"><span class="ic" style="background:var(--warn)">$</span><div><b>${overdue.length} invoices overdue · ${usd(od)}</b><small>AI reminders are going out. Ward Realty hits 14 days today.</small></div><a class="btn sm" href="#invoices">View</a></div>`);
+  alerts.push(`<div class="alert-row"><span class="ic" style="background:var(--info)">★</span><div><b>Jenna W. is a $980 lead</b><small>AI suggests a personal call from the owner before 5 PM.</small></div><a class="btn sm" href="#leads">Open</a></div>`);
+  return `
+  <div class="kpis">
+    <div class="kpi hero"><span class="k">Staff time saved</span><span class="v">${HOURS}<small>hours</small></span><span class="d">Last 14 days · about ${(HOURS/2).toFixed(0)} hrs a week</span></div>
+    <div class="kpi"><span class="k">Automation runs</span><span class="v">${RUNS.toLocaleString('en-US')}</span><span class="d">Last 14 days</span></div>
+    <div class="kpi ${qbConnected?'':'alert'}"><span class="k">Success rate</span><span class="v">${ok}<small>%</small></span><span class="d">${FAILED} failed · ${qbConnected?'all fixed':'1 workflow needs attention'}</span></div>
+    <div class="kpi"><span class="k">Avg. lead response</span><span class="v">48<small>sec</small></span><span class="d">Was 3 hrs 20 min by hand</span></div>
+    <div class="kpi"><span class="k">Open pipeline</span><span class="v">${usd(pipeline)}</span><span class="d">${leads.filter(l=>l.stage<3).length} leads not yet won</span></div>
+  </div>
+  <div class="grid-2">
+    <section class="panel"><div class="panel-h"><h2>The business loop</h2><span class="sub">Lead to review, fully automated · October</span></div><div class="panel-b">${loopHtml()}</div></section>
+    <section class="panel"><div class="panel-h"><h2>Needs your attention</h2><span class="sub">${alerts.length} items</span></div><div class="panel-b alerts">${alerts.join('')}</div></section>
+  </div>
+  <div class="grid-2">
+    <section class="panel"><div class="panel-h"><h2>Automation runs per day</h2><span class="sub">Failures shown under each day</span><div class="grow"></div><div class="legend"><span><i style="background:var(--ink)"></i>Runs</span><span><i style="background:var(--accent)"></i>Today so far</span></div></div><div class="panel-b chart">${runsChart()}</div></section>
+    <section class="panel"><div class="panel-h"><h2>Live activity</h2><span class="sub">What the automations did today</span></div><div class="panel-b feed"><ul id="feed">${feedHtml()}</ul></div></section>
+  </div>`;
+}
+function feedHtml(){return feed.map((f,i)=>`<li class="${f.isNew?'new':''}"><span class="t">${f.t}</span>${appChip(f.a)}<span>${esc(f.m)}</span></li>`).join('')}
+
+let seqIds=[];
+function nodeHtml(st,id){ return `<div class="node" id="${id}"><span class="ab" style="--c:var(${APPS[st.a].v})">${APPS[st.a].s}</span><div><b>${esc(st.t)}</b><small>${APPS[st.a].n}${st.d?' · '+esc(st.d):''}</small></div><span class="nt"></span></div>`; }
+function flowHtml(w){
+  seqIds=[]; let c=0, out='';
+  w.steps.forEach((st,i)=>{
+    if(i) out+='<div class="conn"></div>';
+    if(st.branch){
+      out+=`<div class="branch">${st.paths.map((p,pi)=>`<div class="path"><span class="cond">${st.branch[pi]}</span>${p.map((n,ni)=>{const id='n'+(c++); if(pi===st.take) seqIds.push({id,st:n}); else seqIds.push({id,st:n,skip:true}); return (ni?'<div class="conn" style="height:14px"></div>':'')+nodeHtml(n,id)}).join('')}</div>`).join('')}</div>`;
+    } else { const id='n'+(c++); seqIds.push({id,st}); out+=nodeHtml(st,id); }
+  });
+  return out;
+}
+function vWorkflows(){
+  const w=workflows.find(x=>x.id===state.wf);
+  const list=workflows.map(x=>`<button class="wf-item" data-w="${x.id}" aria-selected="${x.id===w.id}"><b>${esc(x.name)}</b><div class="row">${stPill(wfStatus(x))}<span class="num">${x.runs} runs</span><span>${x.id==='w3'&&qbConnected?'Ready':x.last}</span></div></button>`).join('');
+  const status=wfStatus(w);
+  const log=(w.id==='w3'&&qbConnected?[['2:41 PM','Success','7.2s','Test run after reconnect'],...w.log]:w.log).map(r=>`<tr><td class="num">${r[0]}</td><td><span class="pill ${r[1]==='Success'?'p-ok':'p-crit'}">${r[1]}</span></td><td class="r num">${r[2]}</td><td>${esc(r[3])}</td></tr>`).join('');
+  return `<div class="wf">
+    <section class="panel wf-list" aria-label="Workflows">${list}</section>
+    <div style="display:grid;gap:16px;min-width:0">
+      <section class="panel"><div class="panel-h"><h2>${esc(w.name)}</h2>${stPill(status)}<div class="grow"></div><button class="btn primary" id="runBtn" ${status==='Paused'?'disabled':''}>▶ Run test</button></div>
+        <div class="panel-b" style="display:grid;gap:14px">
+          <div class="wf-stats"><div class="wf-stat"><span>Runs (30 days)</span><b>${w.runs}</b></div><div class="wf-stat"><span>Success</span><b>${w.id==='w3'&&qbConnected?'100':w.ok}%</b></div><div class="wf-stat"><span>Avg. time</span><b>${w.avg}</b></div><div class="wf-stat"><span>Steps</span><b>${w.steps.reduce((a,s)=>a+(s.branch?s.paths[0].length:1),0)}</b></div></div>
+          <div class="canvas" id="canvas">${flowHtml(w)}</div>
+          ${status==='Error'?`<div class="note" style="color:var(--crit);font-size:13px">● The QuickBooks step fails because the connection expired. <a href="#integrations">Reconnect QuickBooks</a> and run a test.</div>`:''}
+        </div></section>
+      <section class="panel"><div class="panel-h"><h2>Recent runs</h2></div><div class="panel-b table-wrap"><table><thead><tr><th>When</th><th>Result</th><th class="r">Time</th><th>Details</th></tr></thead><tbody>${log}</tbody></table></div></section>
+    </div></div>`;
+}
+function runTest(){
+  if(state.running) return; state.running=true;
+  const w=workflows.find(x=>x.id===state.wf); const btn=document.getElementById('runBtn'); btn.disabled=true; btn.textContent='Running…';
+  document.querySelectorAll('.node').forEach(n=>n.classList.remove('running','done','fail','skip'));
+  seqIds.filter(s=>s.skip).forEach(s=>document.getElementById(s.id).classList.add('skip'));
+  const seq=seqIds.filter(s=>!s.skip); let i=0, total=0;
+  const step=()=>{
+    if(i>=seq.length){state.running=false;btn.disabled=false;btn.textContent='▶ Run test';toast(`Test run passed: ${seq.length} steps in ${(total/1000).toFixed(1)}s (demo, no real messages sent)`);return}
+    const s=seq[i], el=document.getElementById(s.id); el.classList.add('running');
+    setTimeout(()=>{el.classList.remove('running');
+      if(s.st.needsQb&&!qbConnected){el.classList.add('fail');el.querySelector('.nt').textContent='failed';
+        seq.slice(i+1).forEach(r=>document.getElementById(r.id).classList.add('skip'));
+        state.running=false;btn.disabled=false;btn.textContent='▶ Run test';toast('Test stopped: QuickBooks authorization expired. Reconnect it under Integrations.');return}
+      el.classList.add('done'); el.querySelector('.nt').textContent=(s.st.ms/1000).toFixed(1)+'s'; total+=s.st.ms; i++; step();
+    }, Math.max(380, Math.min(900, s.st.ms/3)));
+  };
+  step();
+}
+
+function vLeads(){
+  const cols=STAGES.map((name,si)=>{const ls=leads.filter(l=>l.stage===si), sum=ls.reduce((a,b)=>a+b.val,0);
+    return `<div class="col"><div class="col-h">${name} <span class="num">${ls.length}</span><span class="sum">${usd(sum)}</span></div>
+    ${ls.map(l=>{const i=leads.indexOf(l), col=l.score>=80?'var(--ok)':l.score>=65?'var(--warn)':'var(--muted)';
+      return `<div class="card"><div class="top"><b>${esc(l.name)}</b><span class="src">${l.src}</span><span class="val">${usd(l.val)}</span></div>
+      <div class="svc">${esc(l.svc)}</div>
+      <div class="score"><span>AI score</span><span class="bar"><i style="width:${l.score}%;background:${col}"></i></span><b>${l.score}</b></div>
+      <div class="next"><span>↻</span><span>${esc(l.next)}</span></div>
+      ${si<3?`<div class="foot"><button class="btn sm" data-adv="${i}">Move to ${STAGES[si+1]} →</button></div>`:''}</div>`}).join('')||'<div class="empty">No leads</div>'}</div>`}).join('');
+  const won=leads.filter(l=>l.stage===3).reduce((a,b)=>a+b.val,0);
+  return `<div class="kpis"><div class="kpi"><span class="k">New leads this week</span><span class="v">52</span><span class="d"><span class="up">▲ 18%</span> vs. last week</span></div><div class="kpi"><span class="k">Replied within 2 min</span><span class="v">98<small>%</small></span><span class="d">AI texts a quote link right away</span></div><div class="kpi"><span class="k">Won on this board</span><span class="v">${usd(won)}</span><span class="d">Includes 1 recurring account</span></div></div>
+  <div class="board">${cols}</div>
+  <div class="note" style="font-size:12px;color:var(--muted)">Leads land here from the website, Google Ads, Facebook, Yelp and referrals. AI scores each one, then follow-ups run until the lead books or opts out.</div>`;
+}
+
+function vInvoices(){
+  const blocked=!qbConnected;
+  const rows=invoices.filter(i=>!(i.st==='Blocked'&&!blocked)).map((v,i)=>{
+    const pc={Paid:'p-ok',Sent:'p-info','Due today':'p-warn',Overdue:'p-crit',Blocked:'p-mute'}[v.st];
+    const act=v.st==='Overdue'||v.st==='Due today'?`<button class="btn sm" data-rem="${invoices.indexOf(v)}">Send reminder</button>`:v.st==='Blocked'?`<a class="btn sm" href="#integrations">Reconnect QuickBooks</a>`:'';
+    return `<tr><td class="num">${v.no}</td><td><b>${esc(v.who)}</b></td><td class="r num">${usd(v.amt)}</td><td class="num">${v.issued}</td><td class="num">${v.due}</td><td><span class="pill ${pc}">${v.st}${v.days?` · ${v.days}d`:''}</span></td><td class="r num">${v.rem||'—'}</td><td class="r">${act}</td></tr>`}).join('');
+  const sum=s=>invoices.filter(i=>i.st===s).reduce((a,b)=>a+b.amt,0);
+  return `<div class="kpis"><div class="kpi"><span class="k">Paid in October</span><span class="v">${usd(18640)}</span><span class="d">69 invoices · avg. 4.2 days to pay</span></div><div class="kpi"><span class="k">Waiting on payment</span><span class="v">${usd(sum('Sent')+sum('Due today'))}</span><span class="d">Not yet due</span></div><div class="kpi alert"><span class="k">Overdue</span><span class="v">${usd(sum('Overdue'))}</span><span class="d">AI reminders at 1, 7 and 14 days</span></div><div class="kpi"><span class="k">Recovered by reminders</span><span class="v">${usd(3920)}</span><span class="d">Last 30 days</span></div></div>
+  <section class="panel"><div class="panel-h"><h2>Invoices</h2><span class="sub">Created automatically when a crew marks a job complete</span></div>
+  <div class="panel-b table-wrap"><table><thead><tr><th>Invoice</th><th>Customer</th><th class="r">Amount</th><th>Issued</th><th>Due</th><th>Status</th><th class="r">Reminders</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
+function vReport(){
+  return `<section class="panel"><div class="panel-h"><span class="ai-mark">✦ Written by AI</span><span class="sub">Week of Oct 26 – Nov 1 · emailed Mon, Nov 2 at 8:00 AM</span><div class="grow"></div><button class="btn" id="regen">Regenerate</button></div>
+  <div class="panel-b"><div class="report">
+    <p><b>A strong week: revenue was $5,180, up 12% from the week before.</b> You booked 21 jobs, the most since August. Leads rose to 44, and every one got a reply in under 2 minutes. The main risk is cash: $2,140 is overdue across 3 invoices, and one of them, Ward Realty, will reach 14 days late this week.</p>
+    <div class="table-wrap"><table><thead><tr><th>Metric</th><th class="r">This week</th><th class="r">Last week</th><th class="r">Change</th></tr></thead><tbody>
+      <tr><td>Revenue collected</td><td class="r num">$5,180</td><td class="r num">$4,620</td><td class="r num up">+12%</td></tr>
+      <tr><td>New leads</td><td class="r num">44</td><td class="r num">39</td><td class="r num up">+13%</td></tr>
+      <tr><td>Quote → booked</td><td class="r num">63%</td><td class="r num">58%</td><td class="r num up">+5 pts</td></tr>
+      <tr><td>Jobs completed</td><td class="r num">21</td><td class="r num">18</td><td class="r num up">+3</td></tr>
+      <tr><td>New Google reviews</td><td class="r num">9</td><td class="r num">6</td><td class="r num up">+3 · avg 4.9★</td></tr>
+    </tbody></table></div>
+    <div class="grid-2b"><div><h3>What went well</h3><ul><li>Google Ads leads scored 81 on average, the highest of any source.</li><li>Crew B finished every job on time and earned 4 five-star reviews.</li><li>Rob &amp; Kim D. signed a biweekly plan worth $3,840 a year.</li></ul></div>
+    <div><h3>Watch out for</h3><ul><li>Facebook leads converted at only 22%. They mostly ask for one-off cleans under $150.</li><li>Crew A is booked at 96% next week. One more job will cause overtime.</li></ul></div></div>
+    <div><h3>Suggested actions</h3><div class="recs" id="recs">
+      <div class="rec"><div><b>Call Ward Realty about the $1,220 invoice</b><small>A personal call recovers late B2B invoices faster than a 4th email.</small></div><button class="btn sm" data-rec="Call task added for Friday">Add task</button></div>
+      <div class="rec"><div><b>Set a $150 minimum on Facebook lead ads</b><small>Expected to cut low-value leads by about a third.</small></div><button class="btn sm" data-rec="Sent to your ads checklist">Add task</button></div>
+      <div class="rec"><div><b>Send new Thursday jobs to Crew C</b><small>Crew C has 6 open hours next week.</small></div><button class="btn sm" data-rec="Routing rule drafted for review">Add task</button></div>
+    </div></div>
+  </div></div></section>`;
+}
+
+function vIntegrations(){
+  return `<div class="kpis"><div class="kpi"><span class="k">Connected apps</span><span class="v">${ints.length-(qbConnected?0:1)}<small>of ${ints.length}</small></span></div><div class="kpi"><span class="k">Workflows using them</span><span class="v">${workflows.length}</span></div><div class="kpi"><span class="k">Data synced today</span><span class="v">1,184<small>records</small></span></div></div>
+  <div class="ints">${ints.map((x,i)=>{const err=x.qb&&!qbConnected;
+    return `<div class="int ${err?'err':''}"><div class="top"><span class="ab" style="--c:var(${APPS[x.k].v})">${APPS[x.k].s}</span><div><b>${APPS[x.k].n}</b><small>${x.d}</small></div></div>
+    <div style="display:flex;align-items:center;gap:8px;justify-content:space-between">${err?'<span class="pill p-crit">Authorization expired</span>':'<span class="pill p-ok">Connected</span>'}<span class="note" style="font-size:12px;color:var(--muted)">${x.used} workflow${x.used>1?'s':''}</span></div>
+    ${err?'<button class="btn primary" id="reconnect">Reconnect QuickBooks</button>':''}</div>`}).join('')}</div>`;
+}
+
+const VIEWS={overview:['Overview',vOverview],workflows:['Workflows',vWorkflows],leads:['Lead pipeline',vLeads],invoices:['Invoices',vInvoices],report:['AI weekly report',vReport],integrations:['Integrations',vIntegrations]};
+let current='overview';
+function render(){
+  let v=location.hash.slice(1); if(!VIEWS[v]) v='overview'; current=v; state.running=false;
+  document.getElementById('viewTitle').textContent=VIEWS[v][0];
+  document.getElementById('view').innerHTML=VIEWS[v][1]();
+  document.querySelectorAll('#nav a').forEach(a=>a.setAttribute('aria-current',a.dataset.v===v?'page':'false'));
+  badges(); bind(v);
+}
+function bind(v){
+  const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+  if(v==='workflows'){ $$('.wf-item').forEach(b=>b.onclick=()=>{state.wf=b.dataset.w;render()}); const r=$('#runBtn'); if(r) r.onclick=runTest; }
+  if(v==='leads'){ $$('[data-adv]').forEach(b=>b.onclick=()=>{const l=leads[+b.dataset.adv]; l.stage++; l.next=l.stage===3?'Won · onboarding text sent':l.stage===2?'Quote texted · auto follow-up in 2 days':'AI follow-up scheduled'; render(); toast(`${l.name} moved to ${STAGES[l.stage]}. Next automation queued.`)}); }
+  if(v==='invoices'){ $$('[data-rem]').forEach(b=>b.onclick=()=>{const i=invoices[+b.dataset.rem]; i.rem++; render(); toast(`AI reminder emailed to ${i.who} (demo)`)}); }
+  if(v==='report'){ $('#regen').onclick=()=>toast('Report regenerated with the latest numbers (demo)'); $$('[data-rec]').forEach(b=>b.onclick=()=>{b.textContent='Added ✓';b.disabled=true;toast(b.dataset.rec)}); }
+  if(v==='integrations'){ const r=$('#reconnect'); if(r) r.onclick=()=>{qbConnected=true; const b=invoices.find(i=>i.st==='Blocked'); render(); toast('QuickBooks reconnected. 2 waiting invoices were created.')}; }
+}
+/* live feed: add an event every 9s while Overview is open */
+let li=0;
+setInterval(()=>{ if(current!=='overview'||li>=feedLive.length) return;
+  const f=feedLive[li++]; const now=new Date(2026,10,6,14,40+li); const t=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  feed.forEach(x=>x.isNew=false); feed.unshift({t,a:f[0],m:f[1],isNew:true});
+  const ul=document.getElementById('feed'); if(ul) ul.innerHTML=feedHtml();
+}, 9000);
+window.addEventListener('hashchange',render);
+render();
+</script>
+
+</body>
+</html>
