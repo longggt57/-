@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>업무자동화 대표 포트폴리오</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* 대표 포트폴리오 4:3 슬라이드 (1200×900, 1.5배로 캡처). 잉크 네이비 + 따뜻한 종이색 + 전기 파랑, 라임은 강조 한 군데씩만. */
+:root {
+  --paper: #f4f2ee; --card: #ffffff; --ink: #111827; --ink-2: #374151; --muted: #6b7280; --line: #e2ded6;
+  --navy: #0f1a2e; --navy-2: #1b2942; --navy-ink: #e8ecf5; --navy-muted: #9aa6bd;
+  --blue: #3355ff; --blue-soft: #e6eaff; --lime: #c6f432; --ok: #12805c;
+  --display: "Black Han Sans", "Noto Sans KR", sans-serif;
+  --body: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; word-break: keep-all; background: #777; font-family: var(--body); color: var(--ink); }
+.slide { width: 1200px; height: 900px; background: var(--paper); position: relative; overflow: hidden; padding: 60px 68px; display: flex; flex-direction: column; gap: 26px; margin: 0 auto 24px; }
+.slide.dark { background: var(--navy); color: var(--navy-ink); }
+h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; line-height: 1.18; letter-spacing: -.01em; text-wrap: balance; }
+h1 { font-size: 60px; } h2 { font-size: 46px; }
+.eyebrow { display: inline-flex; gap: 10px; align-items: center; font-family: var(--mono); font-size: 16px; color: var(--blue); font-weight: 700; letter-spacing: .02em; }
+.dark .eyebrow { color: var(--lime); }
+.eyebrow::before { content: ""; width: 26px; height: 3px; background: currentColor; }
+.sub { font-size: 19px; color: var(--muted); margin: 0; line-height: 1.6; max-width: 52ch; }
+.dark .sub { color: var(--navy-muted); }
+.foot { position: absolute; left: 68px; right: 68px; bottom: 30px; display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); font-family: var(--mono); }
+.dark .foot { color: var(--navy-muted); }
+.hl { background: linear-gradient(transparent 62%, var(--lime) 62%); padding: 0 4px; }
+.dark .hl { background: none; color: var(--lime); padding: 0; }
+
+/* 브라우저 프레임 */
+.win { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 18px 50px rgba(10, 16, 30, .28); border: 1px solid rgba(0, 0, 0, .06); }
+.win .bar { height: 26px; background: #eceef2; display: flex; gap: 6px; align-items: center; padding: 0 12px; }
+.win .bar i { width: 9px; height: 9px; border-radius: 50%; background: #c9ccd3; }
+.win img { display: block; width: 100%; }
+
+/* 1. 표지 */
+.cover { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; flex: 1; }
+.cover .l { display: flex; flex-direction: column; gap: 22px; padding-top: 20px; position: relative; z-index: 2; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 15px; font-weight: 700; padding: 7px 13px; border-radius: 999px; background: var(--navy-2); color: var(--navy-ink); border: 1px solid #2c3b57; }
+.stack { position: relative; }
+.stack .win { position: absolute; width: 560px; }
+.stack .w1 { top: 10px; left: 30px; transform: rotate(-4deg); }
+.stack .w2 { top: 220px; left: -10px; transform: rotate(2deg); }
+.stack .w3 { top: 430px; left: 40px; transform: rotate(-1.5deg); }
+.stats { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 34px; border-top: 1px solid #2c3b57; padding-top: 20px; margin-top: auto; position: relative; z-index: 2; }
+.stats div { display: grid; gap: 4px; }
+.stats b { font-family: var(--display); font-weight: 400; font-size: 40px; color: #fff; }
+.stats b small { font-size: 22px; margin-left: 4px; color: var(--lime); }
+.stats span { font-size: 14px; max-width: 15ch; line-height: 1.4; color: var(--navy-muted); }
+
+/* 2. 시스템 맵 */
+.map { display: grid; grid-template-columns: 1fr 34px 1.15fr 34px 1fr; gap: 10px; align-items: center; flex: 1; margin-bottom: 40px; }
+.mcol { display: flex; flex-direction: column; gap: 14px; }
+.mh { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--muted); letter-spacing: .04em; margin-bottom: 2px; }
+.node { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 16px; display: grid; grid-template-columns: 34px 1fr; gap: 2px 12px; align-items: center; }
+.node .ic { grid-row: span 2; width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--blue-soft); color: var(--blue); }
+.node .ic svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.node b { font-size: 17px; } .node small { font-size: 13.5px; color: var(--muted); }
+.engine { background: var(--navy); color: var(--navy-ink); border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+.engine .t { font-family: var(--display); font-size: 30px; color: #fff; }
+.engine .t small { display: block; font-family: var(--mono); font-size: 13px; color: var(--lime); margin-bottom: 4px; }
+.eng { background: var(--navy-2); border-radius: 10px; padding: 12px 14px; display: grid; gap: 3px; }
+.eng b { font-size: 16.5px; color: #fff; } .eng span { font-size: 13.5px; color: var(--navy-muted); line-height: 1.5; }
+.arrow { display: flex; align-items: center; justify-content: center; }
+.arrow svg { width: 34px; height: 34px; stroke: var(--blue); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.dash-node { background: var(--blue); color: #fff; border-radius: 12px; padding: 14px; display: grid; gap: 4px; margin-top: 4px; }
+.dash-node b { font-size: 18px; } .dash-node span { font-size: 13.5px; opacity: .85; }
+
+/* 3. 갤러리 */
+.gal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.gc { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.gc .shot { height: 176px; overflow: hidden; border-bottom: 1px solid var(--line); background: #f6f7f9; }
+.gc .shot img { width: 100%; display: block; }
+.gc .tx { padding: 14px 16px 16px; display: grid; gap: 6px; }
+.gc .tx .n { font-family: var(--mono); font-size: 12.5px; color: var(--blue); font-weight: 700; }
+.gc .tx b { font-size: 19px; line-height: 1.3; }
+.gc .tx span { font-size: 14.5px; color: var(--muted); line-height: 1.5; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.tags em { font-style: normal; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: var(--paper); color: var(--ink-2); }
+
+/* 4. 사례 */
+.case { display: grid; grid-template-columns: 1.35fr 1fr; gap: 30px; flex: 1; margin-bottom: 36px; }
+.steps { display: grid; gap: 12px; align-content: start; }
+.step { display: grid; grid-template-columns: 40px 1fr; gap: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.step .k { width: 40px; height: 40px; border-radius: 10px; background: var(--navy); color: var(--lime); font-family: var(--mono); font-weight: 700; display: grid; place-items: center; font-size: 17px; }
+.step b { font-size: 18px; display: block; margin-bottom: 2px; } .step span { font-size: 14.5px; color: var(--muted); line-height: 1.5; }
+.ba { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ba div { border-radius: 12px; padding: 14px 16px; font-size: 15px; line-height: 1.55; }
+.ba .b { background: #ece9e3; color: var(--ink-2); } .ba .a { background: var(--navy); color: var(--navy-ink); }
+.ba b { display: block; font-family: var(--mono); font-size: 12.5px; margin-bottom: 4px; letter-spacing: .04em; }
+.ba .a b { color: var(--lime); }
+.shots { position: relative; }
+
+/* 5. 웹사이트 */
+.sites { display: grid; grid-template-columns: 1.25fr 1fr; gap: 24px; flex: 1; margin-bottom: 36px; }
+.sites .r { display: grid; gap: 18px; align-content: start; }
+.feat { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.feat div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 14.5px; color: var(--muted); line-height: 1.5; }
+.feat b { display: block; color: var(--ink); font-size: 16px; margin-bottom: 2px; }
+
+/* 6. 가능한 자동화 */
+.cando { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; flex: 1; margin-bottom: 36px; }
+.cat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.cat h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 25px; }
+.cat .who { font-size: 13.5px; color: var(--muted); margin-top: -8px; }
+.cat ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 18px; }
+.cat li { font-size: 17px; line-height: 1.45; padding-left: 20px; position: relative; }
+.cat li::before { content: ""; position: absolute; left: 0; top: 7px; width: 9px; height: 9px; border-radius: 3px; background: var(--blue); }
+.cat li.done::before { background: var(--lime); box-shadow: 0 0 0 1.5px #7fa200; }
+.cat .ex { margin-top: auto; background: var(--paper); border-radius: 10px; padding: 14px; font-size: 14.5px; color: var(--ink-2); line-height: 1.6; }
+.cat .ex b { display: block; font-family: var(--mono); font-size: 11.5px; color: var(--blue); letter-spacing: .04em; margin-bottom: 2px; }
+.legend { display: flex; gap: 18px; font-size: 14px; color: var(--muted); align-items: center; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+/* 7. 진행 방식 */
+.proc { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.pc { background: var(--navy-2); border-radius: 14px; padding: 18px; display: grid; gap: 8px; align-content: start; min-height: 190px; }
+.pc .k { font-family: var(--mono); color: var(--lime); font-weight: 700; font-size: 15px; }
+.pc b { font-size: 20px; color: #fff; } .pc span { font-size: 14.5px; color: var(--navy-muted); line-height: 1.55; }
+.tools { display: flex; flex-wrap: wrap; gap: 10px; }
+.tools span { font-family: var(--mono); font-size: 15px; font-weight: 700; padding: 8px 14px; border-radius: 10px; background: var(--navy-2); border: 1px solid #2c3b57; color: var(--navy-ink); }
+.cta { margin-top: auto; margin-bottom: 30px; background: var(--lime); color: var(--navy); border-radius: 16px; padding: 26px 30px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.cta b { font-family: var(--display); font-weight: 400; font-size: 34px; line-height: 1.25; }
+.cta span { font-size: 17px; font-weight: 700; max-width: 26ch; text-align: right; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- 1. 표지 -->
+<section class="slide dark" id="s1">
+  <div class="cover">
+    <div class="l">
+      <span class="eyebrow">업무자동화 · CRM · DB 구축</span>
+      <h1>반복 업무는<br>시스템이 하고,<br><span class="hl">사장님은 숫자만</span><br>보세요</h1>
+      <p class="sub">주문 취합, 엑셀 정리, 고객 관리, 매출 집계까지. 지금 손으로 하는 일을 운영 방식에 맞춘 자동화와 전용 관리 화면으로 바꿔 드립니다.</p>
+      <div class="chips"><span class="chip">n8n</span><span class="chip">Make</span><span class="chip">GPT · Gemini · Claude</span><span class="chip">구글 시트</span><span class="chip">엑셀</span><span class="chip">노션</span></div>
+      <div class="stats">
+    <div><b>5<small>종</small></b><span>n8n 자동화 워크플로</span></div>
+    <div><b>8<small>종</small></b><span>전용 관리 웹사이트 (한·영)</span></div>
+    <div><b>AI<small>연동</small></b><span>문의 답변 초안 · 의뢰 분석</span></div>
+  </div>
+    </div>
+    <div class="stack">
+      <div class="win w1"><div class="bar"><i></i><i></i><i></i></div><img src="assets/sales_dash.png" alt=""></div>
+      <div class="win w2"><div class="bar"><i></i><i></i><i></i></div><img src="assets/crm_dash.png" alt=""></div>
+      <div class="win w3"><div class="bar"><i></i><i></i><i></i></div><img src="assets/console_auto.png" alt=""></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. 시스템 맵 -->
+<section class="slide" id="s2">
+  <span class="eyebrow">SYSTEM MAP</span>
+  <h2>흩어진 데이터를 모아, 정리하고, <span class="hl">한 화면</span>에 보여줍니다</h2>
+  <div class="map">
+    <div class="mcol">
+      <div class="mh">① 들어오는 곳</div>
+      <div class="node"><span class="ic"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg></span><b>스마트스토어 · 쿠팡</b><small>주문 API 자동 수집</small></div>
+      <div class="node"><span class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/></svg></span><b>카페24 · 자사몰</b><small>공동구매 · 전화주문 포함</small></div>
+      <div class="node"><span class="ic"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><b>고객 문의 · 의뢰</b><small>톡톡 · 메일 · 폼</small></div>
+      <div class="node"><span class="ic"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13l2 2 4-4"/></svg></span><b>엑셀 · 구글 시트</b><small>기존에 쓰던 파일 그대로</small></div>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="engine">
+      <div class="t"><small>② 자동화 엔진</small>n8n 워크플로 + AI</div>
+      <div class="eng"><b>수집 · 정리</b><span>채널별 주문 통합, 중복 제거, 전화번호·주소 정리, 합포장 묶기</span></div>
+      <div class="eng"><b>AI 판단</b><span>문의 분류·요약, 답변 초안 작성, 의뢰 내용 분석과 견적 초안</span></div>
+      <div class="eng"><b>정해진 시간에 실행</b><span>매일 아침 · 매시간 · 새 주문이 들어올 때마다</span></div>
+      <div class="eng"><b>검증 · 기록</b><span>누락·오류 확인, 실행 기록 남기고 실패 시 알림</span></div>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="mcol">
+      <div class="mh">③ 결과</div>
+      <div class="node"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span><b>구글 시트 자동 생성</b><small>날짜별 주문표 · 서식까지</small></div>
+      <div class="node"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 7h13v10H3zM16 10h4l1 3v4h-5"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></span><b>택배 업로드 엑셀</b><small>택배사 양식에 맞춰 바로</small></div>
+      <div class="node"><span class="ic"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></span><b>알림 · 리포트</b><small>슬랙 · 메일 · 매일 매출 보고</small></div>
+      <div class="dash-node"><b>④ 전용 대시보드 · CRM</b><span>주문 · 고객 · 계약 · 매출을 한 화면에서 확인하고 관리</span></div>
+    </div>
+  </div>
+  <div class="foot"><span>업무자동화 · CRM · DB 구축</span><b>02 / 07</b></div>
+</section>
+
+<!-- 3. 구축한 시스템 -->
+<section class="slide" id="s3">
+  <span class="eyebrow">BUILT SYSTEMS</span>
+  <h2>직접 구축한 자동화 시스템</h2>
+  <div class="gal">
+    <div class="gc"><div class="shot"><img src="../../screenshots/07_주문취합_워크플로_전체.png" alt=""></div><div class="tx"><span class="n">01 · n8n</span><b>주문 취합 → 택배 엑셀 · 구글 시트</b><span>스마트스토어·쿠팡 주문을 모아 합포장하고 업로드 파일과 시트를 자동 생성</span></div></div>
+    <div class="gc"><div class="shot"><img src="assets/console_auto.png" alt=""></div><div class="tx"><span class="n">02 · 웹 콘솔</span><b>자동화 운영 콘솔</b><span>워크플로 실행 현황, 성공률, 오늘 할 일과 출고 대기를 한 화면에</span></div></div>
+    <div class="gc"><div class="shot"><img src="assets/crm_dash.png" alt=""></div><div class="tx"><span class="n">03 · CRM</span><b>통합 주문 · 정기배송 CRM</b><span>카페24·스마트스토어·공구·전화주문 통합, 고객·정기배송·배송 스케줄 관리</span></div></div>
+    <div class="gc"><div class="shot"><img src="assets/db_dash.png" alt=""></div><div class="tx"><span class="n">04 · DB</span><b>노션형 계약 · 매출 DB</b><span>수식으로 최종 결제금액 자동 계산, 팀별·월별 매출 차트</span></div></div>
+    <div class="gc"><div class="shot"><img src="assets/sales_dash.png" alt=""></div><div class="tx"><span class="n">05 · 웹사이트</span><b>매출관리 전용 웹사이트</b><span>대시보드·계약·고객사·팀 목표·리포트·설정까지 갖춘 관리 시스템</span></div></div>
+    <div class="gc"><div class="shot"><img src="../../screenshots/02_고객문의_AI.png" alt=""></div><div class="tx"><span class="n">06 · AI</span><b>고객 문의 AI 답변 초안</b><span>문의를 분류하고 답변 초안을 만들어 담당자에게 전달</span></div></div>
+  </div>
+  <div class="foot"><span>화면의 업체명·금액은 예시 데이터입니다</span><b>03 / 07</b></div>
+</section>
+
+<!-- 4. 대표 사례: 주문 취합 -->
+<section class="slide" id="s4">
+  <span class="eyebrow">CASE 01 · 쇼핑몰 주문 취합</span>
+  <h2>매일 아침 하던 주문 정리를<br><span class="hl">정해진 시간에 자동</span>으로</h2>
+  <div class="case">
+    <div class="shots" style="display:grid;gap:16px;align-content:start">
+      <div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="../../screenshots/07_주문취합_워크플로_전체.png" alt=""></div>
+      <div class="win" style="width:78%;margin-left:auto;margin-top:-60px;position:relative"><div class="bar"><i></i><i></i><i></i></div><img src="../../screenshots/05_택배엑셀_결과파일.png" alt=""></div>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="k">1</span><div><b>주문 수집</b><span>스마트스토어·쿠팡 API에서 새 주문을 가져옵니다</span></div></div>
+      <div class="step"><span class="k">2</span><div><b>정리 · 합포장</b><span>같은 주소·받는 분 주문을 묶고 번호·주소를 정리합니다</span></div></div>
+      <div class="step"><span class="k">3</span><div><b>파일 생성</b><span>택배사 업로드 엑셀과 날짜별 구글 시트를 만듭니다</span></div></div>
+      <div class="step"><span class="k">4</span><div><b>알림</b><span>건수와 확인할 주문을 메일·슬랙으로 보냅니다</span></div></div>
+      <div class="ba"><div class="b"><b>BEFORE</b>채널마다 엑셀 내려받기 → 복사·붙여넣기 → 양식 맞추기</div><div class="a"><b>AFTER</b>출근하면 업로드 파일과 정리된 시트가 와 있음</div></div>
+    </div>
+  </div>
+  <div class="foot"><span>업무자동화 · CRM · DB 구축</span><b>04 / 07</b></div>
+</section>
+
+<!-- 5. 대표 사례: 전용 웹사이트 -->
+<section class="slide" id="s5">
+  <span class="eyebrow">CASE 02 · 전용 관리 웹사이트</span>
+  <h2>엑셀 대신, 우리 회사만의<br><span class="hl">관리 화면</span>을 만듭니다</h2>
+  <div class="sites">
+    <div style="display:grid;gap:16px;align-content:start">
+      <div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/crm_orders.png" alt="" style="height:330px;object-fit:cover;object-position:top"></div>
+      <div class="win" style="width:74%;margin-left:22%;margin-top:-120px;position:relative"><div class="bar"><i></i><i></i><i></i></div><img src="assets/sales_contracts.png" alt="" style="height:200px;object-fit:cover;object-position:top left"></div>
+    </div>
+    <div class="r">
+      <div class="feat">
+        <div><b>대시보드</b>매출·주문·고객을 카드와 차트로</div>
+        <div><b>통합 DB</b>채널별 주문·고객·계약을 한 표에</div>
+        <div><b>자동 계산</b>할인·최종 금액·목표 달성률</div>
+        <div><b>상태 관리</b>배송·정기배송·계약 기간 추적</div>
+        <div><b>검토 알림</b>누락·이상 건을 빨간 숫자로</div>
+        <div><b>내보내기</b>엑셀(CSV)·표 복사로 바로 보고</div>
+      </div>
+      <div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/db_table.png" alt="" style="height:230px;object-fit:cover;object-position:top"></div>
+    </div>
+  </div>
+  <div class="foot"><span>화면의 업체명·금액은 예시 데이터입니다</span><b>05 / 07</b></div>
+</section>
+
+<!-- 6. 만들 수 있는 자동화 -->
+<section class="slide" id="s6">
+  <span class="eyebrow">WHAT I CAN BUILD</span>
+  <div style="display:flex;justify-content:space-between;align-items:end;gap:20px"><h2>업종별로 만들 수 있는 자동화</h2><div class="legend"><span><i style="background:var(--lime);box-shadow:0 0 0 1.5px #7fa200"></i>구축 완료</span><span><i style="background:var(--blue)"></i>구축 가능</span></div></div>
+  <div class="cando">
+    <div class="cat"><h3>쇼핑몰 · 셀러</h3><div class="who">스마트스토어 · 쿠팡 · 자사몰</div><ul>
+      <li class="done">채널별 주문 취합 · 합포장</li><li class="done">택배 업로드 엑셀 자동 생성</li><li class="done">새 주문 시트 기록 + 알림</li><li class="done">일일 매출 리포트 메일</li><li class="done">정기배송 · 배송 스케줄 CRM</li><li>재고 부족 · 품절 알림</li><li>리뷰 모아보기 · 답변 초안</li></ul><div class="ex"><b>예시 흐름</b>주문 API → 합포장 → 택배 엑셀 → 메일 알림</div></div>
+    <div class="cat"><h3>병원 · 전문직</h3><div class="who">병원 · 세무 · 법률 · 뷰티</div><ul>
+      <li class="done">고객 문의 분류 · AI 답변 초안</li><li>예약 · 상담 고객 DB</li><li>상담 기록 AI 요약</li><li>재방문 · 리콜 안내 알림</li><li>수납 · 계약 기간 관리</li><li>후기 요청 자동 발송</li></ul><div class="ex"><b>예시 흐름</b>예약 접수 → 고객 DB 기록 → 전날 안내 → 방문 후 후기 요청</div></div>
+    <div class="cat"><h3>영업 · 대행사</h3><div class="who">마케팅 · 에이전시 · B2B</div><ul>
+      <li class="done">계약 · 매출 DB (노션형)</li><li class="done">팀 목표 · 매출관리 웹사이트</li><li class="done">의뢰 내용 AI 분석 · 견적 초안</li><li>문의 접수 → 담당자 배정</li><li>견적서 · 계약서 자동 작성</li><li>주간 실적 보고 자동화</li></ul><div class="ex"><b>예시 흐름</b>문의 접수 → AI 분석 → 견적 초안 → 계약 DB → 매출 대시보드</div></div>
+    <div class="cat"><h3>사무 · 교육</h3><div class="who">학원 · 소규모 사무실</div><ul>
+      <li class="done">엑셀 → 택배 양식 변환 도구</li><li>여러 엑셀 취합 · 정리</li><li>수강생 · 출결 DB</li><li>미납 · 일정 안내 알림</li><li>구글폼 응답 → 시트 · 알림</li><li>메일 첨부파일 자동 정리</li></ul><div class="ex"><b>예시 흐름</b>여러 지점 엑셀 → 하나로 취합 → 구글 시트 → 주간 보고 메일</div></div>
+  </div>
+  <div class="foot"><span>업무자동화 · CRM · DB 구축</span><b>06 / 07</b></div>
+</section>
+
+<!-- 7. 진행 방식 -->
+<section class="slide dark" id="s7">
+  <span class="eyebrow">HOW IT WORKS</span>
+  <h2>이렇게 진행합니다</h2>
+  <div class="proc">
+    <div class="pc"><span class="k">STEP 1</span><b>업무 파악</b><span>지금 하는 일을 순서대로 듣고 자동화할 부분을 찾습니다</span></div>
+    <div class="pc"><span class="k">STEP 2</span><b>설계</b><span>데이터 흐름도와 화면 구성을 먼저 보여드립니다</span></div>
+    <div class="pc"><span class="k">STEP 3</span><b>구축</b><span>워크플로·DB·관리 화면을 만들고 기존 데이터를 옮깁니다</span></div>
+    <div class="pc"><span class="k">STEP 4</span><b>테스트</b><span>실제 데이터로 돌려보고 예외 상황까지 맞춥니다</span></div>
+    <div class="pc"><span class="k">STEP 5</span><b>인계 · 관리</b><span>사용법 안내, 수정 요청과 유지보수를 이어갑니다</span></div>
+  </div>
+  <div style="display:grid;gap:12px"><span style="font-family:var(--mono);font-size:14px;color:var(--navy-muted);font-weight:700;letter-spacing:.04em">TOOLS</span>
+    <div class="tools"><span>n8n</span><span>Make</span><span>ChatGPT</span><span>Gemini</span><span>Claude</span><span>Google Sheets</span><span>Excel</span><span>Notion</span><span>Slack</span><span>Gmail</span><span>네이버 커머스 API</span><span>쿠팡 Wing API</span><span>HTML · JavaScript</span><span>Python</span></div></div>
+  <div style="display:grid;gap:12px"><span style="font-family:var(--mono);font-size:14px;color:var(--navy-muted);font-weight:700;letter-spacing:.04em">받으시는 것</span>
+    <div class="tools"><span style="font-family:var(--body)">자동화 워크플로 파일</span><span style="font-family:var(--body)">전용 관리 화면 · DB</span><span style="font-family:var(--body)">흐름도 · 사용 설명서</span><span style="font-family:var(--body)">구축 후 수정 지원</span></div></div>
+  <div class="cta"><b>지금 반복하는 업무를<br>알려주세요</b><span>어디까지 자동화할 수 있는지, 어떤 화면이 필요한지 먼저 정리해 드립니다</span></div>
+</section>
+
+</body>
+</html>
