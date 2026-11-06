@@ -1,19 +1,11 @@
 <div class="app">
-  <aside class="side">
-    <div class="brand"><b>Fernlight Skincare</b><span>Customer care CRM</span></div>
+  <header class="topbar">
+    <div class="brand"><span class="logo">F</span><div><b>Fernlight</b><span>Customer care</span></div></div>
     <nav class="nav" id="nav" aria-label="Menu"></nav>
-    <div class="foot">
-      <span class="pill good" style="width:fit-content">All channels connected</span>
-      <span id="syncInfo"></span>
-    </div>
-  </aside>
-  <div class="main">
-    <header class="top">
-      <h1 id="title">Dashboard</h1>
-      <div class="meta"><span id="clock" class="num"></span><button class="btn sm" id="runTriage" type="button">Check new messages</button></div>
-    </header>
-    <main class="view" id="view"></main>
-  </div>
+    <div class="meta"><span class="health"><i></i><span id="syncInfo"></span></span><span id="clock" class="num"></span><button class="btn sm light" id="runTriage" type="button">Check new messages</button></div>
+  </header>
+  <div class="page-h"><h1 id="title">Dashboard</h1></div>
+  <main class="view" id="view"></main>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
 
@@ -455,7 +447,7 @@ function render() {
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => route() === 'dashboard' && drawChart(), 150); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => route() === 'dashboard' && drawChart());
-const tick = () => { $('#clock').textContent = `${wd(Date.now())}, ${md(Date.now())} · ${kt(Date.now())}`; const last = S.runs[S.runs.length - 1]; $('#syncInfo').textContent = last ? `Last sync ${kdt(last.at)}` : ''; };
+const tick = () => { $('#clock').textContent = `${wd(Date.now())}, ${md(Date.now())} · ${kt(Date.now())}`; const last = S.runs[S.runs.length - 1]; $('#syncInfo').textContent = last ? `Synced ${kt(last.at)}` : 'Connected'; };
 tick(); setInterval(tick, 30e3);
 
 // ───────────── Events ─────────────

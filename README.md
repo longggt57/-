@@ -205,7 +205,7 @@ ANTHROPIC_API_KEY=sk-ant-... python3 test/live_claude_check.py
 | 연결 | 채널 연결 상태, 담당자 배정 규칙 |
 
 - 샘플 데이터로 동작하고 브라우저에 저장됩니다. "Reset sample data"로 초기화할 수 있습니다.
-- 수정은 `body.html`, `extra.css`에서 하고 `python3 docs/crm-en/assemble.py` → `python3 docs/crm-en/build_page.py` 순서로 다시 만드세요.
+- 수정은 `body.html`, `style.css`에서 하고 `python3 docs/crm-en/assemble.py` → `python3 docs/crm-en/build_page.py` 순서로 다시 만드세요.
 
 ## Fiverr 버전 (영어)
 
