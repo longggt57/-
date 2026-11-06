@@ -1,0 +1,937 @@
+{
+ "name": "자동화 시스템 전체 맵",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## ① 주문 취합 → 택배 엑셀 · 구글 시트\n스마트스토어·쿠팡 주문을 매일 아침 모아 합포장하고, 택배 업로드 엑셀과 날짜별 구글 시트를 만들어 메일로 보냅니다",
+    "height": 540,
+    "width": 1720,
+    "color": 4
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    0
+   ],
+   "id": "1c3815cb-376e-4fc5-a9af-c145079d10d0",
+   "name": "메모 1"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours"
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    80,
+    250
+   ],
+   "id": "1f2d183f-9648-4f73-9e95-72ca96c9bb5a",
+   "name": "매일 08:40"
+  },
+  {
+   "parameters": {
+    "url": "https://api.commerce.naver.com/external/v1/pay-order/seller/product-orders/last-changed-statuses"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    320,
+    85
+   ],
+   "id": "e2141733-8dab-482a-8309-8f93189074c4",
+   "name": "스마트스토어 주문 조회"
+  },
+  {
+   "parameters": {
+    "url": "https://api-gateway.coupang.com/v2/providers/openapi/apis/api/v4/vendors/ordersheets"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    320,
+    415
+   ],
+   "id": "66697669-f9ae-4e24-b5fd-030771db1e18",
+   "name": "쿠팡 주문 조회"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.merge",
+   "typeVersion": 3,
+   "position": [
+    560,
+    250
+   ],
+   "id": "13b90af3-134a-4239-be1c-91ccc850e24f",
+   "name": "주문 합치기"
+  },
+  {
+   "parameters": {
+    "jsCode": "return $input.all();"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    800,
+    250
+   ],
+   "id": "2686fe63-8d94-430a-b8d2-ea0834e95b5d",
+   "name": "합포장 · 주소 정리"
+  },
+  {
+   "parameters": {
+    "operation": "xlsx"
+   },
+   "type": "n8n-nodes-base.convertToFile",
+   "typeVersion": 1.1,
+   "position": [
+    1040,
+    250
+   ],
+   "id": "807366b1-9b38-4d1c-9ebc-2d15b2f44a87",
+   "name": "택배 업로드 엑셀"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    1280,
+    250
+   ],
+   "id": "c8dd7721-0d00-41a4-b871-7a266c511e42",
+   "name": "구글 시트 생성"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.gmail",
+   "typeVersion": 2.1,
+   "position": [
+    1520,
+    250
+   ],
+   "id": "cca1ec9a-846d-428b-a8c4-7165f7a24d8f",
+   "name": "담당자 메일"
+  },
+  {
+   "parameters": {
+    "content": "## ② 새 주문 알림\n10분마다 새 주문을 확인해 시트에 기록하고 슬랙으로 알립니다",
+    "height": 540,
+    "width": 1720,
+    "color": 5
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1800,
+    0
+   ],
+   "id": "9f88a758-4406-436f-bcb5-88ce8c117631",
+   "name": "메모 2"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours"
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    1880,
+    250
+   ],
+   "id": "ae5806e8-71a0-4190-b570-c8fcce1b64bd",
+   "name": "10분마다"
+  },
+  {
+   "parameters": {
+    "url": "https://api.commerce.naver.com/external/v1/pay-order/seller/product-orders/last-changed-statuses"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2120,
+    250
+   ],
+   "id": "b3aac0b9-3e9c-4b7b-b780-7ef4e2e72b93",
+   "name": "신규 주문 조회"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2360,
+    250
+   ],
+   "id": "20a92ae8-274b-4170-88f7-c2b04e22891b",
+   "name": "새 주문 있음?"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    2600,
+    85
+   ],
+   "id": "0b0f263b-363f-4318-80fb-32436e48c55d",
+   "name": "주문 시트 기록"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.3,
+   "position": [
+    2840,
+    85
+   ],
+   "id": "0d16af43-778a-4522-a109-b729e6c29c5a",
+   "name": "슬랙 알림"
+  },
+  {
+   "parameters": {
+    "content": "## ③ 고객 문의 AI 답변 초안\n문의가 들어오면 Claude가 분류하고 답변 초안을 쓰며, 급한 문의는 담당자를 바로 호출합니다",
+    "height": 540,
+    "width": 1720,
+    "color": 6
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    600
+   ],
+   "id": "326f1afe-9e7b-463c-869c-acd5ad62c009",
+   "name": "메모 3"
+  },
+  {
+   "parameters": {
+    "path": "inquiry",
+    "httpMethod": "POST"
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    80,
+    850
+   ],
+   "id": "29d71e46-4148-4ad9-ba04-97be1e66c086",
+   "name": "문의 접수"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    320,
+    850
+   ],
+   "id": "54e5681c-6ea2-47c9-bda6-ec1c11447355",
+   "name": "문의 내용 정리"
+  },
+  {
+   "parameters": {
+    "resource": "text",
+    "operation": "message"
+   },
+   "type": "@n8n/n8n-nodes-langchain.anthropic",
+   "typeVersion": 1,
+   "position": [
+    560,
+    850
+   ],
+   "id": "1c0c5ba9-aea5-40e5-8ddc-237e3c3b5e5a",
+   "name": "Claude 분류 · 답변 초안"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    920,
+    850
+   ],
+   "id": "45ed2a42-0f01-491c-b46f-bbdd4c4ea75b",
+   "name": "긴급 문의?"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.3,
+   "position": [
+    1208,
+    685
+   ],
+   "id": "8c3ee95f-fe72-4c77-a577-90f95c9adfca",
+   "name": "담당자 슬랙 호출"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    1208,
+    1015
+   ],
+   "id": "7f4663ad-3632-42a6-bf0d-fc26aaec340b",
+   "name": "답변 초안 저장"
+  },
+  {
+   "parameters": {
+    "content": "## ④ 일일 매출 리포트\n매일 아침 어제 주문을 집계해 채널별 매출 리포트를 메일로 보냅니다",
+    "height": 540,
+    "width": 1720,
+    "color": 3
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1800,
+    600
+   ],
+   "id": "6ee62e5a-2a52-4bf2-bae9-d67231662b12",
+   "name": "메모 4"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours"
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    1880,
+    850
+   ],
+   "id": "27f62835-5ae5-4817-bb9d-6998e7342c1e",
+   "name": "매일 08:30"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    2120,
+    850
+   ],
+   "id": "32acdf2e-feb9-4703-8b48-c04b0e1abc3f",
+   "name": "어제 주문 읽기"
+  },
+  {
+   "parameters": {
+    "jsCode": "return $input.all();"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2360,
+    850
+   ],
+   "id": "d70b6d3b-9a24-4349-ba11-c8a8dad35a2c",
+   "name": "매출 집계"
+  },
+  {
+   "parameters": {
+    "jsCode": "return $input.all();"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2600,
+    850
+   ],
+   "id": "f1991717-d8c3-4bc6-bef4-bbbd8973fae5",
+   "name": "리포트 작성"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.gmail",
+   "typeVersion": 2.1,
+   "position": [
+    2840,
+    850
+   ],
+   "id": "ee97d79e-d5d2-4be2-a0fe-7cf60039ac72",
+   "name": "리포트 메일"
+  },
+  {
+   "parameters": {
+    "content": "## ⑤ 의뢰 분석 → 견적 · 계약 DB\n의뢰서를 Claude가 분석해 견적을 계산하고, 계약 DB에 등록한 뒤 회신 초안을 만듭니다",
+    "height": 540,
+    "width": 1720,
+    "color": 2
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    1200
+   ],
+   "id": "9b3e748c-09dc-4d0f-91fa-31e5b774b3c0",
+   "name": "메모 5"
+  },
+  {
+   "parameters": {
+    "formTitle": "의뢰서"
+   },
+   "type": "n8n-nodes-base.formTrigger",
+   "typeVersion": 2.2,
+   "position": [
+    80,
+    1450
+   ],
+   "id": "5538bad8-9625-4e0f-8f34-865a69833d1e",
+   "name": "의뢰서 접수"
+  },
+  {
+   "parameters": {
+    "resource": "text",
+    "operation": "message"
+   },
+   "type": "@n8n/n8n-nodes-langchain.anthropic",
+   "typeVersion": 1,
+   "position": [
+    320,
+    1450
+   ],
+   "id": "70d50358-621c-48a3-b218-78a18bf62a1b",
+   "name": "Claude 의뢰 분석"
+  },
+  {
+   "parameters": {
+    "jsCode": "return $input.all();"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    680,
+    1450
+   ],
+   "id": "0b003606-b2da-4f4a-b666-3a6dea132645",
+   "name": "견적 계산"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.notion",
+   "typeVersion": 2.2,
+   "position": [
+    920,
+    1450
+   ],
+   "id": "41f47371-342f-4fd2-afe4-ff63a74c4bd4",
+   "name": "계약 DB 등록"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.gmail",
+   "typeVersion": 2.1,
+   "position": [
+    1160,
+    1450
+   ],
+   "id": "a7c84f13-1b32-4771-81b3-8b21fde8d00c",
+   "name": "회신 초안 메일"
+  },
+  {
+   "parameters": {
+    "content": "## ⑥ 통합 CRM · 정기배송 동기화\n카페24·스마트스토어·공구·전화주문을 매시간 모아 고객과 정기배송을 맞추고 CRM 대시보드를 갱신합니다",
+    "height": 540,
+    "width": 1720,
+    "color": 7
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1800,
+    1200
+   ],
+   "id": "4d356569-f1cf-434b-ad04-dc85db0aaaa6",
+   "name": "메모 6"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours"
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    1880,
+    1450
+   ],
+   "id": "3a02f1fd-1c07-4ffc-bc77-17814021e9d4",
+   "name": "매시간"
+  },
+  {
+   "parameters": {
+    "url": "https://mall.cafe24api.com/api/v2/admin/orders"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2120,
+    1285
+   ],
+   "id": "4c0571db-883b-4fb3-85b0-96e8b6abec7b",
+   "name": "카페24 주문"
+  },
+  {
+   "parameters": {
+    "url": "https://api.commerce.naver.com/external/v1/pay-order/seller/product-orders/query"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2120,
+    1450
+   ],
+   "id": "769fbc8f-31f7-4d91-862c-ba57d1faf159",
+   "name": "스마트스토어 주문"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    2120,
+    1615
+   ],
+   "id": "fd9b6387-c10f-4e74-a212-1e4a24f1f62c",
+   "name": "공구 · 전화주문 시트"
+  },
+  {
+   "parameters": {
+    "numberInputs": 3
+   },
+   "type": "n8n-nodes-base.merge",
+   "typeVersion": 3,
+   "position": [
+    2360,
+    1450
+   ],
+   "id": "71ee9a43-d528-45bc-990c-bc0074ecf575",
+   "name": "채널 통합"
+  },
+  {
+   "parameters": {
+    "jsCode": "return $input.all();"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2600,
+    1450
+   ],
+   "id": "c3e558f2-e224-47b3-9857-17cb3e8f7684",
+   "name": "고객 · 정기배송 매칭"
+  },
+  {
+   "parameters": {
+    "url": "https://crm.mall.co.kr/api/sync",
+    "method": "POST"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2840,
+    1450
+   ],
+   "id": "e618697d-43fa-42ef-ade1-3f93dca56a02",
+   "name": "CRM DB 업데이트"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.3,
+   "position": [
+    3080,
+    1450
+   ],
+   "id": "37e92c68-b79c-4ab7-8d15-2bd17438fe10",
+   "name": "이상 건 알림"
+  }
+ ],
+ "connections": {
+  "매일 08:40": {
+   "main": [
+    [
+     {
+      "node": "스마트스토어 주문 조회",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "쿠팡 주문 조회",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "스마트스토어 주문 조회": {
+   "main": [
+    [
+     {
+      "node": "주문 합치기",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "쿠팡 주문 조회": {
+   "main": [
+    [
+     {
+      "node": "주문 합치기",
+      "type": "main",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "주문 합치기": {
+   "main": [
+    [
+     {
+      "node": "합포장 · 주소 정리",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "합포장 · 주소 정리": {
+   "main": [
+    [
+     {
+      "node": "택배 업로드 엑셀",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "택배 업로드 엑셀": {
+   "main": [
+    [
+     {
+      "node": "구글 시트 생성",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "구글 시트 생성": {
+   "main": [
+    [
+     {
+      "node": "담당자 메일",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "10분마다": {
+   "main": [
+    [
+     {
+      "node": "신규 주문 조회",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "신규 주문 조회": {
+   "main": [
+    [
+     {
+      "node": "새 주문 있음?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "새 주문 있음?": {
+   "main": [
+    [
+     {
+      "node": "주문 시트 기록",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "주문 시트 기록": {
+   "main": [
+    [
+     {
+      "node": "슬랙 알림",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "문의 접수": {
+   "main": [
+    [
+     {
+      "node": "문의 내용 정리",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "문의 내용 정리": {
+   "main": [
+    [
+     {
+      "node": "Claude 분류 · 답변 초안",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Claude 분류 · 답변 초안": {
+   "main": [
+    [
+     {
+      "node": "긴급 문의?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "긴급 문의?": {
+   "main": [
+    [
+     {
+      "node": "담당자 슬랙 호출",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "답변 초안 저장",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "매일 08:30": {
+   "main": [
+    [
+     {
+      "node": "어제 주문 읽기",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "어제 주문 읽기": {
+   "main": [
+    [
+     {
+      "node": "매출 집계",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "매출 집계": {
+   "main": [
+    [
+     {
+      "node": "리포트 작성",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "리포트 작성": {
+   "main": [
+    [
+     {
+      "node": "리포트 메일",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "의뢰서 접수": {
+   "main": [
+    [
+     {
+      "node": "Claude 의뢰 분석",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Claude 의뢰 분석": {
+   "main": [
+    [
+     {
+      "node": "견적 계산",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "견적 계산": {
+   "main": [
+    [
+     {
+      "node": "계약 DB 등록",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "계약 DB 등록": {
+   "main": [
+    [
+     {
+      "node": "회신 초안 메일",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "매시간": {
+   "main": [
+    [
+     {
+      "node": "카페24 주문",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "스마트스토어 주문",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "공구 · 전화주문 시트",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "카페24 주문": {
+   "main": [
+    [
+     {
+      "node": "채널 통합",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "스마트스토어 주문": {
+   "main": [
+    [
+     {
+      "node": "채널 통합",
+      "type": "main",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "공구 · 전화주문 시트": {
+   "main": [
+    [
+     {
+      "node": "채널 통합",
+      "type": "main",
+      "index": 2
+     }
+    ]
+   ]
+  },
+  "채널 통합": {
+   "main": [
+    [
+     {
+      "node": "고객 · 정기배송 매칭",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "고객 · 정기배송 매칭": {
+   "main": [
+    [
+     {
+      "node": "CRM DB 업데이트",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "CRM DB 업데이트": {
+   "main": [
+    [
+     {
+      "node": "이상 건 알림",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {},
+ "active": false
+}

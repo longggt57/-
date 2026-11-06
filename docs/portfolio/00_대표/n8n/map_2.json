@@ -1,0 +1,278 @@
+{
+ "name": "AI · 리포트 자동화",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## ③ 고객 문의 AI 답변 초안\n문의가 들어오면 Claude가 분류하고 답변 초안을 쓰며, 급한 문의는 담당자를 바로 호출합니다",
+    "height": 540,
+    "width": 1720,
+    "color": 6
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    0
+   ],
+   "id": "e44fe13b-b0f9-4695-a26e-6871a458e319",
+   "name": "메모 3"
+  },
+  {
+   "parameters": {
+    "path": "inquiry",
+    "httpMethod": "POST"
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    80,
+    250
+   ],
+   "id": "b208cb4f-ca12-4f17-a5d6-8ee4236c0ec4",
+   "name": "문의 접수"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    320,
+    250
+   ],
+   "id": "11444246-ef64-4d0a-96fb-357525febf9f",
+   "name": "문의 내용 정리"
+  },
+  {
+   "parameters": {
+    "resource": "text",
+    "operation": "message"
+   },
+   "type": "@n8n/n8n-nodes-langchain.anthropic",
+   "typeVersion": 1,
+   "position": [
+    560,
+    250
+   ],
+   "id": "ed476948-3fea-40da-9e39-bdd530943735",
+   "name": "Claude 분류 · 답변 초안"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    920,
+    250
+   ],
+   "id": "cf3409e4-8b71-45b6-92d3-f2c09e6bc1e0",
+   "name": "긴급 문의?"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.3,
+   "position": [
+    1208,
+    85
+   ],
+   "id": "46a36064-3fbb-4fd2-895c-59111844ed8c",
+   "name": "담당자 슬랙 호출"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    1208,
+    415
+   ],
+   "id": "6357497b-b7da-47cc-bb2a-70c051b714a2",
+   "name": "답변 초안 저장"
+  },
+  {
+   "parameters": {
+    "content": "## ④ 일일 매출 리포트\n매일 아침 어제 주문을 집계해 채널별 매출 리포트를 메일로 보냅니다",
+    "height": 540,
+    "width": 1720,
+    "color": 3
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    600
+   ],
+   "id": "e81a886c-1b4c-4c03-8e07-0df96a58bd0a",
+   "name": "메모 4"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours"
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    80,
+    850
+   ],
+   "id": "0b491e33-8ee7-4e1a-b472-8b43463798db",
+   "name": "매일 08:30"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    320,
+    850
+   ],
+   "id": "737e63c8-8c66-42d1-b48a-467c3356df12",
+   "name": "어제 주문 읽기"
+  },
+  {
+   "parameters": {
+    "jsCode": "return $input.all();"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    560,
+    850
+   ],
+   "id": "6da41759-c0bb-433e-9507-bd5972bf64bc",
+   "name": "매출 집계"
+  },
+  {
+   "parameters": {
+    "jsCode": "return $input.all();"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    800,
+    850
+   ],
+   "id": "ebebe9d8-af79-4dc5-a1e9-1ab8a5ed5f4c",
+   "name": "리포트 작성"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.gmail",
+   "typeVersion": 2.1,
+   "position": [
+    1040,
+    850
+   ],
+   "id": "ac4674bc-540e-49ea-975d-34bbfe480350",
+   "name": "리포트 메일"
+  }
+ ],
+ "connections": {
+  "문의 접수": {
+   "main": [
+    [
+     {
+      "node": "문의 내용 정리",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "문의 내용 정리": {
+   "main": [
+    [
+     {
+      "node": "Claude 분류 · 답변 초안",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Claude 분류 · 답변 초안": {
+   "main": [
+    [
+     {
+      "node": "긴급 문의?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "긴급 문의?": {
+   "main": [
+    [
+     {
+      "node": "담당자 슬랙 호출",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "답변 초안 저장",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "매일 08:30": {
+   "main": [
+    [
+     {
+      "node": "어제 주문 읽기",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "어제 주문 읽기": {
+   "main": [
+    [
+     {
+      "node": "매출 집계",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "매출 집계": {
+   "main": [
+    [
+     {
+      "node": "리포트 작성",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "리포트 작성": {
+   "main": [
+    [
+     {
+      "node": "리포트 메일",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {},
+ "active": false
+}

@@ -1,0 +1,344 @@
+{
+ "name": "견적 · CRM 자동화",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## ⑤ 의뢰 분석 → 견적 · 계약 DB\n의뢰서를 Claude가 분석해 견적을 계산하고, 계약 DB에 등록한 뒤 회신 초안을 만듭니다",
+    "height": 540,
+    "width": 1720,
+    "color": 2
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    0
+   ],
+   "id": "6d372fbe-eade-4c72-96cd-ddff389c3ab1",
+   "name": "메모 5"
+  },
+  {
+   "parameters": {
+    "formTitle": "의뢰서"
+   },
+   "type": "n8n-nodes-base.formTrigger",
+   "typeVersion": 2.2,
+   "position": [
+    80,
+    250
+   ],
+   "id": "412a8846-e88a-4ef2-9a3a-23de387c0a5b",
+   "name": "의뢰서 접수"
+  },
+  {
+   "parameters": {
+    "resource": "text",
+    "operation": "message"
+   },
+   "type": "@n8n/n8n-nodes-langchain.anthropic",
+   "typeVersion": 1,
+   "position": [
+    320,
+    250
+   ],
+   "id": "cd7be50d-b6a8-4462-9056-2ce320899c0f",
+   "name": "Claude 의뢰 분석"
+  },
+  {
+   "parameters": {
+    "jsCode": "return $input.all();"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    680,
+    250
+   ],
+   "id": "7bfc2b4a-91f8-4313-bb9e-d033f6208a77",
+   "name": "견적 계산"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.notion",
+   "typeVersion": 2.2,
+   "position": [
+    920,
+    250
+   ],
+   "id": "72e7d343-bcb0-4621-b42c-55684a29eb84",
+   "name": "계약 DB 등록"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.gmail",
+   "typeVersion": 2.1,
+   "position": [
+    1160,
+    250
+   ],
+   "id": "af19308f-912f-4f19-8468-191e01cba0c4",
+   "name": "회신 초안 메일"
+  },
+  {
+   "parameters": {
+    "content": "## ⑥ 통합 CRM · 정기배송 동기화\n카페24·스마트스토어·공구·전화주문을 매시간 모아 고객과 정기배송을 맞추고 CRM 대시보드를 갱신합니다",
+    "height": 540,
+    "width": 1720,
+    "color": 7
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    600
+   ],
+   "id": "cc1a8b78-bb36-405f-8fdd-9e3d21ea3faf",
+   "name": "메모 6"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours"
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    80,
+    850
+   ],
+   "id": "bb7fe063-6a65-4b22-9467-077e16da7b4d",
+   "name": "매시간"
+  },
+  {
+   "parameters": {
+    "url": "https://mall.cafe24api.com/api/v2/admin/orders"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    320,
+    685
+   ],
+   "id": "1f705be2-f6ab-4e6a-8d06-6d84d7619698",
+   "name": "카페24 주문"
+  },
+  {
+   "parameters": {
+    "url": "https://api.commerce.naver.com/external/v1/pay-order/seller/product-orders/query"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    320,
+    850
+   ],
+   "id": "170669f4-9c44-429b-a716-fcff22a96328",
+   "name": "스마트스토어 주문"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    320,
+    1015
+   ],
+   "id": "080ec9f6-685c-4770-9272-50f02cf34fb9",
+   "name": "공구 · 전화주문 시트"
+  },
+  {
+   "parameters": {
+    "numberInputs": 3
+   },
+   "type": "n8n-nodes-base.merge",
+   "typeVersion": 3,
+   "position": [
+    560,
+    850
+   ],
+   "id": "5311abdd-3285-4e1c-ab51-c61e6e1dd61a",
+   "name": "채널 통합"
+  },
+  {
+   "parameters": {
+    "jsCode": "return $input.all();"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    800,
+    850
+   ],
+   "id": "54b3534a-25e1-4e6c-ac3d-38994498abea",
+   "name": "고객 · 정기배송 매칭"
+  },
+  {
+   "parameters": {
+    "url": "https://crm.mall.co.kr/api/sync",
+    "method": "POST"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1040,
+    850
+   ],
+   "id": "9aa2bd2e-5dbf-4870-b50c-aeada798c752",
+   "name": "CRM DB 업데이트"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.3,
+   "position": [
+    1280,
+    850
+   ],
+   "id": "3accb027-9ee1-48e5-a9c3-42d5c3d72368",
+   "name": "이상 건 알림"
+  }
+ ],
+ "connections": {
+  "의뢰서 접수": {
+   "main": [
+    [
+     {
+      "node": "Claude 의뢰 분석",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Claude 의뢰 분석": {
+   "main": [
+    [
+     {
+      "node": "견적 계산",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "견적 계산": {
+   "main": [
+    [
+     {
+      "node": "계약 DB 등록",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "계약 DB 등록": {
+   "main": [
+    [
+     {
+      "node": "회신 초안 메일",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "매시간": {
+   "main": [
+    [
+     {
+      "node": "카페24 주문",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "스마트스토어 주문",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "공구 · 전화주문 시트",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "카페24 주문": {
+   "main": [
+    [
+     {
+      "node": "채널 통합",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "스마트스토어 주문": {
+   "main": [
+    [
+     {
+      "node": "채널 통합",
+      "type": "main",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "공구 · 전화주문 시트": {
+   "main": [
+    [
+     {
+      "node": "채널 통합",
+      "type": "main",
+      "index": 2
+     }
+    ]
+   ]
+  },
+  "채널 통합": {
+   "main": [
+    [
+     {
+      "node": "고객 · 정기배송 매칭",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "고객 · 정기배송 매칭": {
+   "main": [
+    [
+     {
+      "node": "CRM DB 업데이트",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "CRM DB 업데이트": {
+   "main": [
+    [
+     {
+      "node": "이상 건 알림",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {},
+ "active": false
+}

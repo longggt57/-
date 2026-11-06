@@ -1,0 +1,339 @@
+{
+ "name": "주문 · 알림 자동화",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## ① 주문 취합 → 택배 엑셀 · 구글 시트\n스마트스토어·쿠팡 주문을 매일 아침 모아 합포장하고, 택배 업로드 엑셀과 날짜별 구글 시트를 만들어 메일로 보냅니다",
+    "height": 540,
+    "width": 1720,
+    "color": 4
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    0
+   ],
+   "id": "fce36049-0bf6-4973-b2a6-039fd7de7dcc",
+   "name": "메모 1"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours"
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    80,
+    250
+   ],
+   "id": "37e37dea-366e-49af-81a6-da99f91a60e9",
+   "name": "매일 08:40"
+  },
+  {
+   "parameters": {
+    "url": "https://api.commerce.naver.com/external/v1/pay-order/seller/product-orders/last-changed-statuses"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    320,
+    85
+   ],
+   "id": "1483fa97-4e63-45e8-8506-b77477038453",
+   "name": "스마트스토어 주문 조회"
+  },
+  {
+   "parameters": {
+    "url": "https://api-gateway.coupang.com/v2/providers/openapi/apis/api/v4/vendors/ordersheets"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    320,
+    415
+   ],
+   "id": "50e7ab3b-7589-4c02-9dee-914dd2d92b36",
+   "name": "쿠팡 주문 조회"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.merge",
+   "typeVersion": 3,
+   "position": [
+    560,
+    250
+   ],
+   "id": "bcd050fa-e3b0-4db5-b718-55e8b4910b05",
+   "name": "주문 합치기"
+  },
+  {
+   "parameters": {
+    "jsCode": "return $input.all();"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    800,
+    250
+   ],
+   "id": "12dbcbea-6af2-4106-bfd7-56cf9031e19e",
+   "name": "합포장 · 주소 정리"
+  },
+  {
+   "parameters": {
+    "operation": "xlsx"
+   },
+   "type": "n8n-nodes-base.convertToFile",
+   "typeVersion": 1.1,
+   "position": [
+    1040,
+    250
+   ],
+   "id": "08d6dda4-4f82-4079-96cf-f06cccee66b3",
+   "name": "택배 업로드 엑셀"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    1280,
+    250
+   ],
+   "id": "73dd0217-651e-48ad-9d05-d289a9b688fa",
+   "name": "구글 시트 생성"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.gmail",
+   "typeVersion": 2.1,
+   "position": [
+    1520,
+    250
+   ],
+   "id": "301bff2e-f083-4c31-b1a6-58755cba2555",
+   "name": "담당자 메일"
+  },
+  {
+   "parameters": {
+    "content": "## ② 새 주문 알림\n10분마다 새 주문을 확인해 시트에 기록하고 슬랙으로 알립니다",
+    "height": 540,
+    "width": 1720,
+    "color": 5
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    600
+   ],
+   "id": "f6721a21-4c12-4363-ba49-d3139dc6cb91",
+   "name": "메모 2"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours"
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    80,
+    850
+   ],
+   "id": "83616a30-3da1-4b00-b778-edb77cc20823",
+   "name": "10분마다"
+  },
+  {
+   "parameters": {
+    "url": "https://api.commerce.naver.com/external/v1/pay-order/seller/product-orders/last-changed-statuses"
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    320,
+    850
+   ],
+   "id": "731032a3-c633-46a1-b53c-9ee514beee25",
+   "name": "신규 주문 조회"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    560,
+    850
+   ],
+   "id": "fe2370a2-24eb-4632-99eb-69a306898958",
+   "name": "새 주문 있음?"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    800,
+    685
+   ],
+   "id": "4a993d24-e014-46eb-94ca-aab5870bc33e",
+   "name": "주문 시트 기록"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.3,
+   "position": [
+    1040,
+    685
+   ],
+   "id": "827115a4-96f1-483e-a566-b66da77416d7",
+   "name": "슬랙 알림"
+  }
+ ],
+ "connections": {
+  "매일 08:40": {
+   "main": [
+    [
+     {
+      "node": "스마트스토어 주문 조회",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "쿠팡 주문 조회",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "스마트스토어 주문 조회": {
+   "main": [
+    [
+     {
+      "node": "주문 합치기",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "쿠팡 주문 조회": {
+   "main": [
+    [
+     {
+      "node": "주문 합치기",
+      "type": "main",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "주문 합치기": {
+   "main": [
+    [
+     {
+      "node": "합포장 · 주소 정리",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "합포장 · 주소 정리": {
+   "main": [
+    [
+     {
+      "node": "택배 업로드 엑셀",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "택배 업로드 엑셀": {
+   "main": [
+    [
+     {
+      "node": "구글 시트 생성",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "구글 시트 생성": {
+   "main": [
+    [
+     {
+      "node": "담당자 메일",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "10분마다": {
+   "main": [
+    [
+     {
+      "node": "신규 주문 조회",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "신규 주문 조회": {
+   "main": [
+    [
+     {
+      "node": "새 주문 있음?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "새 주문 있음?": {
+   "main": [
+    [
+     {
+      "node": "주문 시트 기록",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "주문 시트 기록": {
+   "main": [
+    [
+     {
+      "node": "슬랙 알림",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {},
+ "active": false
+}
